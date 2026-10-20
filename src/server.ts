@@ -25,8 +25,7 @@ function sse(res: ServerResponse, kind: string, value: unknown): boolean {
   res.write(`event: ${kind}\ndata: ${typeof value === 'string' ? value : JSON.stringify(value)}\n\n`);
   return true;
 }
-export function createApp(config: Config) {
-  const archive = new Archive(config.dataDir);
+export function createApp(config: Config, archive = new Archive(config.dataDir)) {
   archive.recover();
   let queue = Promise.resolve();
   let received = Promise.resolve();

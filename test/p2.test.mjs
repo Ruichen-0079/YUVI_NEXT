@@ -16,6 +16,16 @@ const tool = (name, args, index = 0) => frame({ choices: [{ delta: { tool_calls:
   { index, function: { ...(name === undefined ? {} : { name }), ...(args === undefined ? {} : { arguments: args }) } }
 ] } }] });
 const done = 'data: [DONE]\n\n';
+async function assertNoSecret(directory, secret) {
+  for (const item of await readdir(directory, { withFileTypes: true }).catch(() => [])) {
+    const path = join(directory, item.name);
+    if (item.isDirectory()) await assertNoSecret(path, secret);
+    else {
+      try { assert.ok(!(await readFile(path)).includes(Buffer.from(secret))); }
+      catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
+  }
+}
 async function listen(server) {
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   return `http://127.0.0.1:${server.address().port}`;
@@ -54,10 +64,8 @@ async function fixture(t, settings = {}) {
   t.after(async () => {
     await stop(); const closed = new Promise(r => model.close(r)); model.closeAllConnections(); await closed;
     assert.ok(!output.includes(key));
-    for (const file of await readdir(env.YUVI_DATA_DIR).catch(() => [])) {
-      assert.ok(!(await readFile(join(env.YUVI_DATA_DIR, file))).includes(Buffer.from(key)));
-    }
-    await rm(dir, { recursive: true, force: true });
+    await assertNoSecret(env.YUVI_DATA_DIR, key);
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
   });
   await start();
   return { dir, env, url, handlers, requests, start, stop,
@@ -212,7 +220,7 @@ test('usage received before a broken stream belongs to its error, never estimate
 
 test('usage groups UTC dates and sums only provider numeric fields, including historical P1 endings', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'yuvi-usage-')); const archive = new Archive(dir);
-  t.after(async () => { archive.close(); await rm(dir, { recursive: true, force: true }); });
+  t.after(async () => { archive.close(); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }); });
   const heard = archive.append({ class: 'experience', kind: 'heard', actor: 'owner' });
   const insert = archive.db.prepare(`INSERT INTO events
     (id,branch,class,kind,scene,actor,t_recorded,reply_to,content,model,meta) VALUES (?,'dev:v2-dev','act','said','web','yuvi',?,?,'','fake',?)`);

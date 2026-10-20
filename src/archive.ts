@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, existsSync } from 'node:fs';
+import { ARCHIVE_SCHEMA, checkArchiveFile } from './schema.js';
 import { join } from 'node:path';
 
 export interface Event {
@@ -10,6 +11,10 @@ export interface Event {
 }
 export class DataDirectoryInUseError extends Error {
   constructor() { super('YUVI_DATA_DIR is already in use; stop the other instance first.'); }
+}
+
+export class ArchiveIntegrityError extends Error {
+  constructor() { super('YUVI_DATA_DIR archive integrity check failed; restore from a snapshot into a new directory.'); }
 }
 
 export class Archive {
@@ -33,26 +38,13 @@ export class Archive {
         if (code !== undefined && [5, 6].includes(code & 0xff)) throw new DataDirectoryInUseError();
         throw error;
       }
-      this.db = db = new DatabaseSync(join(directory, 'archive.sqlite'));
-      this.db.exec(`
-      PRAGMA journal_mode=WAL;
-      PRAGMA synchronous=FULL;
-      CREATE TABLE IF NOT EXISTS events (
-        seq INTEGER PRIMARY KEY AUTOINCREMENT,
-        id TEXT NOT NULL UNIQUE, branch TEXT NOT NULL, class TEXT NOT NULL,
-        kind TEXT NOT NULL, scene TEXT NOT NULL, actor TEXT NOT NULL,
-        t_recorded INTEGER NOT NULL, reply_to TEXT REFERENCES events(id),
-        content TEXT NOT NULL, model TEXT, meta TEXT NOT NULL
-      );
-      CREATE INDEX IF NOT EXISTS events_reply ON events(reply_to);
-      CREATE TRIGGER IF NOT EXISTS events_no_update BEFORE UPDATE ON events
-        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;
-      CREATE TRIGGER IF NOT EXISTS events_no_delete BEFORE DELETE ON events
-        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;
-      CREATE TRIGGER IF NOT EXISTS events_no_replace BEFORE INSERT ON events
-        WHEN EXISTS (SELECT 1 FROM events WHERE id=NEW.id OR seq=NEW.seq)
-        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;
-      `);
+      const archivePath = join(directory, 'archive.sqlite');
+      if (existsSync(archivePath)) {
+        try { checkArchiveFile(archivePath); } catch { throw new ArchiveIntegrityError(); }
+      }
+      this.db = db = new DatabaseSync(archivePath);
+      this.db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
+      this.db.exec(ARCHIVE_SCHEMA);
     } catch (error) {
       try { db?.close(); } finally { this.instanceLock.close(); }
       throw error;

@@ -14,6 +14,16 @@ const persona = '人设全文\n不加语义标签。\n';
 const piece = text => `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`;
 // P2 adds verifiable event headers; compare the untouched original text below them.
 const eventText = m => m.content.startsWith('档案事件 ') ? m.content.slice(m.content.indexOf('\n') + 1) : m.content;
+async function assertNoSecret(directory, secret) {
+  for (const item of await readdir(directory, { withFileTypes: true }).catch(() => [])) {
+    const path = join(directory, item.name);
+    if (item.isDirectory()) await assertNoSecret(path, secret);
+    else {
+      try { assert.ok(!(await readFile(path)).includes(Buffer.from(secret))); }
+      catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
+  }
+}
 async function listen(server) {
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   return `http://127.0.0.1:${server.address().port}`;
@@ -47,7 +57,7 @@ async function fixture(t, timeout = 5000) {
       await app.idle(); await close(app.server); app.archive.close();
       app = createApp(config); url = await listen(app.server);
     } };
-  t.after(async () => { await app.idle(); await close(app.server); app.archive.close(); await close(model); await rm(dir, { recursive: true, force: true }); });
+  t.after(async () => { await app.idle(); await close(app.server); app.archive.close(); await close(model); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }); });
   return f;
 }
 async function collect(response, onFrame = () => {}) {
@@ -131,7 +141,7 @@ test('A7: HTTP failure cannot leak upstream credentials, subsequent turn succeed
   assert.deepEqual(f.requests[1].body.messages.slice(0, -1).map(m => ({ ...m, content: eventText(m) })), [{ role: 'system', content: persona },
     { role: 'user', content: '失败' }, { role: 'user', content: '继续' }]);
   await f.restart();
-  for (const name of await readdir(f.dir)) assert.equal((await readFile(join(f.dir, name))).includes(Buffer.from(key)), false);
+  await assertNoSecret(f.dir, key);
 });
 
 test('A7b: partial stream disconnect preserves exactly the emitted content', async t => {
@@ -225,7 +235,7 @@ for (const partial of [false, true]) test(`A8${partial ? '' : 'b'}: real SIGKILL
   await stop(); start(); await waitFor(healthy);
   assert.deepEqual(await (await fetch(url + '/api/events')).json(), events);
   await stop(); assert.ok(!output.includes(key));
-  for (const name of await readdir(childDir)) assert.equal((await readFile(join(childDir, name))).includes(Buffer.from(key)), false);
+  await assertNoSecret(childDir, key);
 });
 
 test('context limit counts conversation events, excludes attempt and control', async t => {
