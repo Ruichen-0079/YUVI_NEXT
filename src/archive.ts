@@ -14,15 +14,18 @@ export class DataDirectoryInUseError extends Error {
 
 export class Archive {
   readonly db: DatabaseSync;
+  private readonly instanceLock: DatabaseSync;
   constructor(directory: string) {
     mkdirSync(directory, { recursive: true, mode: 0o700 });
-    this.db = new DatabaseSync(join(directory, 'archive.sqlite'));
+    // This persistent coordination file is never unlinked: replacing its inode
+    // could let two processes acquire different locks for the same directory.
+    this.instanceLock = new DatabaseSync(join(directory, 'service.lock'));
+    let db: DatabaseSync | undefined;
     try {
       try {
-        // Set before the first database access. EXCLUSIVE retains the file lock
-        // across commits; each append still commits durably on its own.
-        // Force acquisition now, before schema setup or startup recovery.
-        this.db.exec(`PRAGMA busy_timeout=0;
+        // Hold the service lock before even opening the archive. Readers and
+        // snapshot processes only open archive.sqlite, so never contend here.
+        this.instanceLock.exec(`PRAGMA busy_timeout=0;
           PRAGMA locking_mode=EXCLUSIVE;
           BEGIN EXCLUSIVE; COMMIT;`);
       } catch (error) {
@@ -30,6 +33,7 @@ export class Archive {
         if (code !== undefined && [5, 6].includes(code & 0xff)) throw new DataDirectoryInUseError();
         throw error;
       }
+      this.db = db = new DatabaseSync(join(directory, 'archive.sqlite'));
       this.db.exec(`
       PRAGMA journal_mode=WAL;
       PRAGMA synchronous=FULL;
@@ -50,7 +54,7 @@ export class Archive {
         BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;
       `);
     } catch (error) {
-      this.db.close();
+      try { db?.close(); } finally { this.instanceLock.close(); }
       throw error;
     }
   }
@@ -120,5 +124,7 @@ export class Archive {
           ...(attempt ? { attempt: attempt.id } : {}) } });
     }
   }
-  close(): void { this.db.close(); }
+  close(): void {
+    try { this.db.close(); } finally { this.instanceLock.close(); }
+  }
 }

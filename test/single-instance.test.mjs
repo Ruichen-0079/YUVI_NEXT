@@ -2,12 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import { mkdtemp, writeFile, rm, symlink } from 'node:fs/promises';
+import { mkdtemp, writeFile, rm, symlink, copyFile, stat, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Archive } from '../dist/archive.js';
+import { createInterface } from 'node:readline';
 
 const delta = text => `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`;
 async function listen(server) {
@@ -219,4 +220,104 @@ test('existing P1/P2 events and a legacy NORMAL-mode crash WAL remain intact', a
   assert.equal(usage[0].prompt_tokens, 6); assert.equal(usage[0].completion_tokens, 4);
   await f.stop(owner);
   const again = await f.start(); assert.deepEqual(await f.events(again), events);
+});
+
+// A separate OS process with a read-only source connection. It never uses Archive
+// or the service-instance lock, and remains open until the test explicitly stops it.
+async function readerProcess(t, source) {
+  const script = `
+    import { DatabaseSync } from 'node:sqlite';
+    import { createInterface } from 'node:readline';
+    const db = new DatabaseSync(process.argv[1], { readOnly: true });
+    db.exec('PRAGMA busy_timeout=0;');
+    const events = () => db.prepare('SELECT * FROM events ORDER BY seq').all();
+    const reply = value => console.log(JSON.stringify(value));
+    try { reply({ ready: true, events: events() }); }
+    catch { reply({ error: 'read failed' }); process.exit(1); }
+    for await (const line of createInterface({ input: process.stdin })) {
+      const command = JSON.parse(line);
+      try {
+        if (command.action === 'snapshot') {
+          db.prepare('VACUUM INTO ?').run(command.path);
+          const copy = new DatabaseSync(command.path, { readOnly: true });
+          const rows = copy.prepare('SELECT * FROM events ORDER BY seq').all();
+          const integrity = copy.prepare('PRAGMA integrity_check').get();
+          copy.close(); reply({ events: rows, integrity });
+        } else if (command.action === 'begin') {
+          db.exec('BEGIN;'); reply({ events: events() });
+        } else if (command.action === 'commit') {
+          db.exec('COMMIT;'); reply({ events: events() });
+        } else reply({ events: events() });
+      } catch { reply({ error: 'reader command failed' }); }
+    }
+    db.close();
+  `;
+  const child = spawn(process.execPath, ['--input-type=module', '-e', script, source], { stdio: ['pipe', 'pipe', 'pipe'] });
+  const exit = once(child, 'exit'); const lines = createInterface({ input: child.stdout });
+  const iterator = lines[Symbol.asyncIterator]();
+  const next = async () => {
+    const value = await iterator.next(); assert.ok(!value.done, 'reader exited unexpectedly');
+    const result = JSON.parse(value.value); assert.ok(!result.error, JSON.stringify(result)); return result;
+  };
+  t.after(async () => { child.stdin.end(); child.kill('SIGKILL'); await exit; lines.close(); });
+  const ready = await next(); assert.equal(ready.ready, true);
+  return { initial: ready.events, command: async command => {
+    child.stdin.write(JSON.stringify(command) + '\n'); return next();
+  } };
+}
+function decodeRows(rows) { return rows.map(row => ({ ...row, meta: JSON.parse(row.meta) })); }
+
+test('independent read-only process reads live WAL and takes consistent copies without weakening the service lock', async t => {
+  const f = await fixture(t);
+  // Open an independent reader before the service to ensure a reader is not
+  // mistaken for a running service. Pin its view while the service writes.
+  const seed = new Archive(f.dataDir); seed.close();
+  const source = join(f.dataDir, 'archive.sqlite');
+  const reader = await readerProcess(t, source);
+  assert.deepEqual(reader.initial, []);
+  await reader.command({ action: 'begin' });
+  const a = await f.start(), generation = await f.pending(a);
+  const pending = await f.events(a);
+  assert.deepEqual(pending.map(e => e.kind), ['heard', 'reply_attempt']);
+  assert.ok((await stat(source + '-wal')).size > 32);
+  // This intentionally incomplete copy is only a test probe, not a snapshot:
+  // prove that the latest events are still outside the main database file.
+  const mainOnly = join(f.directory, 'main-only.sqlite'); await copyFile(source, mainOnly);
+  const probe = spawn(process.execPath, ['--input-type=module', '-e', `
+    import { DatabaseSync } from 'node:sqlite';
+    const db = new DatabaseSync(process.argv[1], { readOnly: true });
+    console.log(db.prepare('SELECT count(*) AS n FROM events').get().n); db.close();
+  `, mainOnly], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let count = ''; probe.stdout.on('data', d => { count += d; });
+  const [probeCode] = await once(probe, 'exit'); assert.equal(probeCode, 0); assert.equal(Number(count.trim()), 0);
+  const latest = await reader.command({ action: 'commit' });
+  assert.deepEqual(decodeRows(latest.events), pending, 'new read sees commits from WAL');
+  const first = await reader.command({ action: 'snapshot', path: join(f.directory, 'pending-copy.sqlite') });
+  assert.deepEqual(decodeRows(first.events), pending);
+  assert.deepEqual(Object.values(first.integrity), ['ok']);
+  const b = (await f.prepare())(); assert.equal(await f.state(b), 'exited');
+  assert.notEqual(b.code, 0); assert.match(b.output, /YUVI_DATA_DIR.*in use/);
+  assert.deepEqual(await f.events(a), pending);
+  await generation.finish();
+  const complete = await f.events(a);
+  assert.deepEqual(complete.map(e => e.kind), ['heard', 'reply_attempt', 'said']);
+  const second = await reader.command({ action: 'snapshot', path: join(f.directory, 'complete-copy.sqlite') });
+  assert.deepEqual(decodeRows(second.events), complete);
+  assert.deepEqual(Object.values(second.integrity), ['ok']);
+  assert.deepEqual(decodeRows((await reader.command({ action: 'read' })).events), complete);
+  await f.stop(a);
+  // The still-open reader must not retain service ownership after A exits.
+  const c = await f.start(); assert.deepEqual(await f.events(c), complete);
+});
+
+
+test('archive-open failure releases service ownership before another startup', async t => {
+  const f = await fixture(t);
+  const badPath = join(f.dataDir, 'archive.sqlite');
+  await mkdir(badPath, { recursive: true });
+  assert.throws(() => new Archive(f.dataDir));
+  await rm(badPath, { recursive: true });
+  const a = await f.start();
+  assert.deepEqual(await f.events(a), []);
+  assert.ok((await (await f.post(a)).text()).includes('event: done'));
 });
