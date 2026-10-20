@@ -1,6 +1,13 @@
 # YUVI_NEXT
 
-YUVI V2 的 P1：本地浏览器文字对话、流式回复和只追加的 SQLite 档案。
+YUVI 的第二代（V2）。一个持续运行的人工个体：发生的事按时间写进只追加的档案，可替换的语言模型阅读档案来生活。V1 与研究历史在 [Ruichen-0079/YUVI](https://github.com/Ruichen-0079/YUVI)。
+
+- 给参与开发的代理：先读 [`AGENTS.md`](AGENTS.md)。
+- 开发周期：[`docs/ROADMAP.md`](docs/ROADMAP.md)
+- 工作包：[`docs/P1.md`](docs/P1.md)（已完成）
+- 设计背景（只作参考）：[V2 蓝图，YUVI PR #339](https://github.com/Ruichen-0079/YUVI/pull/339)
+
+当前能力（P1）：本地浏览器文字对话、流式回复和只追加的 SQLite 档案。
 
 ## 安装与运行
 
