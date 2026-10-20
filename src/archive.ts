@@ -8,12 +8,29 @@ export interface Event {
   scene: string; actor: string; t_recorded: number; reply_to: string | null;
   content: string; model: string | null; meta: Record<string, unknown>;
 }
+export class DataDirectoryInUseError extends Error {
+  constructor() { super('YUVI_DATA_DIR is already in use; stop the other instance first.'); }
+}
+
 export class Archive {
   readonly db: DatabaseSync;
   constructor(directory: string) {
     mkdirSync(directory, { recursive: true, mode: 0o700 });
     this.db = new DatabaseSync(join(directory, 'archive.sqlite'));
-    this.db.exec(`
+    try {
+      try {
+        // Set before the first database access. EXCLUSIVE retains the file lock
+        // across commits; each append still commits durably on its own.
+        // Force acquisition now, before schema setup or startup recovery.
+        this.db.exec(`PRAGMA busy_timeout=0;
+          PRAGMA locking_mode=EXCLUSIVE;
+          BEGIN EXCLUSIVE; COMMIT;`);
+      } catch (error) {
+        const code = (error as { errcode?: number }).errcode;
+        if (code !== undefined && [5, 6].includes(code & 0xff)) throw new DataDirectoryInUseError();
+        throw error;
+      }
+      this.db.exec(`
       PRAGMA journal_mode=WAL;
       PRAGMA synchronous=FULL;
       CREATE TABLE IF NOT EXISTS events (
@@ -31,7 +48,11 @@ export class Archive {
       CREATE TRIGGER IF NOT EXISTS events_no_replace BEFORE INSERT ON events
         WHEN EXISTS (SELECT 1 FROM events WHERE id=NEW.id OR seq=NEW.seq)
         BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;
-    `);
+      `);
+    } catch (error) {
+      this.db.close();
+      throw error;
+    }
   }
   append(input: Pick<Event, 'class' | 'kind' | 'actor'> & Partial<Pick<Event, 'reply_to' | 'content' | 'model' | 'meta'>>): Event {
     const event = { id: randomUUID(), branch: 'dev:v2-dev', scene: 'web',
