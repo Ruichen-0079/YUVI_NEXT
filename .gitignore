@@ -9,3 +9,4 @@ data/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+.local-data/
