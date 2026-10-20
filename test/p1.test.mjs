@@ -12,6 +12,8 @@ import { createApp } from '../dist/server.js';
 const key = 'unique-P1-secret-8bf2b50';
 const persona = '人设全文\n不加语义标签。\n';
 const piece = text => `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`;
+// P2 adds verifiable event headers; compare the untouched original text below them.
+const eventText = m => m.content.startsWith('档案事件 ') ? m.content.slice(m.content.indexOf('\n') + 1) : m.content;
 async function listen(server) {
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   return `http://127.0.0.1:${server.address().port}`;
@@ -36,14 +38,14 @@ async function fixture(t, timeout = 5000) {
   });
   const baseUrl = (await listen(model)) + '/v1';
   const config = { dataDir: dir, baseUrl, apiKey: key, model: 'fake-model', persona,
-    contextEvents: 200, host: '127.0.0.1', port: 8787 };
-  let app = createApp(config, timeout), url = await listen(app.server);
+    contextEvents: 200, host: '127.0.0.1', port: 8787, idleTimeoutMs: timeout, maxDurationMs: 600_000 };
+  let app = createApp(config), url = await listen(app.server);
   const f = { dir, requests, handlers, config, get app() { return app; }, get url() { return url; },
     events: async () => (await fetch(url + '/api/events')).json(),
     post: text => fetch(url + '/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) }),
     restart: async () => {
       await app.idle(); await close(app.server); app.archive.close();
-      app = createApp(config, timeout); url = await listen(app.server);
+      app = createApp(config); url = await listen(app.server);
     } };
   t.after(async () => { await app.idle(); await close(app.server); app.archive.close(); await close(model); await rm(dir, { recursive: true, force: true }); });
   return f;
@@ -102,14 +104,14 @@ test('A2–A6: durable ordered events, first-delta barrier, context and SQL immu
   assert.equal(events[2].meta.attempt, events[1].id);
   assert.equal(frames[0].data, events[0].id); assert.equal(frames.at(-1).data, events[2].id);
   await collect(await f.post('第二句'));
-  assert.deepEqual(f.requests[1].body.messages, [
+  assert.deepEqual(f.requests[1].body.messages.slice(0, -1).map(m => ({ ...m, content: eventText(m) })), [
     { role: 'system', content: persona }, { role: 'user', content: '你好' },
     { role: 'assistant', content: '我在。' }, { role: 'user', content: '第二句' }
   ]);
   assert.equal(f.requests[0].path, '/v1/chat/completions'); assert.equal(f.requests[0].authorization, 'Bearer ' + key);
   events = await f.events(); await f.restart(); assert.deepEqual(await f.events(), events);
   await collect(await f.post('重启后'));
-  assert.ok(f.requests[2].body.messages.some(m => m.content === '第二句'));
+  assert.ok(f.requests[2].body.messages.some(m => eventText(m) === '第二句'));
   const all = await f.events(); assert.ok(all.every((e, i) => !i || e.seq > all[i - 1].seq));
   assert.deepEqual(await (await fetch(f.url + '/api/events?after=3')).json(), all.filter(e => e.seq > 3));
   assert.throws(() => f.app.archive.db.exec("UPDATE events SET content='changed'"), /append-only/);
@@ -126,7 +128,7 @@ test('A7: HTTP failure cannot leak upstream credentials, subsequent turn succeed
   assert.ok(!JSON.stringify(frames).includes(key));
   await collect(await f.post('继续'));
   assert.equal((await f.events()).at(-1).kind, 'said');
-  assert.deepEqual(f.requests[1].body.messages, [{ role: 'system', content: persona },
+  assert.deepEqual(f.requests[1].body.messages.slice(0, -1).map(m => ({ ...m, content: eventText(m) })), [{ role: 'system', content: persona },
     { role: 'user', content: '失败' }, { role: 'user', content: '继续' }]);
   await f.restart();
   for (const name of await readdir(f.dir)) assert.equal((await readFile(join(f.dir, name))).includes(Buffer.from(key)), false);
@@ -166,7 +168,7 @@ test('A9: concurrent arrival queues generation and second context includes first
   assert.deepEqual(events.filter(e => e.kind === 'heard').map(e => e.content), ['第一', '第二']);
   assert.deepEqual(events.filter(e => e.kind === 'said').map(e => e.reply_to), events.filter(e => e.kind === 'heard').map(e => e.id));
   assert.ok(f.requests[1].time >= ended);
-  assert.ok(f.requests[1].body.messages.some(m => m.content === '第一回复'));
+  assert.ok(f.requests[1].body.messages.some(m => eventText(m) === '第一回复'));
 });
 
 test('A10 and invalid requests leave archive unchanged', async t => {
@@ -217,7 +219,7 @@ for (const partial of [false, true]) test(`A8${partial ? '' : 'b'}: real SIGKILL
   const error = assertError(events, partial ? 'unknown' : 'not_sent');
   assert.equal(error.meta.reason, 'interrupted'); await delay(150); assert.equal(f.requests.length, calls);
   await collect(await fetch(url + '/api/messages', { method: 'POST', body: JSON.stringify({ text: '继续生活' }) }));
-  assert.ok(f.requests.at(-1).body.messages.some(m => m.content === '被中断的消息'));
+  assert.ok(f.requests.at(-1).body.messages.some(m => eventText(m) === '被中断的消息'));
   events = await (await fetch(url + '/api/events')).json();
   assert.equal(events.filter(e => e.kind === 'error').length, 1);
   await stop(); start(); await waitFor(healthy);

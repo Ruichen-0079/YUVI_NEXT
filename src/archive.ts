@@ -49,17 +49,48 @@ export class Archive {
   events(after = 0): Event[] {
     return this.decode(this.db.prepare('SELECT * FROM events WHERE seq > ? ORDER BY seq').all(after));
   }
-  context(limit: number, throughHeard = Number.MAX_SAFE_INTEGER): Event[] {
+  context(limit: number): Event[] {
     return this.decode(this.db.prepare(`SELECT * FROM (
       SELECT * FROM events WHERE scene='web' AND
-      ((class='experience' AND kind='heard' AND seq <= ?) OR (class='act' AND kind='said'))
-      ORDER BY seq DESC LIMIT ?) ORDER BY seq`).all(throughHeard, limit));
+      ((class='experience' AND kind='heard') OR (class='act' AND kind IN ('said','silent')))
+      ORDER BY seq DESC LIMIT ?) ORDER BY seq`).all(limit));
+  }
+  usage(): Record<string, unknown>[] {
+    const days = new Map<string, Record<string, unknown>>();
+    const rows = this.decode(this.db.prepare(`SELECT * FROM events WHERE
+      (class='act' AND kind IN ('said','silent')) OR (class='control' AND kind='error')
+      ORDER BY seq`).all());
+    function sum(target: Record<string, unknown>, source: Record<string, unknown>, top = true): void {
+      for (const [key, value] of Object.entries(source)) {
+        if (top && ['date', 'turns', 'turns_with_usage'].includes(key)) continue;
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          target[key] = Number(typeof target[key] === 'number' ? target[key] : 0) + value;
+        } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+          if (!Object.hasOwn(target, key) || typeof target[key] !== 'object') target[key] = Object.create(null);
+          sum(target[key] as Record<string, unknown>, value as Record<string, unknown>, false);
+        }
+      }
+    }
+    for (const event of rows) {
+      const date = new Date(event.t_recorded).toISOString().slice(0, 10);
+      const day = days.get(date) ?? Object.assign(Object.create(null), {
+        date, turns: 0, turns_with_usage: 0, prompt_tokens: 0, completion_tokens: 0
+      });
+      day.turns = Number(day.turns) + 1;
+      const usage = event.meta.usage;
+      if (usage && typeof usage === 'object' && !Array.isArray(usage)) {
+        day.turns_with_usage = Number(day.turns_with_usage) + 1;
+        sum(day, usage as Record<string, unknown>);
+      }
+      days.set(date, day);
+    }
+    return [...days.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, day]) => day);
   }
   recover(): void {
     const pending = this.decode(this.db.prepare(`SELECT * FROM events h
       WHERE h.class='experience' AND h.kind='heard' AND NOT EXISTS
       (SELECT 1 FROM events r WHERE r.reply_to=h.id AND
-      ((r.class='act' AND r.kind='said') OR (r.class='control' AND r.kind='error')))
+      ((r.class='act' AND r.kind IN ('said','silent')) OR (r.class='control' AND r.kind='error')))
       ORDER BY h.seq`).all());
     for (const heard of pending) {
       const attempt = this.db.prepare("SELECT id FROM events WHERE reply_to=? AND kind='reply_attempt' ORDER BY seq DESC LIMIT 1").get(heard.id);

@@ -8,15 +8,20 @@ import { join } from 'node:path';
 import { chromium } from 'playwright-core';
 import { createApp } from '../dist/server.js';
 
-test('A12: Chromium displays a partial reply before completion and reloads durable history',
+test('A12/B2: Chromium streams text, shows neutral silence, and reloads history',
   { skip: !process.env.YUVI_CHROMIUM && 'Set YUVI_CHROMIUM to run browser acceptance' }, async t => {
   assert.ok(process.env.YUVI_CHROMIUM, 'Set YUVI_CHROMIUM to the installed Chromium executable');
   const dir = await mkdtemp(join(tmpdir(), 'yuvi-browser-'));
   let finish;
   const barrier = new Promise(resolve => { finish = resolve; });
+  let calls = 0;
   const model = createServer(async (req, res) => {
     for await (const chunk of req) { /* consume request */ }
     res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+    if (++calls > 1) {
+      res.end('data: '+JSON.stringify({ choices: [{ delta: { tool_calls: [{ index: 0, function: { name: 'stay_silent', arguments: '{"reason":"先不说"}' } }] } }] })+'\n\ndata: [DONE]\n\n');
+      return;
+    }
     res.write('data: {"choices":[{"delta":{"content":"我在"}}]}\n\n');
     await barrier;
     res.end('data: {"choices":[{"delta":{"content":"。"}}]}\n\ndata: [DONE]\n\n');
@@ -43,5 +48,12 @@ test('A12: Chromium displays a partial reply before completion and reloads durab
   assert.equal(await page.locator('#conversation p').last().textContent(), 'yuvi: 我在。');
   await page.reload(); await page.waitForFunction(() => document.querySelector('#conversation').textContent.includes('我在。'));
   assert.match(await page.locator('#conversation').textContent(), /你好 <script>原文<\/script>/);
+  await page.locator('#text').fill('沉默回合'); await page.locator('button').click();
+  await page.waitForFunction(() => document.querySelector('#conversation').textContent.includes('（没有回复）'));
+  assert.equal(await page.locator('#conversation p').last().textContent(), 'yuvi: （没有回复）');
+  assert.ok(!(await page.locator('body').textContent()).includes('先不说'));
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('#conversation').textContent.includes('（没有回复）'));
+  assert.ok(!(await page.locator('body').textContent()).includes('先不说'));
   assert.deepEqual(errors, []);
 });
