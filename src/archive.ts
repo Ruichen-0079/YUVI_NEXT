@@ -8,12 +8,33 @@ export interface Event {
   scene: string; actor: string; t_recorded: number; reply_to: string | null;
   content: string; model: string | null; meta: Record<string, unknown>;
 }
+export class DataDirectoryInUseError extends Error {
+  constructor() { super('YUVI_DATA_DIR is already in use; stop the other instance first.'); }
+}
+
 export class Archive {
   readonly db: DatabaseSync;
+  private readonly instanceLock: DatabaseSync;
   constructor(directory: string) {
     mkdirSync(directory, { recursive: true, mode: 0o700 });
-    this.db = new DatabaseSync(join(directory, 'archive.sqlite'));
-    this.db.exec(`
+    // This persistent coordination file is never unlinked: replacing its inode
+    // could let two processes acquire different locks for the same directory.
+    this.instanceLock = new DatabaseSync(join(directory, 'service.lock'));
+    let db: DatabaseSync | undefined;
+    try {
+      try {
+        // Hold the service lock before even opening the archive. Readers and
+        // snapshot processes only open archive.sqlite, so never contend here.
+        this.instanceLock.exec(`PRAGMA busy_timeout=0;
+          PRAGMA locking_mode=EXCLUSIVE;
+          BEGIN EXCLUSIVE; COMMIT;`);
+      } catch (error) {
+        const code = (error as { errcode?: number }).errcode;
+        if (code !== undefined && [5, 6].includes(code & 0xff)) throw new DataDirectoryInUseError();
+        throw error;
+      }
+      this.db = db = new DatabaseSync(join(directory, 'archive.sqlite'));
+      this.db.exec(`
       PRAGMA journal_mode=WAL;
       PRAGMA synchronous=FULL;
       CREATE TABLE IF NOT EXISTS events (
@@ -31,7 +52,11 @@ export class Archive {
       CREATE TRIGGER IF NOT EXISTS events_no_replace BEFORE INSERT ON events
         WHEN EXISTS (SELECT 1 FROM events WHERE id=NEW.id OR seq=NEW.seq)
         BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;
-    `);
+      `);
+    } catch (error) {
+      try { db?.close(); } finally { this.instanceLock.close(); }
+      throw error;
+    }
   }
   append(input: Pick<Event, 'class' | 'kind' | 'actor'> & Partial<Pick<Event, 'reply_to' | 'content' | 'model' | 'meta'>>): Event {
     const event = { id: randomUUID(), branch: 'dev:v2-dev', scene: 'web',
@@ -99,5 +124,7 @@ export class Archive {
           ...(attempt ? { attempt: attempt.id } : {}) } });
     }
   }
-  close(): void { this.db.close(); }
+  close(): void {
+    try { this.db.close(); } finally { this.instanceLock.close(); }
+  }
 }
