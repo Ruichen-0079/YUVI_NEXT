@@ -4,10 +4,11 @@ YUVI 的第二代（V2）。一个持续运行的人工个体：发生的事按�
 
 - 给参与开发的代理：先读 [`AGENTS.md`](AGENTS.md)。
 - 开发周期：[`docs/ROADMAP.md`](docs/ROADMAP.md)
-- 工作包：[`docs/P1.md`](docs/P1.md)（已完成）
+- 工作包：[`docs/P1.md`](docs/P1.md)、[`docs/P2.md`](docs/P2.md)
+- 事件与用语：[`docs/TERMS.md`](docs/TERMS.md)
 - 设计背景（只作参考）：[V2 蓝图，YUVI PR #339](https://github.com/Ruichen-0079/YUVI/pull/339)
 
-当前能力（P1）：本地浏览器文字对话、流式回复和只追加的 SQLite 档案。
+当前能力（P2）：本地浏览器文字对话、流式回复、可选择的沉默、只追加 SQLite 档案与按日 token 用量。
 
 ## 安装与运行
 
@@ -35,18 +36,27 @@ npm start
 | `YUVI_MODEL` | 必填 | 模型名 |
 | `YUVI_HOST` | `127.0.0.1` | 监听地址 |
 | `YUVI_PORT` | `8787` | 监听端口 |
-| `YUVI_CONTEXT_EVENTS` | `200` | 最近对话事件数，正整数；不计 attempt/error |
+| `YUVI_CONTEXT_EVENTS` | `200` | 最近对话事件数，正整数；包含 heard/said/silent，不计 attempt/error |
+| `YUVI_MODEL_IDLE_TIMEOUT_MS` | `60000` | 等待响应及两次接收数据间的空闲上限（毫秒） |
+| `YUVI_MODEL_MAX_DURATION_MS` | `600000` | 每次模型调用的总时长上限（毫秒） |
 
-程序没有登录功能。默认仅监听本机。所有运行状态在数据目录中；人设是外部输入配置。每次模型请求总超时为 30 秒，超时会记录错误并继续处理下一回合。启动配置错误及模型错误只输出固定消息，不输出上游错误体、密钥或请求头。
+程序没有登录功能。默认仅监听本机。所有运行状态在数据目录中；人设是外部输入配置。模型默认空闲上限为 60 秒、总时长上限为 10 分钟；持续收到数据会重置空闲计时。两个超时变量须为 1–2147483647 的整数毫秒。超时会记录错误并继续处理下一回合。启动配置错误指出变量名，不输出变量值；不输出上游错误体、密钥或请求头。
 
 ## 接口与恢复
 
 - `GET /health` → `{"ok":true}`。
-- `POST /api/messages`，JSON `{"text":"你好"}` → SSE：`heard`（事件 ID）、`delta`（`{"text":"…"}`）、`done`（事件 ID）或 `error`（`{"message":"…"}`）。空白、非字符串及无效 JSON 返回 400。
+- `POST /api/messages`，JSON `{"text":"你好"}` → SSE：`heard`（事件 ID）、`delta`（`{"text":"…"}`）、`done`（事件 ID）、`silent`（事件 ID）或 `error`（`{"message":"…"}`）。空白、非字符串及无效 JSON 返回 400。
 - `GET /api/events?after=0` → 按 `seq` 升序返回全部后续事件。
+- `GET /api/usage` → UTC 日期升序的按日汇总：`date`、`turns`、`turns_with_usage`、`prompt_tokens`、`completion_tokens` 和提供方的其他数值字段（嵌套字段按原层级求和；字符串和数组不求和）。无终结事件时返回 `[]`。
 - `GET /` → 无框架网页，打开及刷新时载入历史。
 
 消息按到达顺序入档并排队。每个回合在模型调用之前已有 `heard`，发送首块之前已有 `reply_attempt`，只有完整收到模型的 `[DONE]` 才写 `said`。模型错误保留已推送的片段。进程重启为所有未完成消息补记中断错误：未尝试发送为 `not_sent`，已尝试为 `unknown`，不补发。浏览器断开不取消生成，也不触发重试。历史页面会明确标出失败或中断。
+
+每次模型请求提供 `stay_silent` 工具（可选字符串参数 `reason`），由模型自行选择。完整流仅调用该工具且没有文本时，写入 `act/silent`，不写发送尝试；网页显示“（没有回复）”，不展示理由。若有文本则文本优先，按 P1 写入 `said` 并记录 `meta.ignored_tools`；无文本、无工具的完整流仍写空 `said`。无效工具输出与失败不冒充沉默，重启也不会为已沉默的回合补记错误。
+
+上下文保持档案的真实 `seq` 顺序，包含沉默的事实；末尾追加临时回合指示来标明当前回应哪条消息，不重排历史，也不将回合指示写入档案。
+
+请求包含 `stream_options.include_usage=true`。提供方返回的 usage 对象原样记在终结事件的 `meta.usage`，缺失时不估算；即使收到 usage 后断流，也将该用量记入 error。用量按终结事件的 UTC 日期汇总，包含旧 P1 回合数，不计算金额。
 
 ## 测试
 
@@ -58,4 +68,4 @@ YUVI_CHROMIUM=/absolute/path/to/chromium npm test
 unshare -rn sh -c 'ip link set lo up; npm test'
 ```
 
-测试自建回环地址假模型，不访问真实模型或外部网络；覆盖持久化、上下文、只追加、HTTP 错误、流断开、超时、串行排队、空输入、密钥卫生和真实 `SIGKILL` 后恢复。浏览器验收检查未完成时增量已显示，以及刷新后的历史。`npm ci` 需要下载开发依赖；不自动下载浏览器。
+测试自建回环地址假模型，不访问真实模型或外部网络；P2 检查含真实进程的 40 秒流，整套测试约一分钟。覆盖沉默、工具分块、回合锚定、两种超时、原始用量与按日汇总、配置错误，以及 P1 的持久化、上下文、只追加、HTTP 错误、流断开、超时、串行排队、空输入、密钥卫生和真实 `SIGKILL` 后恢复。浏览器验收检查增量显示、中性的沉默标记，以及刷新后的历史。`npm ci` 需要下载开发依赖；不自动下载浏览器。

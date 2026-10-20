@@ -18,6 +18,7 @@ async function history() {
   list.replaceChildren();
   for (const event of await response.json()) {
     if (event.kind === 'heard' || event.kind === 'said') add(event.actor, event.content);
+    else if (event.kind === 'silent') add('yuvi', '（没有回复）');
     else if (event.kind === 'error') {
       if (event.content) add('yuvi（未完成）', event.content);
       add('system', '回复失败或中断（' + event.meta.outcome + '）');
@@ -47,6 +48,7 @@ form.addEventListener('submit', async event => {
         const kind = lines.find(line => line.startsWith('event: '))?.slice(7);
         const data = lines.find(line => line.startsWith('data: '))?.slice(6);
         if (kind === 'delta') reply.textContent += JSON.parse(data).text;
+        if (kind === 'silent') { reply.textContent = '（没有回复）'; terminal = true; status.textContent = ''; }
         if (kind === 'done') { terminal = true; status.textContent = ''; }
         if (kind === 'error') { terminal = true; status.textContent = JSON.parse(data).message; }
       }
