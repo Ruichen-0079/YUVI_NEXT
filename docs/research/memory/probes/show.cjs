@@ -1,0 +1,1 @@
+const r=JSON.parse(require('fs').readFileSync(process.argv[2],'utf8').replace(/\(Use `node[^\n]*\n?/g,''));console.log('N',r.N);for(const[k,v] of Object.entries(r.results)){console.log(k,v.hits,'insert',v.insertMs,'ms size',v.sizeMB,'MB');console.log('  ',v.rows.map(x=>x.q+':'+(x.hit?('#'+x.rank):'x')+'('+x.ms+')').join('  '))}
