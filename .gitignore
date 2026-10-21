@@ -4,6 +4,7 @@ coverage/
 *.log
 .env
 .env.*
+!.env.example
 # 运行时数据（档案、媒体、潜在状态）永远不入库
 data/
 *.sqlite

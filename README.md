@@ -25,6 +25,20 @@ export YUVI_MODEL="your-model"
 npm start
 ```
 
+### 多个 worktree 共用本机配置
+
+可把 [`.env.example`](.env.example) 复制到仓库外的 `~/.config/yuvi-next/local.env`，在本机填写密钥与绝对路径，并执行 `chmod 600 ~/.config/yuvi-next/local.env`。Node 环境文件不会展开 `~` 或 `$HOME`。不要把真实配置、私人路径或密钥复制回仓库。
+
+```sh
+npm run start:local
+# 可选：显式使用另一份外部配置
+YUVI_LOCAL_ENV_FILE=/absolute/path/to/local.env npm run start:local
+```
+
+此命令先编译，再用 Node 22 内置环境文件加载能力启动同一服务；已导出的环境变量优先于文件。多个 worktree 默认读取同一外部文件；切换版本前停止使用相同数据目录的旧服务，实验时用环境变量覆盖独立数据目录、端口与人设。Unix 下配置文件必须不对组和其他用户开放（建议 0600）。
+
+`npm start`、`npm test` 和快照/恢复命令保持原行为，**不会自动加载此文件**。例如浏览器测试仍需显式设置 `YUVI_CHROMIUM`；普通测试不会因此读取真实密钥或调用付费 API。维护命令需要的目录变量仍由调用者明确提供。
+
 打开 <http://127.0.0.1:8787>。`npm start` 自动编译 TypeScript。同一数据目录只允许一个服务实例：启动时先取得数据目录内 `service.lock` 的独占使用权，再打开档案数据库、执行初始化和回合恢复；第二个实例会以 `YUVI_DATA_DIR is already in use` 拒绝启动，不写事件。正常退出或 `SIGKILL` 后操作系统会释放文件锁。`service.lock` 是由 SQLite 驱动持锁的协调文件，不存储事件；文件本身会保留，不能在服务运行期间删除或替换。重启不需要手动清理它。升级时先停止旧版本服务，再启动新版本；旧版本未使用此协调锁。不要将真实生活数据用于此开发分支。
 
 档案仍使用普通 WAL 模式，各事件独立提交。独立进程可只读打开 `archive.sqlite`，读取 WAL 中的最新已提交数据，也可使用 SQLite 的 `VACUUM INTO` 或备份接口取得一致副本；这些连接不会争用服务锁。读取时保留同目录的 WAL/SHM，不要将仅复制主文件当作完整副本。服务锁使用独立 SQLite 连接，不增加运行时依赖或修改事件表结构。快照和恢复命令见下文。
