@@ -88,7 +88,7 @@ async function fixture(t) {
   t.after(async () => {
     await Promise.all(instances.map(i => stop(i, 'SIGKILL')));
     const closed = new Promise(resolve => model.close(resolve)); model.closeAllConnections(); await closed;
-    await rm(directory, { recursive: true, force: true });
+    await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
   });
   return { directory, dataDir, prepare, state, start, stop, events, post, pending };
 }

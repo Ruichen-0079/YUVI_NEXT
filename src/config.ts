@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
+import { snapshotPaths } from './snapshots.js';
 import type { ModelConfig } from './model.js';
 export interface Config extends ModelConfig {
   dataDir: string; persona: string; host: string; port: number; contextEvents: number;
   idleTimeoutMs: number; maxDurationMs: number;
+  snapshotDir?: string; snapshotIntervalMs?: number;
 }
 export function loadConfig(): Config {
   const required = (name: string) => {
@@ -30,6 +32,8 @@ export function loadConfig(): Config {
   const host = process.env.YUVI_HOST ?? '127.0.0.1';
   if (!host.trim()) throw new Error('Invalid configuration: YUVI_HOST');
   return { baseUrl, apiKey, model, dataDir, persona,
+    snapshotDir: snapshotPaths().snapshotDir,
+    snapshotIntervalMs: integer('YUVI_SNAPSHOT_INTERVAL_MS', 86_400_000, 2_147_483_647),
     idleTimeoutMs: integer('YUVI_MODEL_IDLE_TIMEOUT_MS', 60_000, 2_147_483_647),
     maxDurationMs: integer('YUVI_MODEL_MAX_DURATION_MS', 600_000, 2_147_483_647),
     host, port: integer('YUVI_PORT', 8787, 65535),
