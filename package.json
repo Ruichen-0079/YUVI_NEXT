@@ -16,7 +16,9 @@
     "preverify-snapshot": "npm run build",
     "verify-snapshot": "node dist/maintenance.js verify-snapshot",
     "prerestore": "npm run build",
-    "restore": "node dist/maintenance.js restore"
+    "restore": "node dist/maintenance.js restore",
+    "prestart:local": "npm run build",
+    "start:local": "node scripts/start-local.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
