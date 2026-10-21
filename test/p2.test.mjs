@@ -105,15 +105,15 @@ test('B2/B3/B5/B6/B7: fragmented silence, optional reason, context and SIGTERM r
   await f.post('继续');
   const request = f.requests[1].body;
   assert.equal(request.tool_choice, 'auto'); assert.equal(request.stream_options.include_usage, true);
-  assert.equal(request.tools.length, 1); assert.equal(request.tools[0].function.name, 'stay_silent');
+  assert.equal(request.tools.length, 2); assert.equal(request.tools[1].function.name, 'check'); assert.equal(request.tools[0].function.name, 'stay_silent');
   assert.equal(request.tools[0].function.parameters.properties.reason.type, 'string');
   assert.deepEqual(request.messages[0], { role: 'system', content: '人设全文\n' });
-  assert.ok(request.messages.some(m => m.content.includes(events[0].id) && m.content.includes('没有回复')));
+  assert.ok(request.messages.some(m => m.role === 'user' && m.content.includes('没有回复')));
   assert.ok(!request.messages.some(m => m.content.includes('先不说')));
   oneEnding(await f.events());
 });
 
-test('B4: text wins regardless of tool ordering; empty stream remains P1 empty said', async t => {
+test('B4/P4 §2.5: text wins over silence; text-free stream without silence is an error', async t => {
   const f = await fixture(t);
   for (const body of [text('好') + tool('stay_silent', '{"reason":"x"}'), tool('stay_silent', '{}') + text('好')]) {
     f.handlers.push(res => res.end(body + done));
@@ -124,8 +124,8 @@ test('B4: text wins regardless of tool ordering; empty stream remains P1 empty s
     assert.equal(events.filter(e => e.kind === 'silent').length, 0);
   }
   f.handlers.push(res => res.end(done)); await f.post('空流');
-  const events = await f.events(); assert.deepEqual(events.slice(-3).map(e => e.kind), ['heard', 'reply_attempt', 'said']);
-  assert.equal(events.at(-1).content, ''); oneEnding(events);
+  const events = await f.events(); assert.deepEqual(events.slice(-2).map(e => e.kind), ['heard', 'error']);
+  assert.equal(events.at(-1).meta.outcome, 'not_sent'); oneEnding(events);
 });
 
 test('B8: real process streams forty one-second chunks beyond P1 thirty-second cap', async t => {
@@ -180,7 +180,7 @@ test('B11: queued turns keep raw event order and end with an ephemeral user anch
   const messages = request.body.messages;
   assert.deepEqual(messages.slice(1, -1).map(m => m.content.slice(m.content.indexOf('\n') + 1)), ['甲', '乙', '对甲的回复']);
   const anchor = messages.at(-1), heard = events.find(e => e.content === '乙');
-  assert.equal(anchor.role, 'user'); assert.ok(anchor.content.includes(heard.id)); assert.ok(anchor.content.endsWith('乙'));
+  assert.equal(anchor.role, 'user'); assert.ok(anchor.content.includes('当前回应')); assert.ok(!anchor.content.includes(heard.id)); assert.match(anchor.content, /\d{4}-\d{2}-\d{2}/); assert.ok(anchor.content.endsWith('乙'));
   assert.equal(events.length, 6); oneEnding(events);
 });
 

@@ -12,8 +12,8 @@ import { createApp } from '../dist/server.js';
 const key = 'unique-P1-secret-8bf2b50';
 const persona = '人设全文\n不加语义标签。\n';
 const piece = text => `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`;
-// P2 adds verifiable event headers; compare the untouched original text below them.
-const eventText = m => m.content.startsWith('档案事件 ') ? m.content.slice(m.content.indexOf('\n') + 1) : m.content;
+// P4 dates and names user messages; assistant text remains exactly the original.
+const eventText = m => m.role === 'user' && /^\d{4}-\d{2}-\d{2} /.test(m.content) ? m.content.slice(m.content.indexOf('\n') + 1) : m.content;
 async function assertNoSecret(directory, secret) {
   for (const item of await readdir(directory, { withFileTypes: true }).catch(() => [])) {
     const path = join(directory, item.name);

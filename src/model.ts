@@ -2,13 +2,24 @@ export interface ModelConfig {
   baseUrl: string; apiKey: string; model: string;
   idleTimeoutMs?: number; maxDurationMs?: number;
 }
-export interface Message { role: 'system' | 'user' | 'assistant'; content: string; }
-export interface ToolCall { name: string; arguments: string; }
+export interface Message { role: 'system' | 'user' | 'assistant' | 'tool'; content: string;
+  tool_calls?: { id: string; type: 'function'; function: { name: string; arguments: string } }[]; tool_call_id?: string; }
+export interface ToolCall { name: string; arguments: string; id?: string; }
 export type Usage = Record<string, unknown>;
+
+export class ModelFailure extends Error {
+  constructor(readonly httpStatus?: number) { super('Model request failed or timed out.'); }
+}
+export const silentTool = { type: 'function', function: { name: 'stay_silent',
+  parameters: { type: 'object', properties: { reason: { type: 'string' } }, additionalProperties: false } } };
+export const checkTool = { type: 'function', function: { name: 'check',
+  description: '查阅档案原文：返回本场景中符合条件的原始记录，逐字，带时间和作者，也包括你自己以前写下的文字。查阅会被记录。当你要把过去的事当作事实告诉别人时，先用它核对。',
+  parameters: { type: 'object', properties: { query: { type: 'string' }, from: { type: 'string' }, to: { type: 'string' } }, additionalProperties: false } } };
+export interface RequestOptions { mode?: 'dialogue' | 'consolidation'; lastStep?: boolean; maxTokens?: number; finish?: (reason: unknown) => void; }
 
 // Provider bodies and exceptions never cross this boundary: they may echo credentials.
 export async function streamModel(config: ModelConfig, messages: Message[],
-  delta: (text: string) => void, usage: (value: Usage) => void): Promise<ToolCall[]> {
+  delta: (text: string) => void, usage: (value: Usage) => void, options: RequestOptions = {}): Promise<ToolCall[]> {
   const controller = new AbortController();
   let idleTimer: ReturnType<typeof setTimeout>;
   const resetIdle = () => {
@@ -24,13 +35,14 @@ export async function streamModel(config: ModelConfig, messages: Message[],
       method: 'POST', signal: controller.signal,
       headers: { Authorization: `Bearer ${config.apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: config.model, messages, stream: true,
-        tools: [{ type: 'function', function: { name: 'stay_silent',
-          parameters: { type: 'object', properties: { reason: { type: 'string' } }, additionalProperties: false } } }],
-        tool_choice: 'auto', stream_options: { include_usage: true }
+        ...(options.mode === 'consolidation' ? { max_tokens: options.maxTokens } : {
+          tools: options.lastStep ? [silentTool] : [silentTool, checkTool], tool_choice: 'auto' }),
+        stream_options: { include_usage: true }
       })
     });
     resetIdle(); // Response headers are received data; subsequent body reads reset again.
-    if (!response.ok || !response.body) throw new Error('provider response');
+    if (!response.ok) throw new ModelFailure(response.status);
+    if (!response.body) throw new ModelFailure();
     reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '', data: string[] = [], completed = false;
@@ -45,7 +57,9 @@ export async function streamModel(config: ModelConfig, messages: Message[],
           usage(parsed.usage);
         }
         if (parsed.error) throw new Error('provider error');
-        const change = parsed.choices?.[0]?.delta;
+        const choice = parsed.choices?.[0];
+        if (choice?.finish_reason !== undefined && choice.finish_reason !== null) options.finish?.(choice.finish_reason);
+        const change = choice?.delta;
         const text = change?.content;
         if (text !== undefined && text !== null && typeof text !== 'string') throw new Error('invalid delta');
         if (text) delta(text);
@@ -53,7 +67,11 @@ export async function streamModel(config: ModelConfig, messages: Message[],
           if (!Array.isArray(change.tool_calls)) throw new Error('invalid tools');
           for (const part of change.tool_calls) {
             if (!Number.isSafeInteger(part.index) || part.index < 0) throw new Error('invalid tool index');
-            const tool = tools.get(part.index) ?? { name: '', arguments: '' };
+            const tool: ToolCall = tools.get(part.index) ?? { name: '', arguments: '' };
+            if (part.id !== undefined) {
+              if (typeof part.id !== 'string') throw new Error('invalid tool identifier');
+              tool.id = (tool.id ?? '') + part.id;
+            }
             for (const field of ['name', 'arguments'] as const) {
               const fragment = part.function?.[field];
               if (fragment !== undefined) {
@@ -82,8 +100,8 @@ export async function streamModel(config: ModelConfig, messages: Message[],
       }
     }
     return [...tools.entries()].sort(([a], [b]) => a - b).map(([, tool]) => tool);
-  } catch {
-    throw new Error('Model request failed or timed out.');
+  } catch (error) {
+    throw error instanceof ModelFailure ? error : new ModelFailure();
   } finally {
     clearTimeout(idleTimer!); clearTimeout(maxTimer);
     controller.abort();
