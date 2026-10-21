@@ -241,17 +241,24 @@ test('D7/D8/D6: thirty turns, stable bounded suffix, failure backoff and determi
     const req = f.requests.slice(count).find(r => r.body.tools);
     const all = await f.events();
     const atRequest = all.filter(e => e.seq < all.findLast(e => e.kind === 'reply_attempt').seq);
-    const current = state(atRequest, 10);
-    const actual = rawMessages(req.body, atRequest);
-    assert.equal(actual.length, current.raw.length);
-    assert.ok(current.raw.at(-1).content === `消息-${i}`);
-    assert.ok(current.raw.length <= Math.max(10, current.pending.length));
-    const rawSeqs = current.raw.map(e => e.seq);
-    assert.deepEqual(rawSeqs, current.dialogue.slice(-rawSeqs.length).map(e => e.seq));
+    const dialogue = atRequest.filter(e => ['heard', 'said', 'silent'].includes(e.kind));
+    const covered = Math.max(0, ...atRequest.filter(e => ['wrote', 'unconsolidated'].includes(e.kind)).map(e => e.meta.material.through_seq));
+    const pending = dialogue.filter(e => e.seq > covered);
+    // Decode the actual wire request, rather than using the implementation's window selector as the oracle.
+    const actual = req.body.messages.slice(1, -1).map(m => {
+      const event = dialogue.find(e => m.role === 'assistant' ? e.kind === 'said' && e.content === m.content :
+        e.kind === 'heard' && m.content.endsWith('\n' + e.content));
+      assert.ok(event, 'unexpected or missing raw record: ' + m.content); return event;
+    });
+    const rawSeqs = actual.map(e => e.seq);
+    assert.equal(actual.at(-1).content, `消息-${i}`);
+    assert.ok(actual.length <= Math.max(10, pending.length));
+    for (const e of pending) assert.ok(rawSeqs.includes(e.seq));
+    assert.deepEqual(rawSeqs, dialogue.slice(-rawSeqs.length).map(e => e.seq));
     const previous = captured.at(-1);
-    if (previous) for (const seq of previous.rawSeqs.filter(seq => !rawSeqs.includes(seq))) assert.ok(seq <= current.covered);
+    if (previous) for (const seq of previous.rawSeqs.filter(seq => !rawSeqs.includes(seq))) assert.ok(seq <= covered);
     const start = rawSeqs[0];
-    captured.push({ req, rawSeqs, start, count: current.dialogue.length, failing });
+    captured.push({ req, rawSeqs, start, count: dialogue.length, failing });
   }
   for (let i = 1; i <= 10; i++) await turn(i);
   failing = true;
