@@ -19,6 +19,7 @@
 | `control/restored`  | 此档案由一份快照恢复而来：在它之前的事件来自该快照（`meta.through_seq`、`meta.snapshot_sha256`），之后的事件发生在恢复之后 | 原档案在快照之后没有别的事件；有事件被删除 | P3   |
 | `inner/wrote`       | YUVI 写下的文字。P4 中只在整理时产生：`meta.material` 为它这次读到的本场景对话事件范围（`from_seq`–`through_seq`）；`content` 为它写下的全部文字，可以为空（读过，没有写）；`meta.finish_reason="length"` 表示写到长度上限时停止 | 对材料的摘要或准确记录；它的全部记忆；任何类型 | P4   |
 | `act/checked`       | YUVI 在一个回合中调用 `check` 查阅档案原文；`meta.arguments` 为查询条件，`meta.result_seqs` 为返回给它的事件；`meta.invalid=true` 表示参数无效、没有查询 | 它相信或采用了这些内容；档案是它全部经历的完整记录 | P4   |
+| `control/imported`  | 此档案的前段（`seq` ≤ `meta.through_seq`）导入自一份 V1 导出包（`meta.bundle_sha256`）；`meta.owner_line` 为负责人私下对话线所含的场所；之后的事件发生在 V2 中 | 导入的是 V1 的全部经历；V1 的记忆、解释或判断；它已经读过这段过去 | P5 |
 | `control/unconsolidated` | 一批对话事件（`meta.material`）没有经过整理，就因积压上限离开了原文窗口                                              | 事件被删除；它从未看到过它们（它们曾在对话上下文中） | P4   |
 
 `control/error` 的 `meta.outcome` 有三个取值：
@@ -39,6 +40,7 @@
   - 档案是程序写下的、关于发生过什么的记录（事件表），只包含被记录下来的事件；它不是 YUVI 全部经历的完整记录。
   - 记忆是它自己整理形成的回忆，可以不准确（P4 起）。P4 中，它整理时写下的文字（`inner/wrote`）是记忆中说得出的那部分的候选载体，不是记忆的定义；程序不判断它写得对不对。
   - 代码中 `memory`、`recall` 只能指后者；读取档案原文叫 `events` 或 `check`。
+- **导入 ≠ 重新经历。** 带 `meta.v1` 的事件是 V1 记录的副本，`t_recorded` 是 V1 记录它的时间。其中可能已有 V1 程序的加工，例如图片占位文字、被删去的 @，导入时原样保留。导入的 `heard` 不表示 V2 为它进行过回合；导入的 `said` 只表示 V1 中有它发出的证据。
 - **查得到 ≠ 被纠正。** 更正入档后可以被 `check` 查到；它是否相信、是否改写自己的文字，是它的事，程序不保证，也不替它判断哪个说法有效。
 - **发送尝试 ≠ 送达。** 程序只记录它做了什么。对方是否收到，只能由独立的回执证明。
 - **沉默 ≠ 失败。** 沉默是 YUVI 的行为（`act/silent`），失败是 `control/error`。二者不能互相替代。
