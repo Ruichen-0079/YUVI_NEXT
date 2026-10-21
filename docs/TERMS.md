@@ -17,8 +17,9 @@
 | `control/error`     | 某条 `heard` 的回合以失败或中断结束                                                                                        | 沉默；YUVI 的选择                          | P1   |
 | `act/silent`        | YUVI 在这一回合选择不回复（通过 `stay_silent`）；`content` 为它给出的理由，可为空，不对外发送                              | 失败；对方知道它在沉默                     | P2   |
 | `control/restored`  | 此档案由一份快照恢复而来：在它之前的事件来自该快照（`meta.through_seq`、`meta.snapshot_sha256`），之后的事件发生在恢复之后 | 原档案在快照之后没有别的事件；有事件被删除 | P3   |
-| `inner/wrote`       | YUVI 写下的文字。P4 中只在整理时产生：`meta.material` 为它这次读到的本场景对话事件范围（`from_seq`–`through_seq`）；`content` 为它写下的全部文字，可以为空（读过，没有写） | 对材料的摘要或准确记录；它的全部记忆；任何类型 | P4   |
+| `inner/wrote`       | YUVI 写下的文字。P4 中只在整理时产生：`meta.material` 为它这次读到的本场景对话事件范围（`from_seq`–`through_seq`）；`content` 为它写下的全部文字，可以为空（读过，没有写）；`meta.finish_reason="length"` 表示写到长度上限时停止 | 对材料的摘要或准确记录；它的全部记忆；任何类型 | P4   |
 | `act/checked`       | YUVI 在一个回合中调用 `check` 查阅档案原文；`meta.arguments` 为查询条件，`meta.result_seqs` 为返回给它的事件；`meta.invalid=true` 表示参数无效、没有查询 | 它相信或采用了这些内容；档案是它全部经历的完整记录 | P4   |
+| `control/unconsolidated` | 一批对话事件（`meta.material`）没有经过整理，就因积压上限离开了原文窗口                                              | 事件被删除；它从未看到过它们（它们曾在对话上下文中） | P4   |
 
 `control/error` 的 `meta.outcome` 有三个取值：
 
@@ -38,6 +39,7 @@
   - 档案是程序写下的、关于发生过什么的记录（事件表），只包含被记录下来的事件；它不是 YUVI 全部经历的完整记录。
   - 记忆是它自己整理形成的回忆，可以不准确（P4 起）。P4 中，它整理时写下的文字（`inner/wrote`）是记忆中说得出的那部分的候选载体，不是记忆的定义；程序不判断它写得对不对。
   - 代码中 `memory`、`recall` 只能指后者；读取档案原文叫 `events` 或 `check`。
+- **查得到 ≠ 被纠正。** 更正入档后可以被 `check` 查到；它是否相信、是否改写自己的文字，是它的事，程序不保证，也不替它判断哪个说法有效。
 - **发送尝试 ≠ 送达。** 程序只记录它做了什么。对方是否收到，只能由独立的回执证明。
 - **沉默 ≠ 失败。** 沉默是 YUVI 的行为（`act/silent`），失败是 `control/error`。二者不能互相替代。
 - **内心记录（`inner`）不分类型。** `inner` 只有一个 kind：`wrote`，不再增加；也不加情绪、意图、重要性等字段。
