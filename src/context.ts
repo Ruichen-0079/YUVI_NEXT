@@ -1,6 +1,10 @@
 import type { Archive, Event } from './archive.js';
 import type { Config } from './config.js';
-import type { Message } from './model.js';
+import { requestParameters, type Message } from './model.js';
+import { createHash } from 'node:crypto';
+
+export type PresentationConfig = Pick<Config, 'persona' | 'ownerName' | 'writingChars'>;
+export const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
 
 export function state(archive: Archive, n: number) {
   const progress = archive.progress();
@@ -8,13 +12,25 @@ export function state(archive: Archive, n: number) {
   return { ...progress, rawStart: Math.min(desiredStart, progress.coveredCount),
     pressure: desiredStart > progress.coveredCount };
 }
-export function localTime(ms: number): string {
+const clocks = new Map<string, Intl.DateTimeFormat>();
+export function localTime(ms: number, timeZone?: string): string {
   const d = new Date(ms), pad = (n: number) => String(n).padStart(2, '0');
-  const offset = -d.getTimezoneOffset();
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}（UTC${offset < 0 ? '-' : '+'}${pad(Math.floor(Math.abs(offset) / 60))}:${pad(Math.abs(offset) % 60)}）`;
+  let year = d.getFullYear(), month = d.getMonth() + 1, day = d.getDate(), hour = d.getHours(), minute = d.getMinutes(), second = d.getSeconds();
+  let offset = -d.getTimezoneOffset();
+  if (timeZone !== undefined) {
+    let clock = clocks.get(timeZone);
+    if (!clock) {
+      clock = new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }); clocks.set(timeZone, clock);
+    }
+    const parts = Object.fromEntries(clock.formatToParts(d).map(p => [p.type, p.value]));
+    year = +parts.year; month = +parts.month; day = +parts.day; hour = +parts.hour; minute = +parts.minute; second = +parts.second;
+    offset = Math.trunc((Date.UTC(year, month - 1, day, hour, minute, second) - Math.floor(ms / 1000) * 1000) / 60000);
+  }
+  return `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:${pad(second)}（UTC${offset < 0 ? '-' : '+'}${pad(Math.floor(Math.abs(offset) / 60))}:${pad(Math.abs(offset) % 60)}）`;
 }
-export function record(e: Event, owner: string, includeReason = false): string {
-  const time = localTime(e.t_recorded);
+export function record(e: Event, owner: string, includeReason = false, timeZone?: string): string {
+  const time = localTime(e.t_recorded, timeZone);
   if (e.kind === 'heard') return `${time} ${owner}说：\n${e.content}`;
   if (e.kind === 'said') return `${time} 你说：\n${e.content}`;
   if (e.kind === 'silent') return `${time} 你没有回复。${includeReason && e.content ? '\n当时给出的理由：\n' + e.content : ''}`;
@@ -23,19 +39,81 @@ export function record(e: Event, owner: string, includeReason = false): string {
 export function writings(archive: Archive, budget: number): Event[] {
   return archive.writings(budget);
 }
-export function prefix(archive: Archive, config: Config): Message[] {
+export function renderPrefix(selected: Event[], config: Pick<Config, 'persona' | 'ownerName'>, timeZone?: string): Message[] {
   return [{ role: 'system', content: config.persona },
-    ...writings(archive, config.writingChars ?? 16000).map(e => ({ role: 'user' as const, content: record(e, config.ownerName ?? '负责人') }))];
+    ...selected.map(e => ({ role: 'user' as const, content: record(e, config.ownerName ?? '负责人', false, timeZone) }))];
+}
+export function renderDialogue(selected: { writings: Event[]; window: Event[] }, heard: Event, config: PresentationConfig, now: number, timeZone?: string): Message[] {
+  return [...renderPrefix(selected.writings, config, timeZone), ...selected.window.map(e => ({
+    role: e.kind === 'said' ? 'assistant' as const : 'user' as const,
+    content: e.kind === 'said' ? e.content : record(e, config.ownerName ?? '负责人', false, timeZone)
+  })), { role: 'user', content: `现在是${localTime(now, timeZone)}。当前回应的是${config.ownerName ?? '负责人'}在${localTime(heard.t_recorded, timeZone)}说的这一句：\n${heard.content}` }];
+}
+export function renderConsolidation(selected: { writings: Event[]; material: Event[] }, config: PresentationConfig, now: number, timeZone?: string): Message[] {
+  return [...renderPrefix(selected.writings, config, timeZone), { role: 'user', content: selected.material.map(e => record(e, config.ownerName ?? '负责人', false, timeZone)).join('\n\n') },
+    { role: 'user', content: `现在是${localTime(now, timeZone)}。\n\n这不是一次对话，不需要回复任何人。\n\n上面是你最近的一段经历，按档案原样列出；如果你以前写下过什么，也在上面。\n\n你可以写下任何想留给以后的自己的东西，也可以什么都不写。写什么、写多少、用什么形式，都由你决定；不需要完整，也不需要准确。\n\n你写下的文字会原样保存。以后对话时，你写下的文字会从最近的一条往前放进你的上下文，总共大约放得下 ${config.writingChars ?? 16000} 字；放不下的旧文字不会消失，仍可以用 check 查到。一次写下的文字过长时，会在长度上限处停止。\n\n你写下的文字不会出现在对话中，但${config.ownerName ?? '负责人'}能够查阅档案。原始记录不会因此改变，以后在对话中需要时，可以用 check 查阅原文。` }];
+}
+
+// Selection reads only the bounded parts already defined by P6.
+export function selectDialogue(archive: Archive, config: Config) {
+  return { writings: writings(archive, config.writingChars ?? 16000),
+    window: archive.dialogue(state(archive, config.contextEvents).rawStart) };
+}
+export function selectConsolidation(archive: Archive, material: Event[], config: Config) {
+  return { writings: writings(archive, config.writingChars ?? 16000), material };
+}
+export function prefix(archive: Archive, config: Config): Message[] {
+  return renderPrefix(writings(archive, config.writingChars ?? 16000), config);
 }
 export function dialogueMessages(archive: Archive, heard: Event, config: Config): Message[] {
-  return [...prefix(archive, config), ...archive.dialogue(state(archive, config.contextEvents).rawStart).map(e => ({
-    role: e.kind === 'said' ? 'assistant' as const : 'user' as const,
-    content: e.kind === 'said' ? e.content : record(e, config.ownerName ?? '负责人')
-  })), { role: 'user', content: `现在是${localTime(Date.now())}。当前回应的是${config.ownerName ?? '负责人'}在${localTime(heard.t_recorded)}说的这一句：\n${heard.content}` }];
+  return renderDialogue(selectDialogue(archive, config), heard, config, Date.now());
 }
 export function consolidationMessages(archive: Archive, material: Event[], config: Config): Message[] {
-  return [...prefix(archive, config), { role: 'user', content: material.map(e => record(e, config.ownerName ?? '负责人')).join('\n\n') },
-    { role: 'user', content: `现在是${localTime(Date.now())}。\n\n这不是一次对话，不需要回复任何人。\n\n上面是你最近的一段经历，按档案原样列出；如果你以前写下过什么，也在上面。\n\n你可以写下任何想留给以后的自己的东西，也可以什么都不写。写什么、写多少、用什么形式，都由你决定；不需要完整，也不需要准确。\n\n你写下的文字会原样保存。以后对话时，你写下的文字会从最近的一条往前放进你的上下文，总共大约放得下 ${config.writingChars ?? 16000} 字；放不下的旧文字不会消失，仍可以用 check 查到。一次写下的文字过长时，会在长度上限处停止。\n\n你写下的文字不会出现在对话中，但${config.ownerName ?? '负责人'}能够查阅档案。原始记录不会因此改变，以后在对话中需要时，可以用 check 查阅原文。` }];
+  return renderConsolidation(selectConsolidation(archive, material, config), config, Date.now());
+}
+
+export interface Section {
+  name: 'persona' | 'writings' | 'window' | 'material' | 'instruction' | 'step';
+  messages: number; chars: number;
+  first_seq?: number; last_seq?: number; count?: number; heard?: string;
+}
+export function messageSize(messages: Message[]) {
+  return { messages: messages.length, chars: messages.reduce((sum, m) => sum + m.content.length, 0) };
+}
+// Pure presentation: every source event and the clock value are explicit.
+// The same messages drive the section counts, request parameters and digest.
+export function assembleBase(input: {
+  purpose: 'dialogue'; selected: { writings: Event[]; window: Event[] }; heard: Event;
+} | {
+  purpose: 'consolidation'; selected: { writings: Event[]; material: Event[] }; maxTokens: number;
+}, config: PresentationConfig, now: number, timeZone: string) {
+  const messages = input.purpose === 'dialogue' ? renderDialogue(input.selected, input.heard, config, now, timeZone) :
+    renderConsolidation(input.selected, config, now, timeZone);
+  const sections: Section[] = [];
+  let offset = 0;
+  const part = (name: Section['name'], count: number, references: Partial<Section> = {}) => {
+    if (!count) return;
+    sections.push({ name, ...messageSize(messages.slice(offset, offset + count)), ...references }); offset += count;
+  };
+  const range = (events: Event[]) => ({ first_seq: events[0].seq, last_seq: events.at(-1)!.seq, count: events.length });
+  part('persona', 1);
+  const writings = input.selected.writings;
+  if (writings.length) part('writings', writings.length, range(writings));
+  if (input.purpose === 'dialogue') {
+    if (input.selected.window.length) part('window', input.selected.window.length, range(input.selected.window));
+    part('instruction', 1, { heard: input.heard.id });
+  } else {
+    part('material', 1, range(input.selected.material)); part('instruction', 1);
+  }
+  const parameters = requestParameters(input.purpose === 'dialogue' ? {} : { mode: 'consolidation', maxTokens: input.maxTokens });
+  return { messages, parameters, manifest: {
+    format: 1, rules: 'p7', purpose: input.purpose, ...(input.purpose === 'dialogue' ? { step: 0 } : {}),
+    now, time_zone: timeZone, owner_name: config.ownerName ?? '负责人',
+    request: { tools: parameters.tools?.map(tool => tool.function.name) ?? [],
+      ...(parameters.max_tokens === undefined ? {} : { max_tokens: parameters.max_tokens }) },
+    persona: { sha256: sha256(config.persona), chars: config.persona.length }, sections,
+    total: messageSize(messages), messages_sha256: sha256(JSON.stringify(messages))
+  } };
 }
 
 // ISO calendar validation, including local datetimes (Date.parse alone normalizes e.g. February 30).
