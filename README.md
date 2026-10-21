@@ -140,3 +140,22 @@ unshare -rn sh -c 'ip link set lo up; npm test'
 P3 专项还覆盖实时 WAL 快照、恢复拒绝与空目录发布、字节损坏与触发器校验、损坏档案启动时不变，以及10万事件下10次真实 SIGKILL 的发布原子性。
 
 P4 专项使用真实服务进程覆盖空闲和压力整理、空文字、失败退避、积压移出记录、稳定窗口和重启、整条文字预算、check 原文与日期查询、多步结局及 SIGKILL、逐次用量、原文/呈现隔离、旧 P3 可执行程序生成的档案及快照恢复。浏览器验收还检查内部文字、查阅和积压事件不显示。
+
+## 档案规模与性能验证（P6）
+
+回合、整理和空闲检查使用从档案重建的数字元数据及按序号读取的有限原文，不缓存历史内容。重启仍执行原有完整性检查，再重建进度；不新增档案索引或持久状态文件。场景和分支仍固定为原有值，不增加配置。
+
+`check` 仍为区分大小写的子串查询，预算与原文呈现不变；匹配总数需要 SQLite 扫描。启动、`/api/events`、`/api/usage` 及快照校验的既有规模成本未在本轮消除。实现选择、实测数字和限制见 [P6 实测说明](docs/notes/P6.md)。
+
+从仓库根目录运行（Node 22；本地 Git 历史须包含基线 `190a272`；脚本不联网、不加载本机模型凭据）：
+
+```sh
+npm run build
+# 生成器：全新文件，事件数、typical/empty 形态、种子
+node scripts/p6/generate.mjs /tmp/yuvi-synthetic.sqlite 1000000 typical 67
+# 一条命令完成两种百万形态、旧版对照、F5 指标和 F6 恢复测试
+# scratch 路径必须尚不存在；结果及原始计时写入其中的 results.json
+unshare -rn sh -c 'ip link set lo up; node scripts/p6/benchmark.mjs /tmp/yuvi-p6-run'
+```
+
+所有服务使用回环假模型和独立数据目录。百万事件检查不加入 `npm test`；普通测试运行同一生成器的两万事件检查、新旧纯函数差分和真实进程跨版本对照。保留的 [实测 JSON](docs/notes/P6-results.json) 包含各回合计时与查询计划。
