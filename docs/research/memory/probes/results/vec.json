@@ -1,0 +1,5 @@
+[
+{"N":10000,"D":512,"js_bruteforce_median_ms":29.4,"sqlite_vec_flat_median_ms":13,"vec_version":"v0.1.9","raw_MB":20},
+{"N":50000,"D":512,"js_bruteforce_median_ms":86.5,"sqlite_vec_flat_median_ms":65.4,"vec_version":"v0.1.9","raw_MB":102},
+{"N":200000,"D":512,"js_bruteforce_median_ms":355.4,"sqlite_vec_flat_median_ms":208.5,"vec_version":"v0.1.9","raw_MB":410}
+]

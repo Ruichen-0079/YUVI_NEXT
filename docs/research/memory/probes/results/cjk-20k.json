@@ -1,0 +1,530 @@
+{
+ "N": 20308,
+ "results": {
+  "trigram": {
+   "insertMs": 463,
+   "sizeMB": 9,
+   "hits": "11/14",
+   "rows": [
+    {
+     "q": "茶叶",
+     "hit": true,
+     "rank": 1,
+     "ms": 12.06,
+     "via": "like/none"
+    },
+    {
+     "q": "茶",
+     "hit": true,
+     "rank": 1,
+     "ms": 11.73,
+     "via": "like/none"
+    },
+    {
+     "q": "年糕",
+     "hit": true,
+     "rank": 1,
+     "ms": 12.14,
+     "via": "like/none"
+    },
+    {
+     "q": "猫叫什么",
+     "hit": false,
+     "rank": null,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "露川-4A87",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.05,
+     "via": "match"
+    },
+    {
+     "q": "4A87",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.04,
+     "via": "match"
+    },
+    {
+     "q": "编辑器",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "editor",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "Solarized",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.05,
+     "via": "match"
+    },
+    {
+     "q": "VS Code 主题",
+     "hit": false,
+     "rank": null,
+     "ms": 0.04,
+     "via": "like/none"
+    },
+    {
+     "q": "amber spruce",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.15,
+     "via": "match"
+    },
+    {
+     "q": "LONGTAIL_9762",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.07,
+     "via": "match"
+    },
+    {
+     "q": "青梧书屋",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "喜欢的茶",
+     "hit": false,
+     "rank": null,
+     "ms": 0.02,
+     "via": "match"
+    }
+   ]
+  },
+  "segmenter": {
+   "insertMs": 1286,
+   "sizeMB": 5.6,
+   "hits": "11/14",
+   "rows": [
+    {
+     "q": "茶叶",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "茶",
+     "hit": false,
+     "rank": null,
+     "ms": 0.01,
+     "via": "match"
+    },
+    {
+     "q": "年糕",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.04,
+     "via": "match"
+    },
+    {
+     "q": "猫叫什么",
+     "hit": false,
+     "rank": null,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "露川-4A87",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "4A87",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "编辑器",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "editor",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "Solarized",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "VS Code 主题",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.04,
+     "via": "match"
+    },
+    {
+     "q": "amber spruce",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.05,
+     "via": "match"
+    },
+    {
+     "q": "LONGTAIL_9762",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "青梧书屋",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.04,
+     "via": "match"
+    },
+    {
+     "q": "喜欢的茶",
+     "hit": false,
+     "rank": null,
+     "ms": 0.02,
+     "via": "match"
+    }
+   ]
+  },
+  "grams": {
+   "insertMs": 1383,
+   "sizeMB": 17.6,
+   "hits": "12/14",
+   "rows": [
+    {
+     "q": "茶叶",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.07,
+     "via": "match"
+    },
+    {
+     "q": "茶",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "年糕",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.04,
+     "via": "match"
+    },
+    {
+     "q": "猫叫什么",
+     "hit": false,
+     "rank": null,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "露川-4A87",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.05,
+     "via": "match"
+    },
+    {
+     "q": "4A87",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "编辑器",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.04,
+     "via": "match"
+    },
+    {
+     "q": "editor",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "Solarized",
+     "hit": true,
+     "rank": 2,
+     "ms": 0.04,
+     "via": "match"
+    },
+    {
+     "q": "VS Code 主题",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.06,
+     "via": "match"
+    },
+    {
+     "q": "amber spruce",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.09,
+     "via": "match"
+    },
+    {
+     "q": "LONGTAIL_9762",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.04,
+     "via": "match"
+    },
+    {
+     "q": "青梧书屋",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.05,
+     "via": "match"
+    },
+    {
+     "q": "喜欢的茶",
+     "hit": false,
+     "rank": null,
+     "ms": 0.03,
+     "via": "match"
+    }
+   ]
+  },
+  "seg_grams": {
+   "insertMs": 3474,
+   "sizeMB": 21.1,
+   "hits": "12/14",
+   "rows": [
+    {
+     "q": "茶叶",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.04,
+     "via": "match"
+    },
+    {
+     "q": "茶",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "年糕",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "猫叫什么",
+     "hit": false,
+     "rank": null,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "露川-4A87",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "4A87",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "编辑器",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "editor",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "Solarized",
+     "hit": true,
+     "rank": 2,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "VS Code 主题",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "amber spruce",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.05,
+     "via": "match"
+    },
+    {
+     "q": "LONGTAIL_9762",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "青梧书屋",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "喜欢的茶",
+     "hit": false,
+     "rank": null,
+     "ms": 0.02,
+     "via": "match"
+    }
+   ]
+  },
+  "jieba": {
+   "insertMs": 653,
+   "sizeMB": 5.5,
+   "hits": "11/14",
+   "rows": [
+    {
+     "q": "茶叶",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "茶",
+     "hit": false,
+     "rank": null,
+     "ms": 0.01,
+     "via": "match"
+    },
+    {
+     "q": "年糕",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "猫叫什么",
+     "hit": false,
+     "rank": null,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "露川-4A87",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.04,
+     "via": "match"
+    },
+    {
+     "q": "4A87",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "编辑器",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "editor",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.02,
+     "via": "match"
+    },
+    {
+     "q": "Solarized",
+     "hit": true,
+     "rank": 2,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "VS Code 主题",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "amber spruce",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.05,
+     "via": "match"
+    },
+    {
+     "q": "LONGTAIL_9762",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.03,
+     "via": "match"
+    },
+    {
+     "q": "青梧书屋",
+     "hit": true,
+     "rank": 1,
+     "ms": 0.04,
+     "via": "match"
+    },
+    {
+     "q": "喜欢的茶",
+     "hit": false,
+     "rank": null,
+     "ms": 0.02,
+     "via": "match"
+    }
+   ]
+  }
+ }
+}

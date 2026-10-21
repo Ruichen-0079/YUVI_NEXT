@@ -1,0 +1,6 @@
+Queries against the 200k-document indexes built by cjk.mjs (content stored). Median of 5.
+grams "今天" OR "天天" OR "天气" OR "公园" OR "散步"   matches 109273  median 115 ms
+grams "今天" "天气" "公园" (AND)                       matches 1647    median 10 ms
+jieba "今天" OR "天气" OR "公园" OR "散步"             matches 109273  median 93 ms
+jieba "今天" "天气" "公园" (AND)                       matches 1647    median 10 ms
+FTS5 features verified on SQLite 3.50.4: content='' + contentless_delete=1 (DELETE works), fts5vocab 'row' (document frequency), rank/bm25, 'optimize', 'automerge'.

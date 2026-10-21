@@ -6,6 +6,7 @@ YUVI 的第二代（V2）。一个持续运行的人工个体：发生的事按�
 - 开发周期：[`docs/ROADMAP.md`](docs/ROADMAP.md)
 - 工作包：[`docs/P1.md`](docs/P1.md)、[`docs/P2.md`](docs/P2.md)、[`docs/P3.md`](docs/P3.md)、[`docs/P4.md`](docs/P4.md)
 - 事件与用语：[`docs/TERMS.md`](docs/TERMS.md)
+- 记忆架构研究与依赖选型：[`docs/research/memory/`](docs/research/memory/README.md)
 - 设计背景（只作参考）：[V2 蓝图，YUVI PR #339](https://github.com/Ruichen-0079/YUVI/pull/339)
 
 当前能力（P4）：本地浏览器文字对话、流式回复、可选择的沉默、只追加 SQLite 档案、按日 token 用量，自动/手动快照、校验和恢复，以及自行整理经历和工具查档。

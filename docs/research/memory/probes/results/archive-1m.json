@@ -1,0 +1,6 @@
+{
+ "note": "Two runs on the same 1M-event file: the first script version, then the extra query shapes (covered_latest, check_rare_full_scan, usage_full) after dropping the probe index. Medians of 5, ms.",
+ "N": 1000000, "build_s": 21.5, "size_MB": 209,
+ "median_ms_no_index": { "full_decode": 45005.3, "last_200_dialogue": 1.3, "covered_json_max_over_all_writings": 153.1, "covered_latest": 0, "writings_budget": 5.4, "check_like_frequent_term": 0.1, "check_rare_full_scan": 370.1, "pending_heard_since": 2.7, "usage_full": 272.2 },
+ "median_ms_with_class_kind_seq_index": { "last_200_dialogue": 1349.9, "covered_json_max_over_all_writings": 12, "writings_budget": 0.4, "check_like_frequent_term": 787.2 }
+}
