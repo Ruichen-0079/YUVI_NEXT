@@ -35,12 +35,11 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
   let retryAfter = 0;
   const range = (material: Event[]) => ({ from_seq: material[0].seq, through_seq: material.at(-1)!.seq });
   async function consolidate(): Promise<boolean> {
-    const events = archive.events();
-    const material = state(events, config.contextEvents).materials.slice(0, config.contextEvents);
+    const material = archive.materials(config.contextEvents);
     if (!material.length || Date.now() < retryAfter) return false;
     let content = '', usage: Usage | undefined, finish: unknown;
     try {
-      await streamModel(config, consolidationMessages(events, material, config), text => { content += text; },
+      await streamModel(config, consolidationMessages(archive, material, config), text => { content += text; },
         value => { usage = value; }, { mode: 'consolidation', maxTokens: config.consolidationMaxTokens ?? 4000,
           finish: value => { finish = value; } });
     } catch (error) {
@@ -57,18 +56,18 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
     return true;
   }
   async function pressure(): Promise<void> {
-    let current = state(archive.events(), config.contextEvents);
-    while (current.materials.length > 2 * config.contextEvents) {
-      const material = current.materials.slice(0, config.contextEvents);
+    let current = state(archive, config.contextEvents);
+    while (current.materialCount > 2 * config.contextEvents) {
+      const material = archive.materials(config.contextEvents);
       archive.append({ class: 'control', kind: 'unconsolidated', actor: 'system',
         meta: { material: range(material), reason: 'backlog' } });
-      current = state(archive.events(), config.contextEvents);
+      current = state(archive, config.contextEvents);
     }
-    while (current.pressure && await consolidate()) current = state(archive.events(), config.contextEvents);
+    while (current.pressure && await consolidate()) current = state(archive, config.contextEvents);
   }
   async function turn(heard: Event, res: ServerResponse): Promise<void> {
     await pressure();
-    const messages: Message[] = dialogueMessages(archive.events(), heard, config);
+    const messages: Message[] = dialogueMessages(archive, heard, config);
     let attempt: Event | undefined, content = '', sentContent = '';
     let archiveFailed = false, usage: Usage | undefined;
     const append = (input: Parameters<Archive['append']>[0]) => {
@@ -97,7 +96,7 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
               ignored.push(tool.name);
               return '本步继续查阅；这个调用没有作为回合结局。';
             }
-            const result = check(() => archive.events(), tool.arguments, config.ownerName ?? '负责人');
+            const result = check(archive, tool.arguments, config.ownerName ?? '负责人');
             append({ class: 'act', kind: 'checked', actor: 'yuvi', model: config.model,
               reply_to: heard.id, meta: { ...result.meta, ...(!recordedUsage ? usageMeta() : {}) } });
             recordedUsage = true;
@@ -182,9 +181,9 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
   // One lightweight timer only enqueues work; model calls always use the dialogue queue.
   const timer = setInterval(() => {
     if (failed || receiving || pendingTurns || consolidating || Date.now() < retryAfter) return;
-    const current = state(archive.events(), config.contextEvents);
-    const last = current.dialogue.at(-1);
-    if (!last || !current.materials.length || Date.now() - last.t_recorded < (config.consolidationIdleMs ?? 3_600_000)) return;
+    const current = state(archive, config.contextEvents);
+    const last = current.lastDialogueTime;
+    if (last === undefined || !current.materialCount || Date.now() - last < (config.consolidationIdleMs ?? 3_600_000)) return;
     consolidating = true;
     queue = queue.then(async () => {
       // A receipt may have arrived after this work was enqueued.

@@ -8,7 +8,13 @@ import { join, resolve } from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { DatabaseSync } from 'node:sqlite';
-import { state, writings, check, localTime } from '../dist/context.js';
+import { check as databaseCheck, localTime } from '../dist/context.js';
+import { state } from './helpers/p4-context.mjs';
+import { withArchive } from './helpers/archive-fixture.mjs';
+// Existing array fixtures now exercise the SQLite implementation with the same rows.
+const check = (source, args, owner) => databaseCheck({ search: (query, from, to) =>
+  withArchive(typeof source === 'function' ? source() : source, archive => archive.search(query, from, to)) }, args, owner);
+const writings = (events, budget) => withArchive(events, archive => archive.writings(budget));
 import { createSnapshot, verifySnapshot, restoreSnapshot } from '../dist/snapshots.js';
 
 process.env.TZ = 'Asia/Shanghai';
@@ -413,8 +419,8 @@ test('check limits, exact case-sensitive substring, calendar dates, whole oversi
   assert.deepEqual(check(events, '{}', '小林').meta.result_seqs, [45]);
   // Nonempty writings alone qualify; attempts/control do not.
   const wrote = { ...events[0], class: 'inner', kind: 'wrote', content: '整条', seq: 100 };
-  assert.deepEqual(check([wrote, { ...wrote, seq: 101, content: '' }, { ...wrote, seq: 102, kind: 'reply_attempt', class: 'act' }], '{}', '小林').meta.result_seqs, [100]);
-  assert.deepEqual(writings([wrote, { ...wrote, seq: 101, content: 'a'.repeat(150) }, { ...wrote, seq: 102, content: 'b'.repeat(20) }], 100).map(e => e.seq), [102]);
+  assert.deepEqual(check([wrote, { ...wrote, id: 'writing-101', seq: 101, content: '' }, { ...wrote, id: 'writing-102', seq: 102, kind: 'reply_attempt', class: 'act' }], '{}', '小林').meta.result_seqs, [100]);
+  assert.deepEqual(writings([wrote, { ...wrote, id: 'writing-101', seq: 101, content: 'a'.repeat(150) }, { ...wrote, id: 'writing-102', seq: 102, content: 'b'.repeat(20) }], 100).map(e => e.seq), [102]);
 });
 
 test('D2/D17: actual P3 executable archive and snapshots remain compatible; restored coverage prevents repetition', async t => {

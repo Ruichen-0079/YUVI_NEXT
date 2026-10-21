@@ -29,9 +29,11 @@ async function waitFor(check, timeout = 10000) {
   while (Date.now() < deadline) { const value = await check(); if (value) return value; await delay(20); }
   throw Error('condition timed out');
 }
+// npm test already compiled dist. Rebuilding it during parallel process tests
+// can expose partially written ES modules; still exercise the npm maintenance entry.
 function cli(command, args = [], env = {}, npm = false) {
   const child = spawn(npm ? 'npm' : process.execPath,
-    npm ? ['run', command, '--', ...args] : ['dist/maintenance.js', command, ...args],
+    npm ? ['--ignore-scripts', 'run', command, '--', ...args] : ['dist/maintenance.js', command, ...args],
     { env: { ...process.env, YUVI_MODEL_BASE_URL: '', YUVI_MODEL_API_KEY: '', YUVI_PERSONA_FILE: '', YUVI_MODEL: '', ...env }, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
   let stdout = '', stderr = '';
   child.stdout.on('data', data => { stdout += data; }); child.stderr.on('data', data => { stderr += data; });
