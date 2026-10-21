@@ -5,6 +5,7 @@ export interface Config extends ModelConfig {
   dataDir: string; persona: string; host: string; port: number; contextEvents: number;
   idleTimeoutMs: number; maxDurationMs: number;
   snapshotDir?: string; snapshotIntervalMs?: number;
+  writingChars?: number; consolidationMaxTokens?: number; consolidationIdleMs?: number; ownerName?: string;
 }
 export function loadConfig(): Config {
   const required = (name: string) => {
@@ -31,7 +32,12 @@ export function loadConfig(): Config {
   catch { throw new Error('Cannot read YUVI_PERSONA_FILE'); }
   const host = process.env.YUVI_HOST ?? '127.0.0.1';
   if (!host.trim()) throw new Error('Invalid configuration: YUVI_HOST');
-  return { baseUrl, apiKey, model, dataDir, persona,
+  const ownerName = process.env.YUVI_OWNER_NAME ?? '负责人';
+  if (!ownerName.trim()) throw new Error('Invalid configuration: YUVI_OWNER_NAME');
+  return { baseUrl, apiKey, model, dataDir, persona, ownerName,
+    writingChars: integer('YUVI_CONTEXT_WRITING_CHARS', 16000, 2_147_483_647),
+    consolidationMaxTokens: integer('YUVI_CONSOLIDATION_MAX_TOKENS', 4000, 2_147_483_647),
+    consolidationIdleMs: integer('YUVI_CONSOLIDATION_IDLE_MS', 3_600_000, 2_147_483_647),
     snapshotDir: snapshotPaths().snapshotDir,
     snapshotIntervalMs: integer('YUVI_SNAPSHOT_INTERVAL_MS', 86_400_000, 2_147_483_647),
     idleTimeoutMs: integer('YUVI_MODEL_IDLE_TIMEOUT_MS', 60_000, 2_147_483_647),

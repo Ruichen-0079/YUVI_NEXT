@@ -52,8 +52,12 @@ test('A12/B2: Chromium streams text, shows neutral silence, and reloads history'
   await page.waitForFunction(() => document.querySelector('#conversation').textContent.includes('（没有回复）'));
   assert.equal(await page.locator('#conversation p').last().textContent(), 'yuvi: （没有回复）');
   assert.ok(!(await page.locator('body').textContent()).includes('先不说'));
+  for (const [cls, kind] of [['inner', 'wrote'], ['act', 'checked'], ['control', 'unconsolidated']]) {
+    app.archive.append({ class: cls, kind, actor: cls === 'control' ? 'system' : 'yuvi', content: 'P4-hidden-' + kind });
+  }
   await page.reload();
   await page.waitForFunction(() => document.querySelector('#conversation').textContent.includes('（没有回复）'));
   assert.ok(!(await page.locator('body').textContent()).includes('先不说'));
+  assert.ok(!(await page.locator('body').textContent()).includes('P4-hidden-'));
   assert.deepEqual(errors, []);
 });

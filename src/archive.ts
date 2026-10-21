@@ -76,7 +76,7 @@ export class Archive {
     const days = new Map<string, Record<string, unknown>>();
     const rows = this.decode(this.db.prepare(`SELECT * FROM events WHERE
       (class='act' AND kind IN ('said','silent')) OR (class='control' AND kind='error')
-      ORDER BY seq`).all());
+      OR json_type(meta,'$.usage')='object' ORDER BY seq`).all());
     function sum(target: Record<string, unknown>, source: Record<string, unknown>, top = true): void {
       for (const [key, value] of Object.entries(source)) {
         if (top && ['date', 'turns', 'turns_with_usage'].includes(key)) continue;
@@ -93,10 +93,12 @@ export class Archive {
       const day = days.get(date) ?? Object.assign(Object.create(null), {
         date, turns: 0, turns_with_usage: 0, prompt_tokens: 0, completion_tokens: 0
       });
-      day.turns = Number(day.turns) + 1;
+      const ending = (event.class === 'act' && ['said', 'silent'].includes(event.kind)) ||
+        (event.class === 'control' && event.kind === 'error');
+      if (ending) day.turns = Number(day.turns) + 1;
       const usage = event.meta.usage;
       if (usage && typeof usage === 'object' && !Array.isArray(usage)) {
-        day.turns_with_usage = Number(day.turns_with_usage) + 1;
+        if (ending) day.turns_with_usage = Number(day.turns_with_usage) + 1;
         sum(day, usage as Record<string, unknown>);
       }
       days.set(date, day);
