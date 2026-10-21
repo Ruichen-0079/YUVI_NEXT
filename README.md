@@ -4,7 +4,7 @@ YUVI 的第二代（V2）。一个持续运行的人工个体：发生的事按�
 
 - 给参与开发的代理：先读 [`AGENTS.md`](AGENTS.md)。
 - 开发周期：[`docs/ROADMAP.md`](docs/ROADMAP.md)
-- 工作包：[`docs/P1.md`](docs/P1.md)、[`docs/P2.md`](docs/P2.md)、[`docs/P3.md`](docs/P3.md)
+- 工作包：[`docs/P1.md`](docs/P1.md)、[`docs/P2.md`](docs/P2.md)、[`docs/P3.md`](docs/P3.md)、[`docs/P4.md`](docs/P4.md)（规划中）
 - 事件与用语：[`docs/TERMS.md`](docs/TERMS.md)
 - 设计背景（只作参考）：[V2 蓝图，YUVI PR #339](https://github.com/Ruichen-0079/YUVI/pull/339)
 
