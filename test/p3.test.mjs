@@ -117,9 +117,9 @@ test('C4/C6/C7/C8/C9/C13: runtime WAL snapshots, safe restore, interrupted recov
   assert.notEqual(b.code, 0); assert.match(b.stderr, /YUVI_DATA_DIR/);
   assert.deepEqual(await f.events(a), pending); assert.deepEqual(await f.snapshots(), snapshotList); assert.equal(f.requests.length, requestCount);
   const first = await f.snapshot(true); assert.deepEqual(rows(first), pending);
-  assert.deepEqual(pending.map(e => e.kind), ['heard', 'reply_attempt']);
+  assert.deepEqual(pending.map(e => e.kind), ['heard', 'presented', 'reply_attempt']);
   const verification = await command('verify-snapshot', [first], {}, true); assert.equal(verification.code, 0, verification.stderr);
-  assert.deepEqual(JSON.parse(verification.stdout.trim().split('\n').at(-1)), { events: 2, max_seq: 2 });
+  assert.deepEqual(JSON.parse(verification.stdout.trim().split('\n').at(-1)), { events: 3, max_seq: 3 });
   assert.equal(hash(await readFile(join(f.data, 'service.lock'))), lockBefore);
   await generation.finish(); const completed = await f.events(a);
   const second = await f.snapshot(true); assert.deepEqual(rows(second), completed); assert.equal(completed.at(-1).kind, 'said');
@@ -174,7 +174,7 @@ test('C3: startup and interval snapshots during a four-second turn, no event ann
     const info = verifySnapshot(file); assert.deepEqual(rows(file), events.filter(e => e.seq <= info.max_seq));
   }
   assert.equal(events.filter(e => e.kind === 'heard').length, 3); assert.equal(events.filter(e => e.kind === 'said').length, 3);
-  assert.equal(events.length, 9);
+  assert.equal(events.length, 12);
 });
 
 test('C5/C7: byte edits, truncation, invalid SQLite and missing triggers are refused before restore writes', async t => {

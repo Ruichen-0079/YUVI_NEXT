@@ -1,0 +1,72 @@
+{
+  "node": "v22.23.3",
+  "command": "node dist/maintenance.js presented summary",
+  "source": "closed WAL-mode P6-compatible archive; readonly:true",
+  "before": [
+    {
+      "name": ".",
+      "mtime_ns": "1792682693833607974",
+      "bytes": 4096,
+      "sha256": null
+    },
+    {
+      "name": "archive.sqlite",
+      "mtime_ns": "1792682693831608182",
+      "bytes": 20480,
+      "sha256": "b56efca6e17787f3c3afe9421ae7db7d5fc8cc8acfd5eec24aefda9a8288767b"
+    },
+    {
+      "name": "service.lock",
+      "mtime_ns": "1792682693810610357",
+      "bytes": 4096,
+      "sha256": "47a50bd3c0ecedaa50661a2ccfb4be4f2050cec94db4b8344aea1d5c6d9bdff8"
+    }
+  ],
+  "after": [
+    {
+      "name": ".",
+      "mtime_ns": "1792682693855605696",
+      "bytes": 4096,
+      "sha256": null
+    },
+    {
+      "name": "archive.sqlite",
+      "mtime_ns": "1792682693831608182",
+      "bytes": 20480,
+      "sha256": "b56efca6e17787f3c3afe9421ae7db7d5fc8cc8acfd5eec24aefda9a8288767b"
+    },
+    {
+      "name": "archive.sqlite-shm",
+      "mtime_ns": "1792682693856191699",
+      "bytes": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "name": "archive.sqlite-wal",
+      "mtime_ns": "1792682693855605696",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "service.lock",
+      "mtime_ns": "1792682693810610357",
+      "bytes": 4096,
+      "sha256": "47a50bd3c0ecedaa50661a2ccfb4be4f2050cec94db4b8344aea1d5c6d9bdff8"
+    }
+  ],
+  "summary": {
+    "evidence": "assembled before attempted request; no claim of receipt, attention or use",
+    "count": 0,
+    "by_purpose": {},
+    "by_step": {},
+    "by_status": {},
+    "groups": {},
+    "first_time": null,
+    "last_time": null,
+    "meta_bytes": {
+      "total": 0,
+      "average": 0,
+      "maximum": 0
+    }
+  }
+}

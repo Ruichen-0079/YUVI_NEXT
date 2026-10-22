@@ -1,0 +1,206 @@
+{
+  "node": "v22.23.3",
+  "request": {
+    "model": "fake-p6",
+    "messages": [
+      {
+        "role": "system",
+        "content": "测试人设原文\n"
+      },
+      {
+        "role": "user",
+        "content": "2026-10-22 22:56:54（UTC+08:00） 小林说：\n原文�尾部"
+      },
+      {
+        "role": "user",
+        "content": "现在是2026-10-22 22:56:54（UTC+08:00）。当前回应的是小林在2026-10-22 22:56:54（UTC+08:00）说的这一句：\n原文\ud800尾部"
+      }
+    ],
+    "stream": true,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "stay_silent",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "reason": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "check",
+          "description": "查阅档案原文：返回本场景中符合条件的原始记录，逐字，带时间和作者，也包括你自己以前写下的文字。查阅会被记录。当你要把过去的事当作事实告诉别人时，先用它核对。",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              },
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "stream_options": {
+      "include_usage": true
+    }
+  },
+  "stored": {
+    "bytes": "E58E9FE69687EFBFBDE5B0BEE983A8"
+  },
+  "show": {
+    "seq": 2,
+    "manifest": {
+      "format": 1,
+      "rules": "p7",
+      "purpose": "dialogue",
+      "step": 0,
+      "now": 1792681014160,
+      "time_zone": "Asia/Shanghai",
+      "node_major": 22,
+      "writing_chars": 16000,
+      "owner_name": "小林",
+      "request": {
+        "tools": [
+          "stay_silent",
+          "check"
+        ]
+      },
+      "persona": {
+        "sha256": "c8a2c0e7b4b78a49da241c3d91c5dd4dc48dca048646580f7aaed2ad892608d9",
+        "chars": 7
+      },
+      "sections": [
+        {
+          "name": "persona",
+          "messages": 1,
+          "chars": 7
+        },
+        {
+          "name": "window",
+          "messages": 1,
+          "chars": 41,
+          "first_seq": 1,
+          "last_seq": 1,
+          "count": 1
+        },
+        {
+          "name": "instruction",
+          "messages": 1,
+          "chars": 85,
+          "heard": "dfa2c548-5d54-436f-a174-985baf49af0c"
+        }
+      ],
+      "total": {
+        "messages": 3,
+        "chars": 133
+      },
+      "messages_sha256": "e860965d01fc9a96dedb6b23a858e632e9beec726647a97902f36d7749420514"
+    },
+    "outcome": {
+      "status": "completed"
+    },
+    "reconstruction": {
+      "status": "mismatch",
+      "messages_sha256": "bd7660e35554a8038a69c9b510b7fe99c0f89f4f642b9e2c4ab4392f16eaeec1",
+      "scope": "messages only; other HTTP fields are not a historical byte-for-byte reconstruction"
+    },
+    "messages": [
+      {
+        "role": "system",
+        "content": "测试人设原文\n"
+      },
+      {
+        "role": "user",
+        "content": "2026-10-22 22:56:54（UTC+08:00） 小林说：\n原文�尾部"
+      },
+      {
+        "role": "user",
+        "content": "现在是2026-10-22 22:56:54（UTC+08:00）。当前回应的是小林在2026-10-22 22:56:54（UTC+08:00）说的这一句：\n原文�尾部"
+      }
+    ]
+  },
+  "baseline": {
+    "ref": "9f67b81",
+    "stored": {
+      "bytes": "E58E9FE69687EFBFBDE5B0BEE983A8"
+    },
+    "request": {
+      "model": "fake-p6",
+      "messages": [
+        {
+          "role": "system",
+          "content": "测试人设原文\n"
+        },
+        {
+          "role": "user",
+          "content": "2026-10-22 22:57:29（UTC+08:00） 小林说：\n原文�尾部"
+        },
+        {
+          "role": "user",
+          "content": "现在是2026-10-22 22:57:29（UTC+08:00）。当前回应的是小林在2026-10-22 22:57:29（UTC+08:00）说的这一句：\n原文\ud800尾部"
+        }
+      ],
+      "stream": true,
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "stay_silent",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "check",
+            "description": "查阅档案原文：返回本场景中符合条件的原始记录，逐字，带时间和作者，也包括你自己以前写下的文字。查阅会被记录。当你要把过去的事当作事实告诉别人时，先用它核对。",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                },
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ],
+      "tool_choice": "auto",
+      "stream_options": {
+        "include_usage": true
+      }
+    }
+  }
+}

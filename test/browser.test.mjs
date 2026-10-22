@@ -59,5 +59,8 @@ test('A12/B2: Chromium streams text, shows neutral silence, and reloads history'
   await page.waitForFunction(() => document.querySelector('#conversation').textContent.includes('（没有回复）'));
   assert.ok(!(await page.locator('body').textContent()).includes('先不说'));
   assert.ok(!(await page.locator('body').textContent()).includes('P4-hidden-'));
+  assert.equal(app.archive.events().filter(e => e.kind === 'presented').length, 2);
+  assert.ok(!(await page.locator('body').textContent()).includes('messages_sha256'));
+  assert.ok(!(await page.locator('body').textContent()).includes('presented'));
   assert.deepEqual(errors, []);
 });

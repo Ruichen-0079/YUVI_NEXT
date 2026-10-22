@@ -22,8 +22,8 @@ test('P7 pure base assembly: selection, exact P4 messages, sections, parameters 
     const material = rows.slice(0, 2), expectedConsolidation = p4.consolidationMessages(rows, material, config);
     Date.now = () => { throw Error('Presentation must use the explicit clock'); };
     try {
-      const dialogue = assembleBase({ purpose: 'dialogue', selected: selectDialogue(archive, config), heard }, config, now, 'Asia/Shanghai');
-      const consolidation = assembleBase({ purpose: 'consolidation', selected: selectConsolidation(archive, material, config), maxTokens: 4000 }, config, now, 'Asia/Shanghai');
+      const dialogue = assembleBase({ purpose: 'dialogue', selected: selectDialogue(archive, config), heard }, config, now, 'Asia/Shanghai', Number(process.versions.node.split('.')[0]));
+      const consolidation = assembleBase({ purpose: 'consolidation', selected: selectConsolidation(archive, material, config), maxTokens: 4000 }, config, now, 'Asia/Shanghai', Number(process.versions.node.split('.')[0]));
       assert.deepEqual(dialogue.messages, expectedDialogue);
       assert.deepEqual(consolidation.messages, expectedConsolidation);
       for (const assembled of [dialogue, consolidation]) {
@@ -76,4 +76,26 @@ test('P7 difference normalization maps every declared reference without masking 
     [[{ event: 'heard', data: 'old-h' }, { event: 'delta', data: '{"text":"new-h"}' }]]);
   actual[5].meta.total = 5; // A behavioral change must survive normalization.
   assert.notDeepEqual(normaliseP7Events(old, actual).events, withoutRecordedTime(old));
+});
+
+test('G6/G7 generator: deterministic presented shape, valid replay samples, legacy shapes unchanged', async t => {
+  const { mkdtemp, readFile, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os'); const { join } = await import('node:path');
+  const { DatabaseSync } = await import('node:sqlite');
+  const { generate } = await import('../scripts/p6/generate.mjs');
+  const { presentedSummary, presentedWritings, presentedShow } = await import('../dist/presented.js');
+  const root = await mkdtemp(join(tmpdir(), 'yuvi-p7-generator-')); t.after(()=>rm(root,{recursive:true,force:true}));
+  const first=join(root,'first.sqlite'),second=join(root,'second.sqlite');
+  const info=generate(first,{count:20000,shape:'presented',seed:67});generate(second,{count:20000,shape:'presented',seed:67});
+  assert.deepEqual(await readFile(first),await readFile(second));assert.equal(info.count,20000);
+  const db=new DatabaseSync(first,{readOnly:true});
+  try {
+    const ps=db.prepare("SELECT seq,meta FROM events WHERE kind='presented' ORDER BY seq").all();
+    assert.equal(presentedSummary(db).count,info.counts.presented);assert.ok(info.counts.presented>=info.counts.heard);
+    assert.equal(presentedSummary(db).by_status.incomplete??0,0);
+    assert.ok(presentedWritings(db).never_presented>=1);
+    const samples=[ps[0],ps.at(-1),...ps.filter(p=>JSON.parse(p.meta).purpose==='consolidation').slice(0,5),...ps.filter(p=>JSON.parse(p.meta).step===1).slice(-5)];
+    for(const p of samples)assert.equal(presentedShow(db,Number(p.seq),'确定性合成测试人设\n',true).reconstruction.status,'exact');
+    for(const p of ps){const m=JSON.parse(p.meta);if(m.step===0)assert.ok(Buffer.byteLength(p.meta)<=1500);}
+  }finally{db.close();}
 });

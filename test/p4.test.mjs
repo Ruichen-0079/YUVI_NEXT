@@ -193,7 +193,7 @@ test('D9/D10/D11/D12/D21: tool round trips, all endings, request diagnostics and
   const matches = events.filter(e => ['heard', 'said', 'wrote', 'silent'].includes(e.kind) && e.content.includes('猫'));
   assert.deepEqual(checked.meta.result_seqs, matches.map(e => e.seq)); assert.deepEqual(checked.meta.arguments, { query: '猫' });
   assert.equal(second.messages.find(m => m.tool_calls).tool_calls[0].id, result.tool_call_id);
-  assert.deepEqual(events.filter(e => e.reply_to === checked.reply_to).map(e => e.kind), ['checked', 'reply_attempt', 'said']);
+  assert.deepEqual(events.filter(e => e.reply_to === checked.reply_to).map(e => e.kind), ['presented', 'checked', 'presented', 'reply_attempt', 'said']);
   const bound = events.find(e => e.content === correction).t_recorded;
   for (const args of [{ from: new Date(bound).toISOString(), to: new Date(bound).toISOString() }, { from: '2026-02-30' }, { query: 1 }]) {
     f.dialogue.push((res, r) => res.end(tools(['check', args]) + end(r.usage)));
@@ -383,7 +383,7 @@ test('D5/D6: interrupted consolidation writes nothing and retries the same mater
   await f.stop('SIGKILL'); await f.start();
   await waitFor(async () => (await f.events()).some(e => e.kind === 'wrote'));
   const events = await f.events(); assert.equal(events.filter(e => e.kind === 'wrote').length, 1);
-  assert.deepEqual(events.at(-1).meta.material, { from_seq: original[0].seq, through_seq: original.at(-1).seq });
+  assert.deepEqual(events.at(-1).meta.material, { from_seq: original[0].seq, through_seq: original.findLast(e => e.kind === 'said').seq });
 });
 
 test('D15: all new numeric configuration bounds and blank owner fail safely', async t => {
@@ -472,7 +472,7 @@ test('consolidation timeout discards partial text and usage, leaves materials pe
   f.consolidation.push((res, r) => { res.write(text('未完成整理') + frame({ choices: [], usage: r.usage })); });
   await f.post('超时材料');
   await waitFor(() => f.output.includes('Consolidation failed; retry deferred.'));
-  const before = await f.events(); assert.deepEqual(before.map(e => e.kind), ['heard', 'reply_attempt', 'said']);
+  const before = await f.events(); assert.deepEqual(before.map(e => e.kind), ['heard', 'presented', 'reply_attempt', 'said', 'presented']);
   assert.equal(state(before, 200).covered, 0);
   await f.post('退避中继续'); assert.equal((await f.events()).at(-1).kind, 'said');
   await delay(200); assert.equal(f.requests.filter(r => !r.body.tools).length, 1);

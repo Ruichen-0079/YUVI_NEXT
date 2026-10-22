@@ -5,10 +5,13 @@ export function normaliseP7Events(baseline, actual) {
   if (events.length !== baseline.length) throw Error('Non-presentation event count differs');
   const ids = new Map(events.map((e, i) => [e.id, baseline[i].id]));
   const seqs = new Map(events.map((e, i) => [e.seq, baseline[i].seq]));
-  const id = value => value == null ? value : ids.get(value) ?? value;
-  const seq = value => value == null ? value : seqs.get(value) ?? value;
-  const normalized = events.map(event => {
+  const id = value => { if (value == null) return value; if (!ids.has(value)) throw Error('Unmapped event ID reference'); return ids.get(value); };
+  const seq = value => { if (value == null || value === 0) return value; if (!seqs.has(value)) throw Error('Unmapped event seq reference'); return seqs.get(value); };
+  const normalized = events.map((event, index) => {
     const { t_recorded, ...e } = structuredClone(event);
+    // Copied seed rows are immutable and compared verbatim. This also preserves
+    // deliberately dangling foreign-scope fixture references (e.g. future C).
+    if (event.id === baseline[index].id) return e;
     e.id = id(e.id); e.seq = seq(e.seq); e.reply_to = id(e.reply_to);
     if (Object.hasOwn(e.meta, 'attempt')) e.meta.attempt = id(e.meta.attempt);
     if (e.meta.material) {

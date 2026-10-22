@@ -1,6 +1,6 @@
 import type { Archive, Event } from './archive.js';
 import type { Config } from './config.js';
-import { requestParameters, type Message } from './model.js';
+import { requestParameters, type Message, type ToolCall, type RequestParameters } from './model.js';
 import { createHash } from 'node:crypto';
 
 export type PresentationConfig = Pick<Config, 'persona' | 'ownerName' | 'writingChars'>;
@@ -76,7 +76,16 @@ export interface Section {
   name: 'persona' | 'writings' | 'window' | 'material' | 'instruction' | 'step';
   messages: number; chars: number;
   first_seq?: number; last_seq?: number; count?: number; heard?: string;
+  index?: number; assistant_text?: string; tool_calls?: { id: string; name: string; arguments: string }[];
+  results?: ({ checked: string } | { ignored: string })[];
 }
+export interface PresentationManifest extends Record<string, unknown> {
+  format: number; rules: string; purpose: 'dialogue' | 'consolidation'; step?: number; previous?: string;
+  now: number; time_zone: string; owner_name: string; writing_chars: number; node_major: number;
+  request: { tools: string[]; max_tokens?: number }; persona: { sha256: string; chars: number };
+  sections: Section[]; total: { messages: number; chars: number }; messages_sha256: string;
+}
+export interface Assembly { messages: Message[]; parameters: RequestParameters; manifest: PresentationManifest; }
 export function messageSize(messages: Message[]) {
   return { messages: messages.length, chars: messages.reduce((sum, m) => sum + m.content.length, 0) };
 }
@@ -86,7 +95,7 @@ export function assembleBase(input: {
   purpose: 'dialogue'; selected: { writings: Event[]; window: Event[] }; heard: Event;
 } | {
   purpose: 'consolidation'; selected: { writings: Event[]; material: Event[] }; maxTokens: number;
-}, config: PresentationConfig, now: number, timeZone: string) {
+}, config: PresentationConfig, now: number, timeZone: string, nodeMajor: number): Assembly {
   const messages = input.purpose === 'dialogue' ? renderDialogue(input.selected, input.heard, config, now, timeZone) :
     renderConsolidation(input.selected, config, now, timeZone);
   const sections: Section[] = [];
@@ -107,13 +116,36 @@ export function assembleBase(input: {
   }
   const parameters = requestParameters(input.purpose === 'dialogue' ? {} : { mode: 'consolidation', maxTokens: input.maxTokens });
   return { messages, parameters, manifest: {
-    format: 1, rules: 'p7', purpose: input.purpose, ...(input.purpose === 'dialogue' ? { step: 0 } : {}),
-    now, time_zone: timeZone, owner_name: config.ownerName ?? '负责人',
+    format: 1 as const, rules: 'p7', purpose: input.purpose, ...(input.purpose === 'dialogue' ? { step: 0 } : {}),
+    now, time_zone: timeZone, node_major: nodeMajor, writing_chars: config.writingChars ?? 16000, owner_name: config.ownerName ?? '负责人',
     request: { tools: parameters.tools?.map(tool => tool.function.name) ?? [],
       ...(parameters.max_tokens === undefined ? {} : { max_tokens: parameters.max_tokens }) },
     persona: { sha256: sha256(config.persona), chars: config.persona.length }, sections,
     total: messageSize(messages), messages_sha256: sha256(JSON.stringify(messages))
   } };
+}
+
+export type StepResult = { reference: { checked: string } | { ignored: string }; content: string };
+export function renderStep(text: string, calls: NonNullable<Section['tool_calls']>, replies: string[]): Message[] {
+  return [{ role: 'assistant', content: text, tool_calls: calls.map(call => ({
+    id: call.id, type: 'function', function: { name: call.name, arguments: call.arguments }
+  })) }, ...calls.map((call, index) => ({ role: 'tool' as const, tool_call_id: call.id, content: replies[index] }))];
+}
+// Single entry for the three request paths. Continuations inherit the exact
+// previous messages; neither archive selection nor base rendering is repeated.
+export function assembleContext(input: Parameters<typeof assembleBase>[0] | {
+  previous: Assembly; previousId: string; text: string; calls: ToolCall[]; results: StepResult[];
+}, config: PresentationConfig, now: number, timeZone: string, nodeMajor: number): Assembly {
+  if (!('previous' in input)) return assembleBase(input, config, now, timeZone, nodeMajor);
+  const prior = input.previous, index = prior.manifest.step!;
+  const calls = input.calls.map((call, i) => ({ id: call.id || `call_${index}_${i}`, name: call.name, arguments: call.arguments }));
+  const appended = renderStep(input.text, calls, input.results.map(result => result.content));
+  const messages = [...prior.messages, ...appended], parameters = requestParameters({ lastStep: index + 1 === 3 });
+  const section: Section = { name: 'step', ...messageSize(appended), index, assistant_text: input.text,
+    tool_calls: calls, results: input.results.map(result => result.reference) };
+  return { messages, parameters, manifest: { ...prior.manifest, step: index + 1, previous: input.previousId,
+    now, request: { tools: parameters.tools!.map(tool => tool.function.name) },
+    sections: [...prior.manifest.sections, section], total: messageSize(messages), messages_sha256: sha256(JSON.stringify(messages)) } };
 }
 
 // ISO calendar validation, including local datetimes (Date.parse alone normalizes e.g. February 30).

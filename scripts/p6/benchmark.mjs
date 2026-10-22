@@ -11,6 +11,7 @@ import { generate } from './generate.mjs';
 import { createSnapshot } from '../../dist/snapshots.js';
 import { legacyCheckout, listen, startService, text, tool, done } from '../../test/helpers/p6-process.mjs';
 import { recoveryChecks } from './recovery.mjs';
+if(process.argv.includes('--p7')) { await import('./benchmark-p7.mjs'); process.exit(process.exitCode ?? 0); }
 const [directory,...args]=process.argv.slice(2),options=Object.fromEntries(Array.from({length:args.length/2},(_,i)=>[args[i*2].replace(/^--/,''),Number(args[i*2+1])]));
 if(!directory)throw Error('Use a new scratch directory');
 const root=resolve(directory);await mkdir(root,{recursive:false,mode:0o700});

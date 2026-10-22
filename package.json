@@ -18,7 +18,8 @@
     "prerestore": "npm run build",
     "restore": "node dist/maintenance.js restore",
     "prestart:local": "npm run build",
-    "start:local": "node scripts/start-local.mjs"
+    "start:local": "node scripts/start-local.mjs",
+    "presented": "node dist/maintenance.js presented"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
