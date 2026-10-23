@@ -1,0 +1,1 @@
+{"turns":1120,"wallMs":8773,"kinds":[{"kind":"heard","n":1120},{"kind":"presented","n":1232},{"kind":"reply_attempt","n":1120},{"kind":"said","n":1120},{"kind":"wrote","n":112}],"last":"2026-12-08T13:20:00.000Z"}

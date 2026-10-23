@@ -1,0 +1,9 @@
+# FTS5 availability in Node's bundled SQLite (official linux-x64 builds, checksums verified)
+# probe: CREATE VIRTUAL TABLE t USING fts5(x, content='', contentless_delete=1); fts5vocab(t,'row')
+22.13.0 3.47.2 fts5: no such module
+22.14.0 3.47.2 fts5: no such module
+22.15.0 3.49.1 fts5: no such module
+22.16.0 3.49.1 fts5: yes (contentless_delete, fts5vocab)
+22.17.0 3.50.0 fts5: yes
+22.18.0 3.50.2 fts5: yes
+22.22.0 3.50.4 fts5: yes (probe machine)
