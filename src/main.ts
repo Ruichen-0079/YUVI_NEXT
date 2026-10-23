@@ -19,8 +19,8 @@ try {
   try { app = createApp(config, archive); }
   catch { archive.close(); console.error('Cannot initialize YUVI_DATA_DIR.'); process.exit(1); }
   const { server } = app;
-  server.on('error', () => {
-    app.archive.close();
+  server.on('error', async () => {
+    await app.index.close().catch(() => {}); app.archive.close();
     console.error('Cannot listen; check YUVI_HOST and YUVI_PORT.'); process.exitCode = 1;
   });
   server.listen(config.port, config.host, () => {

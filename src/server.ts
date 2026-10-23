@@ -101,17 +101,18 @@ export function createApp(config: Config, archive = new Archive(config.dataDir),
         const checks = tools.filter(t => t.name === 'check');
         if (checks.length && step < 3) {
           let recordedUsage = false;
-          const replies: StepResult[] = tools.map(tool => {
+          const replies: StepResult[] = [];
+          for (const tool of tools) {
             if (tool.name !== 'check') {
               ignored.push(tool.name);
-              return { reference: { ignored: tool.name }, content: '本步继续查阅；这个调用没有作为回合结局。' };
+              replies.push({ reference: { ignored: tool.name }, content: '本步继续查阅；这个调用没有作为回合结局。' }); continue;
             }
-            const result = check(archive, tool.arguments, config.ownerName ?? '负责人', { index, engine: options.checkEngine });
+            const result = await check(archive, tool.arguments, config.ownerName ?? '负责人', { index, engine: options.checkEngine, scan: (raw, owner, reason) => index.scan(raw, owner, reason) });
             const checked = append({ class: 'act', kind: 'checked', actor: 'yuvi', model: config.model,
               reply_to: heard.id, meta: { ...result.meta, ...(!recordedUsage ? usageMeta() : {}) } });
             recordedUsage = true;
-            return { reference: { checked: checked.id }, content: result.content };
-          });
+            replies.push({ reference: { checked: checked.id }, content: result.content });
+          }
           try {
             assembled = assembleContext({ previous: assembled, previousId: presented.id, text: stepContent, calls: tools, results: replies },
               config, Date.now(), zone, nodeMajor);

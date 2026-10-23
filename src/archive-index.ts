@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, rmSync, statSync, renameSync, openSync, closeSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { Worker } from 'node:worker_threads';
+import type { CheckResult } from './context.js';
 import { CURRENT_SCOPE, type Event } from './archive.js';
 
 type Scope = { scene: string; branch: string };
@@ -54,7 +55,7 @@ function metadata(db: DatabaseSync): Metadata {
 }
 function openWriter(file: string) {
   if (!existsSync(file)) closeSync(openSync(file, 'wx', 0o600));
-  else chmodSync(file, statSync(file).mode & 0o600);
+  else { const mode = statSync(file).mode; if ((mode & 0o222) === 0) throw Error('Index unavailable.'); chmodSync(file, mode & 0o600); }
   return new DatabaseSync(file);
 }
 function createIndex(db: DatabaseSync, source: DatabaseSync, scope: Scope) {
@@ -62,7 +63,7 @@ function createIndex(db: DatabaseSync, source: DatabaseSync, scope: Scope) {
     CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
     CREATE TABLE docs(seq INTEGER PRIMARY KEY,kind TEXT NOT NULL,t_recorded INTEGER NOT NULL,chars INTEGER NOT NULL,digest TEXT NOT NULL);
     CREATE INDEX docs_time ON docs(t_recorded);
-    CREATE VIRTUAL TABLE terms USING fts5(words,content='',contentless_delete=1,tokenize="unicode61 remove_diacritics 0 categories 'L* N* M*'");
+    CREATE VIRTUAL TABLE terms USING fts5(words,content='',contentless_delete=1,tokenize='ascii');
     CREATE VIRTUAL TABLE vocab USING fts5vocab(terms,'row');`);
   const m: Metadata = { format: 1, tokenizer: TOKENIZER, ...scope, decode: truncates(source) ? 'nul_truncated' : 'full',
     archive_first_id: source.prepare('SELECT id FROM events ORDER BY seq LIMIT 1').get()?.id as string ?? null, through_seq: 0, through_id: null };
@@ -77,8 +78,10 @@ export function appendBatch(db: DatabaseSync, source: DatabaseSync, scope: Scope
   db.exec('BEGIN');
   try {
     for (const e of rows) { const content = e.content as string; doc.run(e.seq, e.kind, e.t_recorded, content.length, digest(content)); insert.run(e.seq, terms(content).join(' ')); }
+    if (m.archive_first_id === null) m.archive_first_id = source.prepare('SELECT id FROM events ORDER BY seq LIMIT 1').get()!.id as string;
     m.through_seq = Number(rows.at(-1)!.seq); m.through_id = rows.at(-1)!.id as string;
     const update = db.prepare('UPDATE metadata SET value=? WHERE key=?');
+    update.run(JSON.stringify(m.archive_first_id), 'archive_first_id');
     update.run(JSON.stringify(m.through_seq), 'through_seq'); update.run(JSON.stringify(m.through_id), 'through_id'); db.exec('COMMIT');
   } catch (error) { db.exec('ROLLBACK'); throw error; }
   return rows.length;
@@ -100,7 +103,7 @@ export function verifyIndex(source: DatabaseSync, file: string, full = false, sc
     const count = Number(db.prepare('SELECT count(*) n FROM docs').get()!.n);
     Object.assign(result, { through_seq: m.through_seq, last_seq: b.last_seq, rows: count, expected_rows: b.expected, sampled: 0 });
     if (m.format !== 1 || m.tokenizer !== TOKENIZER || m.scene !== scope.scene || m.branch !== scope.branch || m.decode !== (nul ? 'nul_truncated' : 'full')) return { ...result, status: 'version' };
-    if (Number(db.prepare('SELECT max(seq) n FROM docs').get()!.n ?? 0) !== m.through_seq || m.archive_first_id !== b.first || (m.through_seq ? source.prepare('SELECT id FROM events WHERE seq=?').get(m.through_seq)?.id !== m.through_id : m.through_id !== null) || count !== b.expected || Number(db.prepare('SELECT count(*) n FROM terms').get()!.n) !== count) return { ...result, status: 'mismatch' };
+    if (Number(db.prepare('SELECT max(seq) n FROM docs').get()!.n ?? 0) !== m.through_seq || m.archive_first_id !== b.first || (m.through_seq ? source.prepare('SELECT id FROM events WHERE seq=?').get(m.through_seq)?.id !== m.through_id : m.through_id !== null) || count !== b.expected || Number(db.prepare('SELECT count(*) n FROM terms_docsize').get()!.n) !== count) return { ...result, status: 'mismatch' };
     const find = source.prepare('SELECT * FROM events WHERE seq=? AND scene=? AND branch=?'), lookup = db.prepare('SELECT rowid FROM terms WHERE terms MATCH ? AND rowid=?');
     if (full) {
       if (db.prepare('PRAGMA integrity_check').all().some(r => Object.values(r)[0] !== 'ok')) return { ...result, status: 'corrupt' };
@@ -123,6 +126,9 @@ export function verifyIndex(source: DatabaseSync, file: string, full = false, sc
 export class ArchiveIndex {
   private db: DatabaseSync | undefined;
   private worker: Worker | undefined;
+  private scanWorker: Worker | undefined;
+  private scanId = 0;
+  private scans = new Map<number, { resolve: (r: CheckResult) => void; reject: (e: Error) => void }>();
   private state: 'building' | 'ready' | 'unavailable' = 'unavailable';
   private closed = false;
   private warned = false;
@@ -131,7 +137,7 @@ export class ArchiveIndex {
     this.file = join(directory, 'index.sqlite');
     if (!supportsFts()) { this.fail(); return; }
     const status = verifyIndex(source, this.file, false, scope).status;
-    if (status === 'ok' || status === 'behind') { try { this.db = openWriter(this.file); this.state = 'ready'; } catch { this.fail(); } }
+    if (status === 'ok' || status === 'behind') { try { this.db = openWriter(this.file); this.state = 'ready'; this.catchUp(); } catch { this.fail(); } }
     else this.rebuild();
   }
   private rebuild() {
@@ -185,14 +191,16 @@ export class ArchiveIndex {
       const table = query ? 'terms f JOIN docs d ON d.seq=f.rowid' : 'docs d';
       const clause = (query ? 'terms MATCH ? AND ' : '') + where;
       const args = [...(query ? [match(words)] : []), ...params];
-      const total = Number(this.db.prepare(`SELECT count(*) n FROM ${table} WHERE ${clause}`).get(...args)!.n);
-      const ranked = this.db.prepare(`SELECT d.seq,d.chars FROM ${table} WHERE ${clause} ORDER BY ${relevance ? 'f.rank,' : ''} d.seq DESC LIMIT 100`).all(...args);
+      const unrestricted = from === -Infinity && to === Infinity && kinds === undefined;
+      const total = unrestricted && query ? (used.length === 1 ? used[0].n : Number(this.db.prepare('SELECT count(*) n FROM terms WHERE terms MATCH ?').get(match(words))!.n)) :
+        Number(this.db.prepare(`SELECT count(*) n FROM ${table} WHERE ${clause}`).get(...args)!.n);
+      const ranked = this.db.prepare(`SELECT d.seq,d.chars FROM ${table} WHERE ${clause} ORDER BY ${query ? (relevance ? 'f.rank,f.rowid DESC' : 'f.rowid DESC') : 'd.seq DESC'} LIMIT 100`).all(...args);
       const picked: number[] = [], lengths = new Map(ranked.map(r => [Number(r.seq), Number(r.chars)])); let chars = 0;
       const add = (seq: number, length: number) => { picked.push(seq); chars += length; };
       if (ranked.length) {
         add(Number(ranked[0].seq), Number(ranked[0].chars));
         if (relevance) {
-          const newest = this.db.prepare(`SELECT d.seq,d.chars FROM ${table} WHERE ${clause} ORDER BY d.seq DESC LIMIT 1`).get(...args)!;
+          const newest = this.db.prepare(`SELECT d.seq,d.chars FROM ${table} WHERE ${clause} ORDER BY f.rowid DESC LIMIT 1`).get(...args)!;
           if (!picked.includes(Number(newest.seq))) add(Number(newest.seq), Number(newest.chars));
         }
         for (const r of ranked) { const seq = Number(r.seq); if (picked.includes(seq)) continue;
@@ -202,10 +210,23 @@ export class ArchiveIndex {
       const results = picked.sort((a, b) => a - b).map(seq => decode(get.get(seq, this.scope.scene, this.scope.branch)!));
       return { results, total, meta: { rules: 'p8', engine: 'index', mode: relevance ? 'relevance' : 'recent', terms: words, dropped,
         rank_seqs: ranked.map(r => Number(r.seq)), ...(limited ? { terms_limited: true } : {}) } };
-    } catch (e) { this.fail(e); return { fallback: 'index_unavailable' }; }
+    } catch (e) { this.fail(e); return { fallback: (this.state as string) === 'unavailable' ? 'index_unavailable' : 'index_building' }; }
+  }
+  scan(raw: string, owner: string, fallback: NonNullable<SearchMeta['fallback']>): Promise<CheckResult> {
+    if (!this.scanWorker) {
+      this.scanWorker = new Worker(new URL('./archive-index-worker.js', import.meta.url), { workerData: { mode: 'scan', directory: this.directory, scope: this.scope } });
+      this.scanWorker.on('message', ({ id, result, error }) => {
+        if (this.closed) return;
+        const pending = this.scans.get(id); this.scans.delete(id);
+        if (error) pending?.reject(new Error('Archive scan failed.')); else pending?.resolve(result);
+      });
+      this.scanWorker.on('error', () => { if (!this.closed) for (const p of this.scans.values()) p.reject(new Error('Archive scan failed.')); this.scans.clear(); });
+    }
+    const id = ++this.scanId, through = Number(this.source.prepare('SELECT max(seq) n FROM events').get()!.n ?? 0);
+    return new Promise((resolve, reject) => { this.scans.set(id, { resolve, reject }); this.scanWorker!.postMessage({ id, raw, owner, fallback, through }); });
   }
   async ready() { if (this.worker) await new Promise<void>(resolve => this.worker!.once('exit', () => resolve())); }
-  async close() { this.closed = true; this.db?.close(); this.db = undefined; await this.worker?.terminate(); }
+  async close() { this.closed = true; this.scans.clear(); this.db?.close(); this.db = undefined; await Promise.all([this.worker?.terminate(), this.scanWorker?.terminate()]); }
 }
 
 export function indexCommand(args: string[]) {
@@ -213,11 +234,11 @@ export function indexCommand(args: string[]) {
   if (!((command === 'verify' && args.length <= 2 && (flag === undefined || flag === '--full')) || (command === 'rebuild' && args.length === 1))) throw Error('Invalid maintenance command or arguments.');
   const directory = process.env.YUVI_DATA_DIR;
   if (!directory?.trim()) throw Error('Missing required configuration: YUVI_DATA_DIR');
-  let lock: DatabaseSync | undefined;
+  let lock: DatabaseSync | undefined, acquired = false;
   const file = join(directory, 'index.sqlite'), temporary = join(directory, `index.build-${process.pid}.sqlite`);
   // Refuse a running service before touching any index or archive connection.
   try {
-    if (command === 'rebuild') { lock = new DatabaseSync(join(directory, 'service.lock')); lock.exec('PRAGMA busy_timeout=0; PRAGMA locking_mode=EXCLUSIVE; BEGIN EXCLUSIVE; COMMIT;'); }
+    if (command === 'rebuild') { lock = new DatabaseSync(join(directory, 'service.lock')); lock.exec('PRAGMA busy_timeout=0; PRAGMA locking_mode=EXCLUSIVE; BEGIN EXCLUSIVE; COMMIT;'); acquired = true; }
     const source = new DatabaseSync(join(directory, 'archive.sqlite'), { readOnly: true });
     try {
       source.exec('BEGIN');
@@ -229,6 +250,6 @@ export function indexCommand(args: string[]) {
       renameSync(temporary, file); return report;
     } finally { source.close(); }
   } finally {
-    if (lock) { for (const suffix of ['', '-wal', '-shm']) rmSync(temporary + suffix, { force: true }); lock.close(); }
+    if (lock) { if (acquired) for (const suffix of ['', '-wal', '-shm']) rmSync(temporary + suffix, { force: true }); lock.close(); }
   }
 }

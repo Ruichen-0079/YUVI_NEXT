@@ -20,7 +20,9 @@
     "prestart:local": "npm run build",
     "start:local": "node scripts/start-local.mjs",
     "presented": "node dist/maintenance.js presented",
-    "index": "node dist/maintenance.js index"
+    "index": "node dist/maintenance.js index",
+    "preeval": "npm run build",
+    "eval": "node eval/cli.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

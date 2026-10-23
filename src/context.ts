@@ -178,7 +178,11 @@ function dateBound(value: unknown): number {
   if (!Number.isFinite(parsed)) throw new Error('invalid date');
   return parsed;
 }
-export function check(archive: Archive, rawArguments: string, owner: string, options?: { index?: ArchiveIndex; engine?: 'scan' }) {
+export interface CheckResult { meta: Record<string, unknown>; content: string; }
+export function check(archive: Pick<Archive, 'search' | 'scanRanks'>, rawArguments: string, owner: string, options?: {
+  index?: ArchiveIndex; engine?: 'scan'; fallback?: SearchMeta['fallback'];
+  scan?: (raw: string, owner: string, fallback: NonNullable<SearchMeta['fallback']>) => Promise<CheckResult>;
+}): CheckResult | Promise<CheckResult> {
   let args: unknown;
   try { args = JSON.parse(rawArguments); } catch { args = rawArguments; }
   let params: Record<string, unknown>, from: number, to: number;
@@ -191,7 +195,7 @@ export function check(archive: Archive, rawArguments: string, owner: string, opt
     to = params.to === undefined ? Infinity : dateBound(params.to);
     if (from > to) throw new Error();
   } catch {
-    return { meta: { arguments: args, invalid: true, result_seqs: [], total: 0 }, content: '查阅参数无效；请使用子串及有效的日期范围。' };
+    return { meta: { arguments: args, invalid: true, result_seqs: [], total: 0, ...(options ? { rules: 'p8', engine: options.engine === 'scan' ? 'scan' : 'index', mode: options.engine === 'scan' ? 'substring' : 'recent', terms: [], dropped: [], rank_seqs: [], ...(options.engine === 'scan' ? { fallback: 'index_unavailable' } : {}) } : {}) }, content: '查阅参数无效；请使用子串及有效的日期范围。' };
   }
   const query = params.query as string ?? '';
   // The three-argument form remains the P6 scan helper for differential tests.
@@ -205,10 +209,11 @@ export function check(archive: Archive, rawArguments: string, owner: string, opt
     query && !words.length ? { fallback: 'no_terms' as const } : options.index!.search(query, from, to);
   let results: Event[], total: number, selection: SearchMeta;
   if ('fallback' in found) {
+    if (options.scan) return options.scan(rawArguments, owner, found.fallback);
     ({ results, total } = archive.search(query, from, to));
     // Recover the top 100 matching seqs without decoding the whole archive.
-    const candidates = archive.scanRanks(query, from, to);
-    selection = { rules: 'p8', engine: 'scan', mode: 'substring', terms: [], dropped: [], fallback: found.fallback, rank_seqs: candidates };
+    const candidates = total === results.length ? results.map(e => e.seq).reverse() : archive.scanRanks(query, from, to);
+    selection = { rules: 'p8', engine: 'scan', mode: 'substring', terms: [], dropped: [], fallback: options.fallback ?? found.fallback, rank_seqs: candidates };
   } else { ({ results, total } = found); selection = found.meta; }
   const meta = { arguments: args, result_seqs: results.map(e => e.seq), total, ...selection };
   return { meta, content: checkedText(meta, results, owner) };

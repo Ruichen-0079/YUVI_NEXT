@@ -14,7 +14,8 @@ export const alphabet=['的','我','是',...Array.from({length:1800},(_,i)=>Stri
 export function varied(file,{count=50000,seed=67}={}) {
  if(existsSync(file))throw Error('Synthetic corpus already exists');mkdirSync(dirname(file),{recursive:true,mode:0o700});
  let random=seed>>>0;const rand=()=>random=(Math.imul(random,1664525)+1013904223)>>>0;
- const word=()=>alphabet[Math.min(alphabet.length-1,Math.floor(Math.pow(rand()/4294967296,4)*alphabet.length))];
+ const cumulative=[];let harmonic=0;for(let i=0;i<alphabet.length;i++){harmonic+=1/(i+1);cumulative.push(harmonic);}
+ const word=()=>{const x=rand()/4294967296*harmonic;let a=0,b=alphabet.length-1;while(a<b){const m=(a+b)>>>1;if(cumulative[m]<x)a=m+1;else b=m;}return alphabet[a];};
  const filler=(length=80)=>'的我是'+Array.from({length},word).join('')+' dw'+(rand()%10000);
  const base=Date.parse('2026-01-01T00:00:00Z'),time=seq=>base+seq*1000;
  const targets={},special=new Map();
@@ -27,7 +28,7 @@ export function varied(file,{count=50000,seed=67}={}) {
   ['T10',.7,'车牌尾号是3721'],['T11',.9,'更正：车牌尾号是3712'],['T12',.8,'ＡＢＣ１２３ 是新的工号'],['T13',.85,'今天好开心🎉'],['T14',.75,'等他忙完再说','silent'],['T15',.95,'我想到一个灯塔的比喻','wrote']];
  for(const r of rows)reserve(...r);
  for(let i=0;i<300;i++)reserve('coffee'+i,.025+(i+.5)/300*.94,'今天又去咖啡馆坐了一会儿');
- for(let i=0;i<60;i++)reserve('sweet'+i,.03+(i+.5)/60*.94,'糖葫芦'+filler(10+(i*37)%391));
+ for(let i=0;i<60;i++){const length=10+(i*37)%391;reserve('sweet'+i,.03+(i+.5)/60*.94,'糖葫芦'+filler(length).slice(0,length-3));}
  const db=new DatabaseSync(file);let seq=0,lastHeard=null;
  const id=n=>'10000000-0000-4000-8000-'+n.toString(16).padStart(12,'0');
  try{

@@ -1,3 +1,4 @@
+import { legacyP8Requests } from './helpers/p8-scan-equivalence.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -10,10 +11,11 @@ import { Archive } from '../dist/archive.js';
 import { createSnapshot, verifySnapshot } from '../dist/snapshots.js';
 import { generate } from '../scripts/p6/generate.mjs';
 import { insertEvents } from './helpers/archive-fixture.mjs';
-import { legacyCheckout, listen, startService, normaliseRun, text, tool, done } from './helpers/p6-process.mjs';
+import { legacyCheckout, listen, startService as startRawService, normaliseRun, text, tool, done } from './helpers/p6-process.mjs';
 import { normaliseP7Events, withoutRecordedTime } from './helpers/p7-equivalence.mjs';
 import { capturePresentation, assertPresentations, cliPresented } from './helpers/p7-records.mjs';
 import * as reference from './helpers/p4-context.mjs';
+const startService=(root,options)=>startRawService(root,{...options,scan:true});
 function rows(data){const db=new DatabaseSync(join(data,'archive.sqlite'),{readOnly:true});try{return db.prepare('SELECT * FROM events ORDER BY seq').all().map(e=>({...e,meta:JSON.parse(e.meta)}));}finally{db.close();}}
 
 test('G2/G3/G4/G6: real P6/P7 services, reference mapping, request manifests and historical reconstruction', async t=>{
@@ -65,7 +67,7 @@ test('G2/G3/G4/G6: real P6/P7 services, reference mapping, request manifests and
       }finally{await service.stop();}
       const events=rows(data);
       if(label==='old'){oldEvents=events;expected={events:withoutRecordedTime(events),frames:frames.map(g=>g.map(({event,data})=>({event,data}))),requests,rawRequests,usage};}
-      else {const mapped=normaliseP7Events(oldEvents,events);assert.deepEqual({events:mapped.events,frames:mapped.frames(frames),requests,rawRequests,usage},expected,scenario);}
+      else {requests=legacyP8Requests(requests);rawRequests=rawRequests.map(raw=>JSON.stringify(legacyP8Requests([JSON.parse(raw)])[0]));const mapped=normaliseP7Events(oldEvents,events);assert.deepEqual({events:mapped.events,frames:mapped.frames(frames),requests,rawRequests,usage},expected,scenario);}
       assert.ok(requests.some(r=>r.messages.some(m=>m.role==='tool')));
       if(['lagging','backlog','failure'].includes(scenario))assert.ok(requests.some(r=>!r.tools));
       if(scenario==='foreign'){

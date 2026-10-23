@@ -20,13 +20,13 @@ test('P8 contentless index: exact vocab, bounded rank/recency selection, increme
  try{
   const add=(content,kind='heard')=>a.append({class:kind==='wrote'?'inner':kind==='heard'?'experience':'act',kind,actor:'owner',content});
   const one=add('我的猫叫年糕，三岁了'),two=add('更正：其实猫叫豆包');
-  add('café カナ 한글 ＡＢＣ１２３');add(''),add('理由','silent');
+  add('café カナ 한글 ＡＢＣ１２３ ΟΣ İSTANBUL');add(''),add('理由','silent');
   add('截断\0不应索引尾部');add('写下灯塔','wrote');
   for(let i=0;i<60;i++)add('糖葫芦'+String(i));
   buildIndex(dir);assert.equal(verifyIndex(a.db,join(dir,'index.sqlite'),true).status,'ok');
   const db=new DatabaseSync(join(dir,'index.sqlite'),{readOnly:true});
   try{
-   for(const term of ['café','カナ','한글','abc123'])assert.ok(db.prepare('SELECT * FROM vocab WHERE term=?').get(term),term);
+   for(const term of ['café','カナ','한글','abc123','ος','i̇stanbul'])assert.ok(db.prepare('SELECT * FROM vocab WHERE term=?').get(term),term);
    assert.equal(db.prepare('SELECT words FROM terms LIMIT 1').get().words,null);
    assert.equal(db.prepare('SELECT * FROM vocab WHERE term=?').get('尾部'),undefined);
   }finally{db.close();}
@@ -42,4 +42,15 @@ test('P8 contentless index: exact vocab, bounded rank/recency selection, increme
   assert.equal(verifyIndex(a.db,join(dir,'index.sqlite')).status,'mismatch');
   index=new ArchiveIndex(a.db,dir);await index.ready();assert.equal(verifyIndex(a.db,index.file,true).status,'ok');
  }finally{index?.close();a.close();rmSync(dir,{recursive:true,force:true});}
+});
+
+test('P8 asynchronous scan freezes its archive prefix before a queued receipt is appended',async()=>{
+ const dir=mkdtempSync(join(tmpdir(),'yuvi-p8-scan-cut-')),a=new Archive(dir);let index;
+ try{
+  const old=a.append({class:'experience',kind:'heard',actor:'owner',content:'相同查阅词'});index=new ArchiveIndex(a.db,dir);
+  const pending=index.scan(JSON.stringify({query:'查阅词'}),'负责人','index_building');
+  const queued=a.append({class:'experience',kind:'heard',actor:'owner',content:'另一句也有查阅词'});
+  const result=await pending;assert.equal(result.meta.total,1);assert.deepEqual(result.meta.result_seqs,[old.seq]);assert.ok(!result.meta.rank_seqs.includes(queued.seq));
+  const next=await index.scan(JSON.stringify({query:'查阅词'}),'负责人','index_unavailable');assert.equal(next.meta.total,2);assert.deepEqual(next.meta.result_seqs,[old.seq,queued.seq]);
+ }finally{await index?.close();a.close();rmSync(dir,{recursive:true,force:true});}
 });

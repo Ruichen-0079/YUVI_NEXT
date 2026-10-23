@@ -1,0 +1,851 @@
+{
+  "format": 1,
+  "id": "life-b",
+  "seed": 8001,
+  "start": "2026-11-02T08:00:00+08:00",
+  "time_zone": "Asia/Shanghai",
+  "days": 63,
+  "owner_name": "小林",
+  "writing_policy": "excerpt",
+  "config": {
+    "YUVI_CONTEXT_EVENTS": 60,
+    "YUVI_CONTEXT_WRITING_CHARS": 2000,
+    "YUVI_CONSOLIDATION_IDLE_MS": 3600000,
+    "YUVI_CONSOLIDATION_MAX_TOKENS": 4000
+  },
+  "rhythm": {
+    "from": "08:00",
+    "to": "23:00",
+    "messages": 200,
+    "variation": 20
+  },
+  "gaps": [
+    {
+      "from_day": 20,
+      "days": 9
+    },
+    {
+      "from_day": 45,
+      "days": 2
+    }
+  ],
+  "filler": {
+    "topics": [
+      {
+        "id": "日常",
+        "words": [
+          "天气",
+          "散步",
+          "晚饭",
+          "通勤",
+          "窗外",
+          "雨声"
+        ],
+        "per_day": 10,
+        "from_day": 1,
+        "to_day": 63
+      },
+      {
+        "id": "猫",
+        "words": [
+          "猫"
+        ],
+        "per_day": 30,
+        "every_days": 1,
+        "from_day": 1,
+        "to_day": 63
+      },
+      {
+        "id": "咖啡",
+        "words": [
+          "咖啡"
+        ],
+        "per_day": 30,
+        "every_days": 1,
+        "from_day": 1,
+        "to_day": 63
+      },
+      {
+        "id": "项目",
+        "words": [
+          "项目"
+        ],
+        "per_day": 30,
+        "every_days": 1,
+        "from_day": 1,
+        "to_day": 63
+      },
+      {
+        "id": "林姐",
+        "words": [
+          "林姐"
+        ],
+        "per_day": 10,
+        "every_days": 2,
+        "from_day": 1,
+        "to_day": 63
+      },
+      {
+        "id": "钥匙",
+        "words": [
+          "钥匙"
+        ],
+        "per_day": 10,
+        "every_days": 7,
+        "from_day": 1,
+        "to_day": 63
+      },
+      {
+        "id": "生日",
+        "words": [
+          "生日"
+        ],
+        "per_day": 10,
+        "every_days": 7,
+        "from_day": 1,
+        "to_day": 63
+      },
+      {
+        "id": "茶",
+        "words": [
+          "茶"
+        ],
+        "per_day": 10,
+        "every_days": 3,
+        "from_day": 1,
+        "to_day": 63
+      }
+    ]
+  },
+  "facts": [
+    {
+      "id": "F1",
+      "versions": [
+        {
+          "version": "a",
+          "day": 2,
+          "time": "09:12",
+          "text": "跟你说，我家猫叫团子，今年三岁了。",
+          "anchor": "团子"
+        },
+        {
+          "version": "b",
+          "day": 33,
+          "time": "20:05",
+          "text": "更正一下：我家猫其实叫年糕，团子是邻居家的猫。",
+          "anchor": "年糕",
+          "correction": true
+        }
+      ]
+    },
+    {
+      "id": "F2",
+      "versions": [
+        {
+          "version": "",
+          "day": 5,
+          "time": "08:40",
+          "text": "新的门禁码是 4A87，记一下。",
+          "anchor": "4A87"
+        }
+      ]
+    },
+    {
+      "id": "F3",
+      "versions": [
+        {
+          "version": "",
+          "day": 3,
+          "time": "10:20",
+          "text": "楼下那家咖啡馆叫 amber spruce，拿铁不错。",
+          "anchor": "amber spruce"
+        }
+      ]
+    },
+    {
+      "id": "F4",
+      "versions": [
+        {
+          "version": "",
+          "day": 1,
+          "time": "21:30",
+          "text": "明年夏天想去喀纳斯看看。",
+          "anchor": "喀纳斯"
+        }
+      ]
+    },
+    {
+      "id": "F5",
+      "versions": [
+        {
+          "version": "a",
+          "day": 8,
+          "time": "19:00",
+          "text": "我的车牌尾号是 3721。",
+          "anchor": "3721"
+        },
+        {
+          "version": "b",
+          "day": 40,
+          "time": "12:15",
+          "text": "更正：车牌尾号是 3712，之前说错了。",
+          "anchor": "3712",
+          "correction": true
+        }
+      ]
+    },
+    {
+      "id": "F6",
+      "versions": [
+        {
+          "version": "",
+          "day": 10,
+          "time": "13:00",
+          "text": "我对芒果过敏，吃了会起疹子。",
+          "anchor": "芒果过敏"
+        }
+      ]
+    },
+    {
+      "id": "F7",
+      "versions": [
+        {
+          "version": "",
+          "day": 12,
+          "time": "22:10",
+          "text": "把 VS Code 主题换成了 Solarized。",
+          "anchor": "Solarized"
+        }
+      ]
+    },
+    {
+      "id": "F8",
+      "versions": [
+        {
+          "version": "",
+          "day": 14,
+          "time": "21:00",
+          "text": null,
+          "anchor": "蓝色鞋盒",
+          "generated_length": 1500
+        }
+      ]
+    },
+    {
+      "id": "F9",
+      "versions": [
+        {
+          "version": "",
+          "day": 16,
+          "time": "18:30",
+          "text": "妈妈的生日是三月九号，别忘了。",
+          "anchor": "三月九号"
+        }
+      ]
+    },
+    {
+      "id": "F10",
+      "versions": [
+        {
+          "version": "",
+          "day": 18,
+          "time": "15:00",
+          "text": "最近比较喜欢喝乌龙。",
+          "anchor": "乌龙"
+        }
+      ]
+    },
+    {
+      "id": "F11",
+      "versions": [
+        {
+          "version": "a",
+          "day": 4,
+          "time": "11:00",
+          "text": "新项目代号叫青鸟。",
+          "anchor": "青鸟"
+        },
+        {
+          "version": "b",
+          "day": 30,
+          "time": "10:30",
+          "text": "项目改名了，现在叫白鹭。",
+          "anchor": "白鹭",
+          "correction": true
+        },
+        {
+          "version": "c",
+          "day": 50,
+          "time": "16:45",
+          "text": "项目最后定名为夜航。",
+          "anchor": "夜航",
+          "correction": true
+        }
+      ]
+    },
+    {
+      "id": "F12",
+      "versions": [
+        {
+          "version": "",
+          "day": 19,
+          "time": "20:00",
+          "text": "今天好开心🎉",
+          "anchor": "🎉"
+        }
+      ]
+    }
+  ],
+  "people": [
+    {
+      "id": "M1",
+      "name": "王老师",
+      "mentions": [
+        {
+          "version": "",
+          "day": 11,
+          "time": "14:00",
+          "text": "下午去见了王老师，他建议我多读论文。",
+          "anchor": "王老师"
+        }
+      ]
+    },
+    {
+      "id": "M2",
+      "name": "小周",
+      "mentions": [
+        {
+          "version": "a",
+          "day": 3,
+          "time": "12:00",
+          "text": "小周今天请我吃饭。",
+          "anchor": "请我吃饭"
+        },
+        {
+          "version": "b",
+          "day": 15,
+          "time": "19:00",
+          "text": "小周搬家了。",
+          "anchor": "搬家"
+        },
+        {
+          "version": "c",
+          "day": 35,
+          "time": "18:00",
+          "text": "小周换了工作。",
+          "anchor": "换了工作"
+        },
+        {
+          "version": "d",
+          "day": 55,
+          "time": "13:00",
+          "text": "小周下个月结婚。",
+          "anchor": "结婚"
+        }
+      ]
+    },
+    {
+      "id": "M3",
+      "name": "林姐",
+      "mentions": [
+        {
+          "version": "",
+          "day": 6,
+          "time": "10:00",
+          "text": "林姐的工位在七楼东侧。",
+          "anchor": "七楼东侧"
+        }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "id": "P01",
+      "day": 2,
+      "time": "21:00",
+      "ask": "我家猫叫什么来着？",
+      "query": {
+        "query": "我家猫"
+      },
+      "targets": [
+        "F1a"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P02",
+      "day": 9,
+      "time": "21:00",
+      "ask": "我家猫叫什么来着？",
+      "query": {
+        "query": "我家猫"
+      },
+      "targets": [
+        "F1a"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P03",
+      "day": 31,
+      "time": "21:00",
+      "ask": "我家猫叫什么来着？",
+      "query": {
+        "query": "我家猫"
+      },
+      "targets": [
+        "F1a"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P04",
+      "day": 34,
+      "time": "21:00",
+      "ask": "我家猫叫什么来着？",
+      "query": {
+        "query": "我家猫"
+      },
+      "targets": [
+        "F1a",
+        "F1b"
+      ],
+      "tags": [
+        "correction"
+      ]
+    },
+    {
+      "id": "P05",
+      "day": 61,
+      "time": "21:00",
+      "ask": "我家猫叫什么来着？",
+      "query": {
+        "query": "我家猫"
+      },
+      "targets": [
+        "F1a",
+        "F1b"
+      ],
+      "tags": [
+        "correction"
+      ]
+    },
+    {
+      "id": "P06",
+      "day": 6,
+      "time": "21:00",
+      "ask": "门禁码多少？",
+      "query": {
+        "query": "门禁码"
+      },
+      "targets": [
+        "F2"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P07",
+      "day": 36,
+      "time": "21:00",
+      "ask": "门禁码多少？",
+      "query": {
+        "query": "门禁码"
+      },
+      "targets": [
+        "F2"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P08",
+      "day": 60,
+      "time": "21:00",
+      "ask": "4A87 是什么？",
+      "query": {
+        "query": "4A87"
+      },
+      "targets": [
+        "F2"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P09",
+      "day": 17,
+      "time": "21:00",
+      "ask": "楼下咖啡馆叫什么？",
+      "query": {
+        "query": "咖啡馆"
+      },
+      "targets": [
+        "F3"
+      ],
+      "tags": [
+        "high_frequency"
+      ]
+    },
+    {
+      "id": "P10",
+      "day": 52,
+      "time": "21:00",
+      "ask": "楼下咖啡馆叫什么？",
+      "query": {
+        "query": "咖啡馆"
+      },
+      "targets": [
+        "F3"
+      ],
+      "tags": [
+        "high_frequency"
+      ]
+    },
+    {
+      "id": "P11",
+      "day": 58,
+      "time": "21:00",
+      "ask": "喀纳斯那次是怎么说的？",
+      "query": {
+        "query": "喀纳斯"
+      },
+      "targets": [
+        "F4"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P12",
+      "day": 9,
+      "time": "20:00",
+      "ask": "我车牌尾号多少？",
+      "query": {
+        "query": "车牌尾号"
+      },
+      "targets": [
+        "F5a"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P13",
+      "day": 41,
+      "time": "20:00",
+      "ask": "我车牌尾号多少？",
+      "query": {
+        "query": "车牌尾号"
+      },
+      "targets": [
+        "F5a",
+        "F5b"
+      ],
+      "tags": [
+        "correction"
+      ]
+    },
+    {
+      "id": "P14",
+      "day": 62,
+      "time": "20:00",
+      "ask": "我车牌尾号多少？",
+      "query": {
+        "query": "车牌尾号"
+      },
+      "targets": [
+        "F5a",
+        "F5b"
+      ],
+      "tags": [
+        "correction"
+      ]
+    },
+    {
+      "id": "P15",
+      "day": 32,
+      "time": "20:00",
+      "ask": "我对什么过敏？",
+      "query": {
+        "query": "过敏"
+      },
+      "targets": [
+        "F6"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P16",
+      "day": 42,
+      "time": "20:00",
+      "ask": "我编辑器主题换成什么了？",
+      "query": {
+        "query": "VS Code 主题"
+      },
+      "targets": [
+        "F7"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P17",
+      "day": 43,
+      "time": "20:00",
+      "ask": "备用钥匙在哪？",
+      "query": {
+        "query": "备用钥匙"
+      },
+      "targets": [
+        "F8"
+      ],
+      "tags": [
+        "high_frequency"
+      ]
+    },
+    {
+      "id": "P18",
+      "day": 44,
+      "time": "20:00",
+      "ask": "妈妈生日哪天？",
+      "query": {
+        "query": "生日"
+      },
+      "targets": [
+        "F9"
+      ],
+      "tags": [
+        "high_frequency"
+      ]
+    },
+    {
+      "id": "P19",
+      "day": 44,
+      "time": "20:30",
+      "ask": "上个月中旬我提过生日吗？",
+      "query": {
+        "query": "生日",
+        "from": "2026-11-15",
+        "to": "2026-11-20"
+      },
+      "targets": [
+        "F9"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P20",
+      "day": 53,
+      "time": "20:00",
+      "ask": "我喜欢喝什么茶？",
+      "query": {
+        "query": "茶叶偏好"
+      },
+      "targets": [
+        "F10"
+      ],
+      "tags": [
+        "expected_miss"
+      ]
+    },
+    {
+      "id": "P21",
+      "day": 53,
+      "time": "20:30",
+      "ask": "我最近爱喝什么？",
+      "query": {
+        "query": "乌龙"
+      },
+      "targets": [
+        "F10"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P22",
+      "day": 12,
+      "time": "20:00",
+      "ask": "项目代号叫什么？",
+      "query": {
+        "query": "项目代号"
+      },
+      "targets": [
+        "F11a"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P23",
+      "day": 31,
+      "time": "20:00",
+      "ask": "项目现在叫什么？",
+      "query": {
+        "query": "项目"
+      },
+      "targets": [
+        "F11a",
+        "F11b"
+      ],
+      "tags": [
+        "correction",
+        "high_frequency"
+      ]
+    },
+    {
+      "id": "P24",
+      "day": 63,
+      "time": "20:00",
+      "ask": "项目现在叫什么？",
+      "query": {
+        "query": "项目"
+      },
+      "targets": [
+        "F11a",
+        "F11b",
+        "F11c"
+      ],
+      "tags": [
+        "correction",
+        "high_frequency"
+      ]
+    },
+    {
+      "id": "P25",
+      "day": 38,
+      "time": "20:00",
+      "ask": "我那天为什么很开心？",
+      "query": {
+        "query": "🎉"
+      },
+      "targets": [
+        "F12"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P26",
+      "day": 41,
+      "time": "21:00",
+      "ask": "王老师给过什么建议？",
+      "query": {
+        "query": "王老师"
+      },
+      "targets": [
+        "M1"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P27",
+      "day": 57,
+      "time": "21:00",
+      "ask": "小周最近怎么样？",
+      "query": {
+        "query": "小周"
+      },
+      "targets": [
+        "M2a",
+        "M2b",
+        "M2c",
+        "M2d"
+      ],
+      "tags": []
+    },
+    {
+      "id": "P28",
+      "day": 48,
+      "time": "21:00",
+      "ask": "林姐工位在哪？",
+      "query": {
+        "query": "林姐工位"
+      },
+      "targets": [
+        "M3"
+      ],
+      "tags": [
+        "high_frequency"
+      ]
+    }
+  ],
+  "sanity": [
+    {
+      "id": "S1",
+      "day": 3,
+      "time": "15:00",
+      "ask_time": "15:01",
+      "text": "今天的暗号是 澄湾1号",
+      "anchor": "澄湾1号",
+      "ask": "刚才的暗号是什么？",
+      "query": {
+        "query": "暗号"
+      }
+    },
+    {
+      "id": "S2",
+      "day": 10,
+      "time": "15:00",
+      "ask_time": "15:01",
+      "text": "今天的暗号是 澄湾2号",
+      "anchor": "澄湾2号",
+      "ask": "刚才的暗号是什么？",
+      "query": {
+        "query": "暗号"
+      }
+    },
+    {
+      "id": "S3",
+      "day": 17,
+      "time": "15:00",
+      "ask_time": "15:01",
+      "text": "今天的暗号是 澄湾3号",
+      "anchor": "澄湾3号",
+      "ask": "刚才的暗号是什么？",
+      "query": {
+        "query": "暗号"
+      }
+    },
+    {
+      "id": "S4",
+      "day": 31,
+      "time": "15:00",
+      "ask_time": "15:01",
+      "text": "今天的暗号是 澄湾4号",
+      "anchor": "澄湾4号",
+      "ask": "刚才的暗号是什么？",
+      "query": {
+        "query": "暗号"
+      }
+    },
+    {
+      "id": "S5",
+      "day": 38,
+      "time": "15:00",
+      "ask_time": "15:01",
+      "text": "今天的暗号是 澄湾5号",
+      "anchor": "澄湾5号",
+      "ask": "刚才的暗号是什么？",
+      "query": {
+        "query": "暗号"
+      }
+    },
+    {
+      "id": "S6",
+      "day": 52,
+      "time": "15:00",
+      "ask_time": "15:01",
+      "text": "今天的暗号是 澄湾6号",
+      "anchor": "澄湾6号",
+      "ask": "刚才的暗号是什么？",
+      "query": {
+        "query": "暗号"
+      }
+    },
+    {
+      "id": "S7",
+      "day": 59,
+      "time": "15:00",
+      "ask_time": "15:01",
+      "text": "今天的暗号是 澄湾7号",
+      "anchor": "澄湾7号",
+      "ask": "刚才的暗号是什么？",
+      "query": {
+        "query": "暗号"
+      }
+    }
+  ]
+}

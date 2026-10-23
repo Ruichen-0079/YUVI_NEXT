@@ -162,34 +162,10 @@ export class Archive {
   }
   private nonempty(): string { return this.truncatesAtNul ? 'length(content)>0' : "content<>''"; }
   search(query: string, from: number, to: number): { results: Event[]; total: number } {
-    // instr is case-sensitive, treats %/_ literally, and preserves embedded NUL.
-    // Lone UTF-16 surrogates cannot be bound losslessly as UTF-8. In that rare case
-    // keep the query in the connection-local callback so includes remains exact.
-    const loneSurrogate = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(query);
-    if (this.truncatesAtNul && query.includes('\0')) return { results: [], total: 0 };
-    if (loneSurrogate) this.db.function('check_substring', { deterministic: true }, value =>
-      (this.truncatesAtNul ? (value as string).split('\0', 1)[0] : value as string).includes(query) ? 1 : 0);
-    const match = loneSurrogate ? 'check_substring(content)>0' :
-      `instr(content,?)>0${this.truncatesAtNul ? ' AND (instr(content,char(0))=0 OR instr(content,?)+length(?)<=instr(content,char(0)))' : ''}`;
-    const predicate = `scene=? AND branch=? AND (${dialogueWhere} OR (class='inner' AND kind='wrote' AND ${this.nonempty()}))
-      AND t_recorded>=? AND t_recorded<=? AND ${match}`;
-    const params = [this.scope.scene, this.scope.branch, from, to, ...(loneSurrogate ? [] : this.truncatesAtNul ? [query, query, query] : [query])];
-    const total = Number(this.db.prepare(`SELECT count(*) AS n FROM events NOT INDEXED WHERE ${predicate}`).get(...params)!.n);
-    if (!total) return { results: [], total };
-    const results: Event[] = []; let chars = 0;
-    for (const row of this.db.prepare(`SELECT * FROM events NOT INDEXED WHERE ${predicate} ORDER BY seq DESC LIMIT 40`).iterate(...params)) {
-      const length = (row.content as string).length;
-      if (results.length && chars + length > 16000) break;
-      results.push(...this.decode([row])); chars += length;
-    }
-    return { results: results.reverse(), total };
+    return scanArchive(this.db, this.scope, query, from, to) as { results: Event[]; total: number };
   }
   scanRanks(query: string, from: number, to: number): number[] {
-    this.db.function('scan_rank_match', { deterministic: true }, value =>
-      (this.truncatesAtNul ? (value as string).split('\0', 1)[0] : value as string).includes(query) ? 1 : 0);
-    return this.db.prepare(`SELECT seq FROM events NOT INDEXED WHERE scene=? AND branch=? AND t_recorded>=? AND t_recorded<=?
-      AND (${dialogueWhere} OR (class='inner' AND kind='wrote' AND ${this.nonempty()})) AND scan_rank_match(content)>0 ORDER BY seq DESC LIMIT 100`)
-      .all(this.scope.scene, this.scope.branch, from, to).map(r => Number(r.seq));
+    return scanArchive(this.db, this.scope, query, from, to, Infinity, true) as number[];
   }
   context(limit: number): Event[] {
     return this.decode(this.db.prepare(`SELECT * FROM (
@@ -245,4 +221,31 @@ export class Archive {
   close(): void {
     try { this.db.close(); } finally { this.instanceLock.close(); }
   }
+}
+
+export function scanArchive(db: DatabaseSync, scope: { scene: string; branch: string }, query: string, from: number, to: number, through = Infinity, rankOnly = false): { results: Event[]; total: number } | number[] {
+  const nul = (db.prepare("SELECT CAST(x'610062' AS TEXT) AS value").get()!.value as string).length === 1;
+    // instr is case-sensitive, treats %/_ literally, and preserves embedded NUL.
+    // Lone UTF-16 surrogates cannot be bound losslessly as UTF-8. In that rare case
+    // keep the query in the connection-local callback so includes remains exact.
+    const loneSurrogate = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(query);
+    if (nul && query.includes('\0')) return rankOnly ? [] : { results: [], total: 0 };
+    if (loneSurrogate) db.function('check_substring', { deterministic: true }, value =>
+      (nul ? (value as string).split('\0', 1)[0] : value as string).includes(query) ? 1 : 0);
+    const match = loneSurrogate ? 'check_substring(content)>0' :
+      `instr(content,?)>0${nul ? ' AND (instr(content,char(0))=0 OR instr(content,?)+length(?)<=instr(content,char(0)))' : ''}`;
+    const predicate = `scene=? AND branch=? AND (${dialogueWhere} OR (class='inner' AND kind='wrote' AND ${(nul ? 'length(content)>0' : "content<>''")}))
+      AND t_recorded>=? AND t_recorded<=? AND seq<=? AND ${match}`;
+    const params = [scope.scene, scope.branch, from, to, through, ...(loneSurrogate ? [] : nul ? [query, query, query] : [query])];
+    if (rankOnly) return db.prepare(`SELECT seq FROM events NOT INDEXED WHERE ${predicate} ORDER BY seq DESC LIMIT 100`).all(...params).map(r => Number(r.seq));
+    const total = Number(db.prepare(`SELECT count(*) AS n FROM events NOT INDEXED WHERE ${predicate}`).get(...params)!.n);
+    if (!total) return { results: [], total };
+    const results: Event[] = []; let chars = 0;
+    for (const row of db.prepare(`SELECT * FROM events NOT INDEXED WHERE ${predicate} ORDER BY seq DESC LIMIT 40`).iterate(...params)) {
+      const length = (row.content as string).length;
+      if (results.length && chars + length > 16000) break;
+      results.push({ ...row, meta: JSON.parse(row.meta as string) } as unknown as Event); chars += length;
+    }
+    return { results: results.reverse(), total };
+
 }
