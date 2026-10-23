@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync,mkdirSync,mkdtempSync,readFileSync,writeFileSync } from 'node:fs';
-import { join,resolve } from 'node:path';
+import { join,resolve,basename } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import assert from 'node:assert/strict';
 import { loadLife } from './life.mjs';
@@ -38,7 +38,15 @@ function report(result,root){
  md+='\n## Q3：更正前后能否同时呈现\n\n';for(const[key,r]of Object.entries(result.runs))md+=`- ${key}（呈现）：${r.corrections.filter(c=>c.all_presented).length}/${r.corrections.length} 个更正探针呈现全部版本。\n`;
  md+='\n## Q4：高频日常的干扰\n\n相同事实、时间与探针在两段生活中保持不变；下表按臂比较，不把差异解释成语义能力。\n';
  for(const arm of ['A0','A1','A2']){const a=result.runs[`life-a-${arm}-excerpt`],b=result.runs[`life-b-${arm}-excerpt`];md+=`- ${arm}（呈现）：高频标签答案 life-a ${a.coverage.tags.high_frequency.presented}/${a.coverage.tags.high_frequency.total}；life-b ${b.coverage.tags.high_frequency.presented}/${b.coverage.tags.high_frequency.total}。\n`;}
- md+='\n## Q5：候选、前100与实际呈现的损失\n\n上表给出三层数量；JSON 的 retrieval_gap 区分全部查询词与实际保留词的交集，reasons 给出裁剪、排序、预算与范围等机械原因。\n';
+ md+='\n## Q5：候选、前100与实际呈现的损失\n\n检索候选与所有渠道呈现不是严格的漏斗：文字与窗口可能直接呈现；强制最近条也可能排在前100之外。\n\n| 生活/臂 | 全部词相交 | 保留词相交 | 排进前100 | check呈现但不在前100 | 无check主答案仍呈现 | 全渠道呈现 |\n| --- | ---: | ---: | ---: | ---: | ---: | ---: |\n';
+ for(const[key,r]of Object.entries(result.runs)){const g=r.retrieval_gap;md+=`| ${key} | ${g.overlap}/${g.total} | ${g.used_overlap} | ${g.ranked_100} | ${g.check_presented_outside_top100} | ${g.presented_without_check} | ${g.presented} |\n`;}
+ md+='\n## A2 相对 A1 的逐探针对照\n\n下表只比较检索/呈现事实。rank=无表示不在所记录前100，不能当成没有候选；旧版scan按时间排序。\n\n| 生活 | 探针/答案 | A1 呈现 / rank / 原因 | A2 呈现 / rank / 原因 |\n| --- | --- | --- | --- |\n';
+ for(const life of ['life-a','life-b']){const before=result.runs[`${life}-A1-excerpt`],after=result.runs[`${life}-A2-excerpt`];
+  for(const p of after.probes)for(const a of p.answers){const old=before.probes.find(v=>v.id===p.id).answers.find(v=>v.target===a.target);const cell=v=>`${v.presented?'是':'否'} / ${v.rank??'无'} / ${v.reason??'已呈现'}`;md+=`| ${life} | ${p.id}/${a.target} | ${cell(old)} | ${cell(a)} |\n`;}}
+ md+='\n## 整理、文字呈现与成本\n\n| 生活/臂 | 空闲/压力整理 | 非空文字 | 从未呈现 | 经check呈现 | 请求数 | 第0步字数均值/p95 | 续步字数均值/p95 | 工具结果字数 |\n| --- | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: |\n';
+ for(const[key,r]of Object.entries(result.runs)){const c=r.cost;md+=`| ${key} | ${r.consolidation.idle}/${r.consolidation.pressure} | ${r.writings.rows.length} | ${r.writings.never_presented} | ${r.writings.via_check} | ${c.requests} | ${c.zero_chars.mean}/${c.zero_chars.p95} | ${c.later_chars.mean}/${c.later_chars.p95} | ${c.tool_result_chars} |\n`;}
+ md+='\n更正探针的呈现顺序（true为所有版本均呈现且按原事件时间顺序；null为不能作此判断）：\n';
+ for(const[key,r]of Object.entries(result.runs))md+=`- ${key}：`+r.corrections.map(c=>`${c.probe} ${c.chronological} (${c.presentation_order.join(' → ')||'无'})`).join('；')+'。\n';
  md+='\n## Q6：遗漏复现\n\n';for(const[key,r]of Object.entries(result.runs))md+=`- ${key}：${JSON.stringify(r.reasons)}。\n`;
  md+='\n## 逐探针证据与遗漏命令\n\n| 生活/臂 | 探针 | 答案 | 渠道 | 排名 | 原因 |\n| --- | --- | --- | --- | ---: | --- |\n';
  for(const[key,r]of Object.entries(result.runs))for(const p of r.probes)for(const a of p.answers){const ch=Object.entries({window:a.window,writing:a.writing,check:a.check,check_writing:a.check_writing}).filter(([,v])=>v).map(([k])=>k).join(',')||'无';md+=`| ${key} | ${p.id} | ${a.target} | ${ch} | ${a.rank??'不在前100'} | ${a.reason??'已呈现'} |\n`;}
@@ -54,7 +62,7 @@ export async function baseline(regress=false){
  const serialized=JSON.stringify(result,null,2)+'\n';writeFileSync(join(root,'baseline.json'),serialized);
  writeFileSync(join(root,'timing.json'),JSON.stringify({wall_ms:performance.now()-wall},null,2)+'\n');
  if(regress)assert.equal(serialized,readFileSync('docs/notes/P8-baseline.json','utf8'),'Full nine-week baseline changed');
- else {writeFileSync('docs/notes/P8-baseline.json',serialized);writeFileSync('docs/notes/P8-baseline.md',report(result,root));}
+ else {writeFileSync('docs/notes/P8-baseline.json',serialized);writeFileSync('docs/notes/P8-baseline.md',report(result,'.local-data/'+basename(root)));}
  return {root,wall_ms:performance.now()-wall};
 }
 const [command,...args]=process.argv.slice(2);

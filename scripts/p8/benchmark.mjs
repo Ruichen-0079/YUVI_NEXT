@@ -80,7 +80,9 @@ try{
    }finally{await s.stop();}
    save();
   }
-  shapeResult.passed={build:shapeResult.empty_build_ms<=300000,health:shapeResult.rebuild.health.p99_ms<=100&&healthFailures.length===0,turns:turns.every(t=>t.last==='done'),ordinary:shapeResult.service.p8.program.p95_ms<100,startup_increment:shapeResult.service.p8.startup_ms-shapeResult.service.p7.startup_ms<=1000,index_size:shape==='typical'||shapeResult.index.bytes<=1.5*shapeResult.index.archive_bytes};save();
+  const rare=new Set(['R1','R3','R4','R8','R9','R11','R12','R20','R21','R22']);
+  shapeResult.passed={retrieval:shapeResult.queries.every(q=>q.index.p95_ms<=(rare.has(q.id)?20:200)),build:shapeResult.empty_build_ms<=300000,health:shapeResult.rebuild.health.p99_ms<=100&&healthFailures.length===0,turns:turns.every(t=>t.last==='done'),ordinary:shapeResult.service.p8.program.p95_ms<100,startup_increment:shapeResult.service.p8.startup_ms-shapeResult.service.p7.startup_ms<=1000,index_size:shape==='typical'||shapeResult.index.bytes<=1.5*shapeResult.index.archive_bytes};save();
  }
  console.log(JSON.stringify(result,null,2));
+ if(Object.values(result.shapes.varied.passed).some(v=>!v))process.exitCode=1;
 }finally{await new Promise(r=>fake.close(r));}

@@ -103,7 +103,8 @@ export function verifyIndex(source: DatabaseSync, file: string, full = false, sc
     const count = Number(db.prepare('SELECT count(*) n FROM docs').get()!.n);
     Object.assign(result, { through_seq: m.through_seq, last_seq: b.last_seq, rows: count, expected_rows: b.expected, sampled: 0 });
     if (m.format !== 1 || m.tokenizer !== TOKENIZER || m.scene !== scope.scene || m.branch !== scope.branch || m.decode !== (nul ? 'nul_truncated' : 'full')) return { ...result, status: 'version' };
-    if (Number(db.prepare('SELECT max(seq) n FROM docs').get()!.n ?? 0) !== m.through_seq || m.archive_first_id !== b.first || (m.through_seq ? source.prepare('SELECT id FROM events WHERE seq=?').get(m.through_seq)?.id !== m.through_id : m.through_id !== null) || count !== b.expected || Number(db.prepare('SELECT count(*) n FROM terms_docsize').get()!.n) !== count) return { ...result, status: 'mismatch' };
+    const unbound = count === 0 && m.through_seq === 0 && m.archive_first_id === null && m.through_id === null;
+    if (Number(db.prepare('SELECT max(seq) n FROM docs').get()!.n ?? 0) !== m.through_seq || (!unbound && m.archive_first_id !== b.first) || (m.through_seq ? source.prepare('SELECT id FROM events WHERE seq=?').get(m.through_seq)?.id !== m.through_id : m.through_id !== null) || count !== b.expected || Number(db.prepare('SELECT count(*) n FROM terms_docsize').get()!.n) !== count) return { ...result, status: 'mismatch' };
     const find = source.prepare('SELECT * FROM events WHERE seq=? AND scene=? AND branch=?'), lookup = db.prepare('SELECT rowid FROM terms WHERE terms MATCH ? AND rowid=?');
     if (full) {
       if (db.prepare('PRAGMA integrity_check').all().some(r => Object.values(r)[0] !== 'ok')) return { ...result, status: 'corrupt' };
@@ -118,7 +119,7 @@ export function verifyIndex(source: DatabaseSync, file: string, full = false, sc
       if (!e || e.kind !== row.kind || e.t_recorded !== row.t_recorded || (e.content as string).length !== row.chars || digest(e.content as string) !== row.digest || (words.length && !lookup.get(match([words[0]]), row.seq))) return { ...result, status: 'mismatch', sampled: checked };
       checked++;
     }
-    return { ...result, status: m.through_seq < b.last_seq ? 'behind' : 'ok', sampled: checked };
+    return { ...result, status: m.through_seq < b.last_seq || (unbound && b.first !== null) ? 'behind' : 'ok', sampled: checked };
   } catch { return { ...result, status: 'corrupt' }; } finally { db?.close(); }
 }
 
@@ -207,20 +208,28 @@ export class ArchiveIndex {
           if (picked.length === 40 || chars + Number(r.chars) > 16000) break; add(seq, lengths.get(seq)!); }
       }
       const get = this.source.prepare('SELECT * FROM events WHERE seq=? AND scene=? AND branch=?');
-      const results = picked.sort((a, b) => a - b).map(seq => decode(get.get(seq, this.scope.scene, this.scope.branch)!));
+      const sourceMeta = this.db.prepare('SELECT kind,t_recorded,chars,digest FROM docs WHERE seq=?');
+      const results = picked.sort((a, b) => a - b).map(seq => {
+        const row = get.get(seq, this.scope.scene, this.scope.branch), doc = sourceMeta.get(seq);
+        if (!row || !doc || !((row.class === 'experience' && row.kind === 'heard') || (row.class === 'act' && ['said', 'silent'].includes(row.kind as string)) || (row.class === 'inner' && row.kind === 'wrote' && (row.content as string).length > 0)) || row.kind !== doc.kind || row.t_recorded !== doc.t_recorded || (row.content as string).length !== doc.chars || digest(row.content as string) !== doc.digest)
+          throw Object.assign(new Error('Index source mismatch.'), { errcode: 11 });
+        return decode(row);
+      });
       return { results, total, meta: { rules: 'p8', engine: 'index', mode: relevance ? 'relevance' : 'recent', terms: words, dropped,
         rank_seqs: ranked.map(r => Number(r.seq)), ...(limited ? { terms_limited: true } : {}) } };
     } catch (e) { this.fail(e); return { fallback: (this.state as string) === 'unavailable' ? 'index_unavailable' : 'index_building' }; }
   }
   scan(raw: string, owner: string, fallback: NonNullable<SearchMeta['fallback']>): Promise<CheckResult> {
     if (!this.scanWorker) {
-      this.scanWorker = new Worker(new URL('./archive-index-worker.js', import.meta.url), { workerData: { mode: 'scan', directory: this.directory, scope: this.scope } });
-      this.scanWorker.on('message', ({ id, result, error }) => {
+      const worker = this.scanWorker = new Worker(new URL('./archive-index-worker.js', import.meta.url), { workerData: { mode: 'scan', directory: this.directory, scope: this.scope } });
+      worker.on('message', ({ id, result, error }) => {
         if (this.closed) return;
         const pending = this.scans.get(id); this.scans.delete(id);
         if (error) pending?.reject(new Error('Archive scan failed.')); else pending?.resolve(result);
       });
-      this.scanWorker.on('error', () => { if (!this.closed) for (const p of this.scans.values()) p.reject(new Error('Archive scan failed.')); this.scans.clear(); });
+      const failed = () => { if (!this.closed) for (const p of this.scans.values()) p.reject(new Error('Archive scan failed.')); this.scans.clear(); };
+      worker.on('error', failed);
+      worker.once('exit', () => { if (this.scanWorker === worker) { this.scanWorker = undefined; failed(); } });
     }
     const id = ++this.scanId, through = Number(this.source.prepare('SELECT max(seq) n FROM events').get()!.n ?? 0);
     return new Promise((resolve, reject) => { this.scans.set(id, { resolve, reject }); this.scanWorker!.postMessage({ id, raw, owner, fallback, through }); });

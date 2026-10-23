@@ -10,15 +10,19 @@ export const queries = [
  ['的 我 是',[]],['我的喀纳斯',['T7']],['',[]],['"年糕" OR NEAR(猫 叫) AND -x:*',['T1']],['',[]],['\ud800年糕',['T1']],['灯塔',['T15']]
 ].map(([query,expected],i)=>({id:'R'+(i+1),query,expected}));
 const forbidden = new Set(queries.map(q=>q.query).join('')+'我的猫叫年糕三岁了更正其实豆包新的门禁码是露川主题我换成备用钥匙在蓝色鞋盒里咖啡馆名字此后今天又去坐一会儿去了一趟晚饭吃鳗鱼最近比较喜欢喝乌龙车牌尾号今天好开心等他忙完再说我想到一个灯塔比喻糖葫芦');
-export const alphabet=['的','我','是',...Array.from({length:1800},(_,i)=>String.fromCodePoint(0x4e00+i)).filter(c=>!forbidden.has(c)&&!['的','我','是'].includes(c)).slice(0,1200)];
+// Shared fixed vocabulary for retrieval noise and the synthetic lives. Query
+// targets are reserved, so frozen retrieval expectations do not depend on luck.
+const common='的一是不了人我在有他这为之大来以个中上们到说国和地也子时道出而要于就下得可你年生自会那后能对着事其里所去行过家十用发天如然作方成者多日都三小军二无同么经法当起与好看学进种将还分此心前面又定见只主没公从想全实间长最意很把知因关点向气正外命情明问力机给等几常业再手任理少海头位开立作情既眼别无虽笑并各展边解听原打走却感使身受果必风及应路形相平报接记非般转往张山连内数光利表何难便至直让花村流林东太告远视管段色识处交或师认特次友今任觉望早传声热信变红失完黑造讲百朝世识低消按夜角房书留每离示青快火满选计断带越欢回刚网钟放随近午树云住街静雨窗住温春秋冬房忙清慢轻杯阳步行旅读写餐食晚公园河桥纸笔衣床鞋碗桌门茶饭车';
+export const alphabet=['的','我','是',...[...new Set(common)].filter(c=>!forbidden.has(c)&&!['的','我','是'].includes(c))];
+export const latin=['window','tram','weather','pages','rain','walk','quiet','evening','morning','cloud','station','traffic','garden','river','paper','light','breeze','street','routine','notebook'];
 export function varied(file,{count=50000,seed=67}={}) {
  if(existsSync(file))throw Error('Synthetic corpus already exists');mkdirSync(dirname(file),{recursive:true,mode:0o700});
  let random=seed>>>0;const rand=()=>random=(Math.imul(random,1664525)+1013904223)>>>0;
- const cumulative=[];let harmonic=0;for(let i=0;i<alphabet.length;i++){harmonic+=1/(i+1);cumulative.push(harmonic);}
- const word=()=>{const x=rand()/4294967296*harmonic;let a=0,b=alphabet.length-1;while(a<b){const m=(a+b)>>>1;if(cumulative[m]<x)a=m+1;else b=m;}return alphabet[a];};
- const filler=(length=80)=>'的我是'+Array.from({length},word).join('')+' dw'+(rand()%10000);
+ const vocabulary=[...alphabet,...latin],cumulative=[];let harmonic=0;for(let i=0;i<vocabulary.length;i++){harmonic+=1/(i+1);cumulative.push(harmonic);}
+ const word=()=>{const x=rand()/4294967296*harmonic;let a=0,b=vocabulary.length-1;while(a<b){const m=(a+b)>>>1;if(cumulative[m]<x)a=m+1;else b=m;}const w=vocabulary[a];return /^[a-z]/.test(w)?' '+w+' ':w;};
+ const filler=(length=80)=>'的我是'+Array.from({length},word).join('');
  const base=Date.parse('2026-01-01T00:00:00Z'),time=seq=>base+seq*1000;
- const targets={},special=new Map();
+ const targets={},special=new Map(),privacy=[];
  const reserve=(label,fraction,content,kind='heard')=>{
   let seq=Math.max(2,Math.floor(fraction*count));while([...special.keys()].some(s=>Math.abs(s-seq)<3))seq++;
   if(seq>=count-2)throw Error('Corpus position overflow');special.set(seq,{label,content,kind});targets[label]=seq;
@@ -29,6 +33,11 @@ export function varied(file,{count=50000,seed=67}={}) {
  for(const r of rows)reserve(...r);
  for(let i=0;i<300;i++)reserve('coffee'+i,.025+(i+.5)/300*.94,'今天又去咖啡馆坐了一会儿');
  for(let i=0;i<60;i++){const length=10+(i*37)%391;reserve('sweet'+i,.03+(i+.5)/60*.94,'糖葫芦'+filler(length).slice(0,length-3));}
+ for(let i=0;i<10;i++){
+  const chars=Array.from({length:60},(_,j)=>alphabet[(j*17+i*7)%alphabet.length]).join('');
+  const content=chars.slice(0,30)+'，quietledger'+i+' - '+chars.slice(30)+'； window '+i+'。';
+  privacy.push(content);reserve('privacy'+i,.975+i*.001,content);
+ }
  const db=new DatabaseSync(file);let seq=0,lastHeard=null;
  const id=n=>'10000000-0000-4000-8000-'+n.toString(16).padStart(12,'0');
  try{
@@ -51,6 +60,6 @@ export function varied(file,{count=50000,seed=67}={}) {
   spec[21].from=time(targets.T1);spec[21].to=time(targets.T1);
   spec[25].query=filler(500);spec[27].from=time(Math.floor(count*.4));spec[27].to=time(Math.floor(count*.42));
   spec[29].kinds=['wrote'];
-  return {count,seed,targets,queries:spec,first:base};
+  return {count,seed,targets,privacy,queries:spec,first:base};
  }finally{db.close();}
 }

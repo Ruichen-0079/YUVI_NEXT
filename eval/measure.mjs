@@ -27,7 +27,8 @@ export function measure(directory,{write=true}={}){
   assert.ok(base,'Probe missing base presentation');
   const checks=events.filter(e=>e.kind==='checked'&&e.reply_to===h.id),references=new Set(requests.flatMap(p=>p.meta.sections.flatMap(s=>s.results?.flatMap(r=>r.checked?[r.checked]:[])??[])));
   const presentedChecks=checks.filter(c=>references.has(c.id));
-  const out={id:probe.probe,heard_seq:h.seq,day:probe.day,tags:probe.tags,base_sections:base.meta.sections.map(s=>({...s,...(s.heard?{heard_seq:byId.get(s.heard).seq,heard:undefined}:{})})),checks:checks.map(c=>({seq:c.seq,...c.meta})),requests:requests.length,answers:[]};
+  const lastRequest=requests.at(-1);
+  const out={id:probe.probe,heard_seq:h.seq,day:probe.day,tags:probe.tags,base_sections:base.meta.sections.map(s=>{const{heard,...rest}=s;return heard?{...rest,heard_seq:byId.get(heard).seq}:rest;}),checks:checks.map(c=>({seq:c.seq,...c.meta})),requests:requests.length,answers:[]};
   for(const id of probe.targets){
    const answer=answers[id],g=primary(answer),carriers=writings.filter(w=>w.seq>g.seq&&w.content.includes(answer.anchor));
    const channels={};
@@ -60,11 +61,24 @@ export function measure(directory,{write=true}={}){
      reason=rank!==null&&rank<=40&&stoppedForChars?'budget_cut':check.meta.mode==='relevance'&&usedOverlap?'ranked_out':'unexplained';
     }
    }
+   const positions=[];let message=0;
+   for(const section of lastRequest.meta.sections){
+    if(section.name==='writings'||section.name==='window'){
+     const source=(section.name==='writings'?writings:events.filter(e=>e.kind==='heard'||(e.class==='act'&&['said','silent'].includes(e.kind)))).filter(e=>includes(section,e.seq));
+     source.forEach((e,i)=>{if(e.seq===g.seq||carriers.some(w=>w.seq===e.seq))positions.push([message+i,0,Math.max(0,e.content.indexOf(answer.anchor))]);});
+    }else if(section.name==='step'){
+     section.results.forEach((ref,i)=>{const c=byId.get(ref.checked);if(!c)return;c.meta.result_seqs.forEach((seq,j)=>{if(seq===g.seq||carriers.some(w=>w.seq===seq))positions.push([message+i+1,j,Math.max(0,bySeq.get(seq).content.indexOf(answer.anchor))]);});});
+    }
+    message+=section.messages;
+   }
+   positions.sort((a,b)=>a[0]-b[0]||a[1]-b[1]||a[2]-b[2]);
    const age=(probe.t-g.t_recorded)/86400000,row={target:id,seq:g.seq,age_days:age,age_group:age<1?'<1d':age<=7?'1-7d':age<=28?'7-28d':'>28d',channels,
-    window:!!channels.window,writing:!!channels.writings,check:checked,check_writing:checkWriting,presented,overlap:overlaps,used_overlap:usedOverlap,rank,reason};
+    first_position:positions[0]??null,window:!!channels.window,writing:!!channels.writings,check:checked,check_writing:checkWriting,presented,overlap:overlaps,used_overlap:usedOverlap,rank,reason};
    out.answers.push(row);if(!probe.tags.includes('sanity'))allAnswers.push({...row,probe:probe.probe,tags:probe.tags});
   }
   out.all_presented=out.answers.every(a=>a.presented);
+  out.presentation_order=out.answers.filter(a=>a.first_position).sort((a,b)=>a.first_position[0]-b.first_position[0]||a.first_position[1]-b.first_position[1]||a.first_position[2]-b.first_position[2]).map(a=>a.target);
+  out.chronological=out.all_presented&&out.answers.every(a=>a.first_position)?out.presentation_order.every((id,i)=>i===0||out.answers.find(a=>a.target===out.presentation_order[i-1]).seq<=out.answers.find(a=>a.target===id).seq):null;
   if(probe.tags.includes('sanity'))sanity.push(out);else probeRows.push(out);
  }
  const reasons={};for(const a of allAnswers)if(a.reason)reasons[a.reason]=(reasons[a.reason]??0)+1;
@@ -82,9 +96,9 @@ export function measure(directory,{write=true}={}){
   consolidation:{requests:idle+pressure,idle,pressure,wrote:events.filter(e=>e.kind==='wrote').length,nonempty:writings.length},
   probes:probeRows,sanity,coverage:{overall:coverage(allAnswers),age:Object.fromEntries(['<1d','1-7d','7-28d','>28d'].map(k=>[k,coverage(allAnswers.filter(a=>a.age_group===k))])),
    channels:Object.fromEntries(['window','writing','check','check_writing'].map(k=>[k,{total:allAnswers.length,presented:allAnswers.filter(a=>a[k]).length}])),tags:Object.fromEntries(['high_frequency','correction','expected_miss'].map(k=>[k,coverage(allAnswers.filter(a=>a.tags.includes(k)))]))},
-  corrections:probeRows.filter(p=>p.tags.includes('correction')).map(p=>({probe:p.id,all_presented:p.all_presented,versions:p.answers.map(a=>({target:a.target,rank:a.rank,presented:a.presented}))})),
-  retrieval_gap:{total:allAnswers.length,overlap:allAnswers.filter(a=>a.overlap).length,used_overlap:allAnswers.filter(a=>a.used_overlap).length,ranked_100:allAnswers.filter(a=>a.rank!==null).length,presented:allAnswers.filter(a=>a.presented).length},
-  reasons:{...reasons,unexplained:reasons.unexplained??0},writings:{rows:writingRows,never_presented:writingRows.filter(w=>!w.presentations&&!w.check_presentations).length,via_check:writingRows.filter(w=>w.check_presentations).length},
+  corrections:probeRows.filter(p=>p.tags.includes('correction')).map(p=>({probe:p.id,all_presented:p.all_presented,chronological:p.chronological,presentation_order:p.presentation_order,versions:p.answers.map(a=>({target:a.target,rank:a.rank,presented:a.presented}))})),
+  retrieval_gap:{total:allAnswers.length,overlap:allAnswers.filter(a=>a.overlap).length,used_overlap:allAnswers.filter(a=>a.used_overlap).length,ranked_100:allAnswers.filter(a=>a.rank!==null).length,check_presented_outside_top100:allAnswers.filter(a=>a.check&&a.rank===null).length,presented_without_check:allAnswers.filter(a=>a.presented&&!a.check).length,presented:allAnswers.filter(a=>a.presented).length},
+  reasons:{...reasons,unexplained:reasons.unexplained??0},writings:{rows:writingRows,never_in_writings:writingRows.filter(w=>!w.presentations).length,never_presented:writingRows.filter(w=>!w.presentations&&!w.check_presentations).length,never_presented_rate:writingRows.length?writingRows.filter(w=>!w.presentations&&!w.check_presentations).length/writingRows.length:null,via_check_rate:writingRows.length?writingRows.filter(w=>w.check_presentations).length/writingRows.length:null,via_check:writingRows.filter(w=>w.check_presentations).length},
   cost:{requests:ps.length,turn_requests:distribution(heard.map(h=>ps.filter(p=>p.reply_to===h.id).length)),zero_chars:distribution(ps.filter(p=>p.meta.step===0).map(p=>p.meta.total.chars)),later_chars:distribution(ps.filter(p=>p.meta.step>0).map(p=>p.meta.total.chars)),check_calls:events.filter(e=>e.kind==='checked').length,tool_result_chars:ps.reduce((n,p)=>n+p.meta.sections.filter(s=>s.name==='step').reduce((sum,s)=>sum+s.chars-(s.assistant_text?.length??0),0),0)}};
  if(write)writeFileSync(join(directory,'metrics.json'),JSON.stringify(result,null,2)+'\n');return result;
 }
