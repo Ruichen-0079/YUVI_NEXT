@@ -92,10 +92,10 @@ test('B2/B3/B5/B6/B7: fragmented silence, optional reason, context and SIGTERM r
   const frames = await f.post('第一句');
   assert.deepEqual(frames.map(f => f.event), ['heard', 'silent']);
   let events = await f.events();
-  assert.deepEqual(events.map(e => e.kind), ['heard', 'silent']);
-  assert.equal(events[1].reply_to, events[0].id); assert.equal(events[1].actor, 'yuvi');
-  assert.equal(events[1].model, 'fake-p2'); assert.equal(events[1].content, '先不说');
-  assert.equal(frames.at(-1).data, events[1].id);
+  assert.deepEqual(events.map(e => e.kind), ['heard', 'presented', 'silent']);
+  assert.equal(events[2].reply_to, events[0].id); assert.equal(events[2].actor, 'yuvi');
+  assert.equal(events[2].model, 'fake-p2'); assert.equal(events[2].content, '先不说');
+  assert.equal(frames.at(-1).data, events[2].id);
   await f.stop(); await f.start(); assert.deepEqual(await f.events(), events);
   for (const args of [undefined, '{}']) {
     f.handlers.push(res => res.end(tool('stay_silent', args) + done));
@@ -124,7 +124,7 @@ test('B4/P4 §2.5: text wins over silence; text-free stream without silence is a
     assert.equal(events.filter(e => e.kind === 'silent').length, 0);
   }
   f.handlers.push(res => res.end(done)); await f.post('空流');
-  const events = await f.events(); assert.deepEqual(events.slice(-2).map(e => e.kind), ['heard', 'error']);
+  const events = await f.events(); assert.deepEqual(events.slice(-3).map(e => e.kind), ['heard', 'presented', 'error']);
   assert.equal(events.at(-1).meta.outcome, 'not_sent'); oneEnding(events);
 });
 
@@ -175,13 +175,13 @@ test('B11: queued turns keep raw event order and end with an ephemeral user anch
   const first = f.post('甲'); await delay(100); const second = f.post('乙');
   await Promise.all([first, second]);
   const events = await f.events(), request = f.requests[1];
-  assert.deepEqual(events.map(e => e.kind), ['heard', 'reply_attempt', 'heard', 'said', 'reply_attempt', 'said']);
+  assert.deepEqual(events.map(e => e.kind), ['heard', 'presented', 'reply_attempt', 'heard', 'said', 'presented', 'reply_attempt', 'said']);
   assert.ok(request.time >= ended);
   const messages = request.body.messages;
   assert.deepEqual(messages.slice(1, -1).map(m => m.content.slice(m.content.indexOf('\n') + 1)), ['甲', '乙', '对甲的回复']);
   const anchor = messages.at(-1), heard = events.find(e => e.content === '乙');
   assert.equal(anchor.role, 'user'); assert.ok(anchor.content.includes('当前回应')); assert.ok(!anchor.content.includes(heard.id)); assert.match(anchor.content, /\d{4}-\d{2}-\d{2}/); assert.ok(anchor.content.endsWith('乙'));
-  assert.equal(events.length, 6); oneEnding(events);
+  assert.equal(events.length, 8); oneEnding(events);
 });
 
 test('B12: raw usage on said/silent, no estimates on 500, UTC daily sums survive restart', async t => {
@@ -250,7 +250,7 @@ for (const output of [tool('stay_silent', '{'), tool('unknown', '{}'), tool('sta
   test('unsupported or malformed text-free tool output is error, not invented silence', async t => {
     const f = await fixture(t); f.handlers.push(res => res.end(output + done));
     assert.equal((await f.post('不合法')).at(-1).event, 'error');
-    const events = await f.events(); assert.deepEqual(events.map(e => e.kind), ['heard', 'error']);
+    const events = await f.events(); assert.deepEqual(events.map(e => e.kind), ['heard', 'presented', 'error']);
     assert.equal(events.at(-1).meta.outcome, 'not_sent'); oneEnding(events);
   });
 }

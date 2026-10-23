@@ -160,3 +160,37 @@ unshare -rn sh -c 'ip link set lo up; node scripts/p6/benchmark.mjs /tmp/yuvi-p6
 ```
 
 所有服务使用回环假模型和独立数据目录。百万事件检查不加入 `npm test`；普通测试运行同一生成器的两万事件检查、新旧纯函数差分和真实进程跨版本对照。保留的 [实测 JSON](docs/notes/P6-results.json) 包含各回合计时与查询计划。
+
+
+## 呈现记录与只读诊断（P7）
+
+每次对话、工具后续步骤及整理请求组装完成后，程序在调用模型之前追加 `control/presented`。它记录来源范围、消息数量/字数、请求参数、规则版本、人设及消息摘要；只证明“已组装、即将交给请求发送”，不证明服务收到或模型使用了内容。工具后续步骤继承第 0 步的原始基础消息，追加本步工具往返，并各自记录组装时间。
+
+先运行一次 `npm run build`，然后指定要检查的数据目录；无需模型地址或 API 密钥。诊断命令不自动编译、不加载本机凭据、不写档案事件、不取得服务锁，可以在服务运行时读取已提交 WAL：
+
+```sh
+YUVI_DATA_DIR=/tmp/yuvi-data npm run --silent presented -- summary
+YUVI_DATA_DIR=/tmp/yuvi-data npm run --silent presented -- writings
+YUVI_DATA_DIR=/tmp/yuvi-data YUVI_PERSONA_FILE=/tmp/persona.txt npm run --silent presented -- show 42 --messages
+# 等价的直接入口：node dist/maintenance.js presented summary
+```
+
+三个命令输出 JSON。`summary` 汇总清单数量、用途/步骤/结局、时间及 meta 字节数；`writings` 按请求统计每条非空文字的呈现次数和完成次数，给出从未有记录的条数。P7 之前的请求没有记录，不按规则推测它们曾呈现过什么。
+
+`show` 按历史范围和 `previous` 链重建消息，以 SHA-256 核对。成功为 `exact`；人设缺失/不同为 `persona_mismatch`，Node 主版本不同为 `node_mismatch`，未知规则为 `rules_unsupported`，有效 IANA 时区未记录（缺失、无效或 `null`）为 `time_zone_unrecorded`，其余来源/摘要无法核对为 `mismatch`。它只核验 messages；工具描述等未逐条保存的常量不能被扩大声称为任意历史版本 HTTP 请求的精确副本。结局从后续事件推导：`completed`、`failed`、`unknown` 或整理的 `incomplete`；失败的 reason/outcome/http_status 沿用实际 error。
+
+运行时时间文字沿用 P6 的原生 Date 行为，不依赖时区名字；可用的 IANA 名仅供历史重建，不可用时明确记录 `time_zone: null`。工具后续步骤的基础时间仍取第 0 步。
+
+源数据边界：仅当重建摘要不符、且档案当前 `heard` 含 U+FFFD 时报告 `source_lossy`。这表示可能的源数据损失，不能证明原输入含孤立 UTF-16 代理项，也不能排除实现缺陷。真实 U+FFFD、NUL、emoji 的正常请求仍应精确重建；P7 不改写输入或旧档案。Node 22 的 NUL 读回差异通过区分当前回合指示与历史窗口处理。
+
+诊断按逻辑只读执行：不改变事件、主库、空闲 WAL 的已提交内容或服务锁。原生 SQLite 可以创建 WAL/SHM，或维护 SHM 协调字节；这不表示诊断写入了档案事实。运行中和关闭后的目录均有检查，并验证随后服务仍能正常对话。
+
+离线性能与存储复现（全新 scratch 目录，Node 22.23.3；分项插桩使用其内置 registerHooks）：
+
+```sh
+unshare -rn sh -c 'ip link set lo up; node scripts/p6/benchmark.mjs /tmp/yuvi-p7-run --p7 1'
+# 单独生成带呈现记录的形态：
+node scripts/p6/generate.mjs /tmp/yuvi-presented.sqlite 1000000 presented 67
+```
+
+脚本复用 P6 两种档案，在真实服务入口比较 P6 与 P7；另生成带呈现记录的百万档案测量只读诊断。它只使用回环假模型，保留 results.json 和合成数据。[实施说明](docs/notes/P7.md)、[原始性能数据](docs/notes/P7-results.json)。

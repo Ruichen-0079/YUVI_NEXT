@@ -1,8 +1,8 @@
 import { createServer, type ServerResponse, type IncomingMessage } from 'node:http';
 import { Archive, type Event } from './archive.js';
 import type { Config } from './config.js';
-import { streamModel, silenceReason, type Message, type Usage, ModelFailure } from './model.js';
-import { state, dialogueMessages, consolidationMessages, check } from './context.js';
+import { streamModel, silenceReason, type Usage, ModelFailure } from './model.js';
+import { state, recordedTimeZone, assembleContext, selectDialogue, selectConsolidation, check, type StepResult } from './context.js';
 import { page } from './page.js';
 
 async function readText(req: IncomingMessage): Promise<string | null> {
@@ -33,14 +33,19 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
   let failed = false;
   let pendingTurns = 0, receiving = 0, consolidating = false;
   let retryAfter = 0;
+  const zone = recordedTimeZone();
+  const nodeMajor = Number(process.versions.node.split('.')[0]);
   const range = (material: Event[]) => ({ from_seq: material[0].seq, through_seq: material.at(-1)!.seq });
   async function consolidate(): Promise<boolean> {
     const material = archive.materials(config.contextEvents);
     if (!material.length || Date.now() < retryAfter) return false;
+    const assembled = assembleContext({ purpose: 'consolidation', selected: selectConsolidation(archive, material, config),
+      maxTokens: config.consolidationMaxTokens ?? 4000 }, config, Date.now(), zone, nodeMajor);
+    archive.append({ class: 'control', kind: 'presented', actor: 'system', model: config.model, meta: assembled.manifest });
     let content = '', usage: Usage | undefined, finish: unknown;
     try {
-      await streamModel(config, consolidationMessages(archive, material, config), text => { content += text; },
-        value => { usage = value; }, { mode: 'consolidation', maxTokens: config.consolidationMaxTokens ?? 4000,
+      await streamModel(config, assembled.messages, text => { content += text; },
+        value => { usage = value; }, { parameters: assembled.parameters,
           finish: value => { finish = value; } });
     } catch (error) {
       retryAfter = Date.now() + 30_000;
@@ -67,7 +72,8 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
   }
   async function turn(heard: Event, res: ServerResponse): Promise<void> {
     await pressure();
-    const messages: Message[] = dialogueMessages(archive, heard, config);
+    let assembled = assembleContext({ purpose: 'dialogue', selected: selectDialogue(archive, config), heard },
+      config, Date.now(), zone, nodeMajor);
     let attempt: Event | undefined, content = '', sentContent = '';
     let archiveFailed = false, usage: Usage | undefined;
     const append = (input: Parameters<Archive['append']>[0]) => {
@@ -80,32 +86,34 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
       for (let step = 0; step < 4; step++) {
         usage = undefined;
         let stepContent = '';
-        const tools = await streamModel(config, messages, text => {
+        const presented = append({ class: 'control', kind: 'presented', actor: 'system', reply_to: heard.id,
+          model: config.model, meta: assembled.manifest });
+        const tools = await streamModel(config, assembled.messages, text => {
           if (!attempt) {
             attempt = append({ class: 'act', kind: 'reply_attempt',
               actor: 'yuvi', reply_to: heard.id, model: config.model });
           }
           if (sse(res, 'delta', { text })) sentContent += text;
           content += text; stepContent += text;
-        }, value => { usage = value; }, { lastStep: step === 3 });
+        }, value => { usage = value; }, { parameters: assembled.parameters });
         const checks = tools.filter(t => t.name === 'check');
         if (checks.length && step < 3) {
           let recordedUsage = false;
-          const replies = tools.map(tool => {
+          const replies: StepResult[] = tools.map(tool => {
             if (tool.name !== 'check') {
               ignored.push(tool.name);
-              return '本步继续查阅；这个调用没有作为回合结局。';
+              return { reference: { ignored: tool.name }, content: '本步继续查阅；这个调用没有作为回合结局。' };
             }
             const result = check(archive, tool.arguments, config.ownerName ?? '负责人');
-            append({ class: 'act', kind: 'checked', actor: 'yuvi', model: config.model,
+            const checked = append({ class: 'act', kind: 'checked', actor: 'yuvi', model: config.model,
               reply_to: heard.id, meta: { ...result.meta, ...(!recordedUsage ? usageMeta() : {}) } });
             recordedUsage = true;
-            return result.content;
+            return { reference: { checked: checked.id }, content: result.content };
           });
-          messages.push({ role: 'assistant', content: stepContent, tool_calls: tools.map((tool, index) => ({
-            id: tool.id || `call_${step}_${index}`, type: 'function', function: { name: tool.name, arguments: tool.arguments }
-          })) });
-          tools.forEach((tool, index) => messages.push({ role: 'tool', tool_call_id: tool.id || `call_${step}_${index}`, content: replies[index] }));
+          try {
+            assembled = assembleContext({ previous: assembled, previousId: presented.id, text: stepContent, calls: tools, results: replies },
+              config, Date.now(), zone, nodeMajor);
+          } catch { archiveFailed = true; throw new Error('assembly failure'); }
           usage = undefined;
           continue;
         }
@@ -122,7 +130,7 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
       if (archiveFailed) throw new Error('archive failure');
       append({ class: 'control', kind: 'error', actor: 'system', reply_to: heard.id,
         content: sentContent, meta: { outcome: attempt ? 'partial' : 'not_sent', reason: 'model_failure',
-          request_chars: messages.reduce((sum, message) => sum + message.content.length, 0),
+          request_chars: assembled.messages.reduce((sum, message) => sum + message.content.length, 0),
           ...(error instanceof ModelFailure && error.httpStatus !== undefined ? { http_status: error.httpStatus } : {}),
           ...(attempt ? { attempt: attempt.id } : {}), ...usageMeta() } });
       sse(res, 'error', { message: 'Model request failed or timed out.' });

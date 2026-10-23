@@ -96,7 +96,7 @@ async function fixture(t) {
 test('second real process cannot recover a live generation or write a contradictory ending', async t => {
   const f = await fixture(t), a = await f.start(), generation = await f.pending(a);
   const before = await f.events(a);
-  assert.deepEqual(before.map(e => e.kind), ['heard', 'reply_attempt']);
+  assert.deepEqual(before.map(e => e.kind), ['heard', 'presented', 'reply_attempt']);
   const b = (await f.prepare())(), bState = await f.state(b);
   const whileGenerating = await f.events(a);
   await generation.finish();
@@ -105,7 +105,7 @@ test('second real process cannot recover a live generation or write a contradict
   assert.equal(bState, 'exited', 'second process must refuse startup');
   assert.notEqual(b.code, 0); assert.match(b.output, /YUVI_DATA_DIR.*in use/);
   assert.deepEqual(whileGenerating, before, 'rejected startup must not append recovery errors');
-  assert.deepEqual(after.map(e => e.kind), ['heard', 'reply_attempt', 'said']);
+  assert.deepEqual(after.map(e => e.kind), ['heard', 'presented', 'reply_attempt', 'said']);
   assert.equal(after.at(-1).content, '正在生成，完成');
   assert.equal((await fetch(a.url + '/health')).status, 200);
 });
@@ -278,7 +278,7 @@ test('independent read-only process reads live WAL and takes consistent copies w
   await reader.command({ action: 'begin' });
   const a = await f.start(), generation = await f.pending(a);
   const pending = await f.events(a);
-  assert.deepEqual(pending.map(e => e.kind), ['heard', 'reply_attempt']);
+  assert.deepEqual(pending.map(e => e.kind), ['heard', 'presented', 'reply_attempt']);
   assert.ok((await stat(source + '-wal')).size > 32);
   // This intentionally incomplete copy is only a test probe, not a snapshot:
   // prove that the latest events are still outside the main database file.
@@ -300,7 +300,7 @@ test('independent read-only process reads live WAL and takes consistent copies w
   assert.deepEqual(await f.events(a), pending);
   await generation.finish();
   const complete = await f.events(a);
-  assert.deepEqual(complete.map(e => e.kind), ['heard', 'reply_attempt', 'said']);
+  assert.deepEqual(complete.map(e => e.kind), ['heard', 'presented', 'reply_attempt', 'said']);
   const second = await reader.command({ action: 'snapshot', path: join(f.directory, 'complete-copy.sqlite') });
   assert.deepEqual(decodeRows(second.events), complete);
   assert.deepEqual(Object.values(second.integrity), ['ok']);

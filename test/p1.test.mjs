@@ -103,16 +103,17 @@ test('A2–A6: durable ordered events, first-delta barrier, context and SQL immu
   assert.equal(frames[0].event, 'heard'); assert.equal(frames.at(-1).event, 'done');
   assert.equal(frames.filter(f => f.event === 'delta').map(f => JSON.parse(f.data).text).join(''), '我在。');
   let events = await f.events();
-  assert.deepEqual(events.map(e => e.kind), ['heard', 'reply_attempt', 'said']);
+  assert.deepEqual(events.map(e => e.kind), ['heard', 'presented', 'reply_attempt', 'said']);
   for (const event of events) {
     for (const field of ['seq', 'id', 'branch', 'class', 'kind', 'scene', 'actor', 't_recorded', 'reply_to', 'content', 'model', 'meta']) assert.ok(field in event);
     assert.equal(event.branch, 'dev:v2-dev'); assert.equal(event.scene, 'web');
   }
-  assert.equal(events[0].actor, 'owner'); assert.equal(events[1].actor, 'yuvi'); assert.equal(events[2].actor, 'yuvi');
-  assert.equal(events[1].model, 'fake-model'); assert.equal(events[2].model, 'fake-model');
-  assert.equal(events[1].reply_to, events[0].id); assert.equal(events[2].reply_to, events[0].id);
-  assert.equal(events[2].meta.attempt, events[1].id);
-  assert.equal(frames[0].data, events[0].id); assert.equal(frames.at(-1).data, events[2].id);
+  const flow = events.filter(e => e.kind !== 'presented');
+  assert.equal(flow[0].actor, 'owner'); assert.equal(flow[1].actor, 'yuvi'); assert.equal(flow[2].actor, 'yuvi');
+  assert.equal(flow[1].model, 'fake-model'); assert.equal(flow[2].model, 'fake-model');
+  assert.equal(flow[1].reply_to, flow[0].id); assert.equal(flow[2].reply_to, flow[0].id);
+  assert.equal(flow[2].meta.attempt, flow[1].id);
+  assert.equal(frames[0].data, flow[0].id); assert.equal(frames.at(-1).data, flow[2].id);
   await collect(await f.post('第二句'));
   assert.deepEqual(f.requests[1].body.messages.slice(0, -1).map(m => ({ ...m, content: eventText(m) })), [
     { role: 'system', content: persona }, { role: 'user', content: '你好' },
