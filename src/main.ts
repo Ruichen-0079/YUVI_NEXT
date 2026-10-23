@@ -26,8 +26,8 @@ try {
   server.listen(config.port, config.host, () => {
     const stopSnapshots = startAutomaticSnapshots(paths, config.snapshotIntervalMs!);
     server.once('close', stopSnapshots);
-    for (const signal of ['SIGTERM', 'SIGINT'] as const) process.once(signal, () => {
-      stopSnapshots(); archive.close(); process.exit(0);
+    for (const signal of ['SIGTERM', 'SIGINT'] as const) process.once(signal, async () => {
+      stopSnapshots(); await app.index.close(); archive.close(); process.exit(0);
     });
     console.log('YUVI is ready.');
   });

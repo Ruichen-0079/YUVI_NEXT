@@ -1,3 +1,4 @@
+import { ArchiveIndex } from './archive-index.js';
 import { createServer, type ServerResponse, type IncomingMessage } from 'node:http';
 import { Archive, type Event } from './archive.js';
 import type { Config } from './config.js';
@@ -26,8 +27,9 @@ function sse(res: ServerResponse, kind: string, value: unknown): boolean {
   res.write(`event: ${kind}\ndata: ${typeof value === 'string' ? value : JSON.stringify(value)}\n\n`);
   return true;
 }
-export function createApp(config: Config, archive = new Archive(config.dataDir)) {
+export function createApp(config: Config, archive = new Archive(config.dataDir), options: { checkEngine?: 'scan' } = {}) {
   archive.recover();
+  const index = new ArchiveIndex(archive.db, config.dataDir, archive.scope);
   let queue = Promise.resolve();
   let received = Promise.resolve();
   let failed = false;
@@ -57,7 +59,7 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
     archive.append({ class: 'inner', kind: 'wrote', actor: 'yuvi', model: config.model, content,
       meta: { material: range(material), ...(finish === undefined ? {} : { finish_reason: finish }),
         ...(usage === undefined ? {} : { usage }) } });
-    retryAfter = 0;
+    retryAfter = 0; index.catchUp();
     return true;
   }
   async function pressure(): Promise<void> {
@@ -104,7 +106,7 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
               ignored.push(tool.name);
               return { reference: { ignored: tool.name }, content: '本步继续查阅；这个调用没有作为回合结局。' };
             }
-            const result = check(archive, tool.arguments, config.ownerName ?? '负责人');
+            const result = check(archive, tool.arguments, config.ownerName ?? '负责人', { index, engine: options.checkEngine });
             const checked = append({ class: 'act', kind: 'checked', actor: 'yuvi', model: config.model,
               reply_to: heard.id, meta: { ...result.meta, ...(!recordedUsage ? usageMeta() : {}) } });
             recordedUsage = true;
@@ -179,7 +181,7 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
         pendingTurns++;
         queue = queue.then(async () => {
           try { if (!failed) await turn(heard, res); }
-          finally { pendingTurns--; }
+          finally { pendingTurns--; index.catchUp(); }
         }).catch(fatal);
       }).catch(fatal);
       return;
@@ -199,6 +201,6 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
     }).catch(fatal).finally(() => { consolidating = false; });
   }, Math.min(1000, config.consolidationIdleMs ?? 3_600_000));
   timer.unref();
-  server.on('close', () => clearInterval(timer));
-  return { server, archive, idle: async () => { await received; await queue; } };
+  server.on('close', () => { clearInterval(timer); void index.close(); });
+  return { server, archive, index, idle: async () => { await received; await queue; } };
 }

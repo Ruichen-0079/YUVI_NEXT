@@ -184,6 +184,13 @@ export class Archive {
     }
     return { results: results.reverse(), total };
   }
+  scanRanks(query: string, from: number, to: number): number[] {
+    this.db.function('scan_rank_match', { deterministic: true }, value =>
+      (this.truncatesAtNul ? (value as string).split('\0', 1)[0] : value as string).includes(query) ? 1 : 0);
+    return this.db.prepare(`SELECT seq FROM events NOT INDEXED WHERE scene=? AND branch=? AND t_recorded>=? AND t_recorded<=?
+      AND (${dialogueWhere} OR (class='inner' AND kind='wrote' AND ${this.nonempty()})) AND scan_rank_match(content)>0 ORDER BY seq DESC LIMIT 100`)
+      .all(this.scope.scene, this.scope.branch, from, to).map(r => Number(r.seq));
+  }
   context(limit: number): Event[] {
     return this.decode(this.db.prepare(`SELECT * FROM (
       SELECT * FROM events NOT INDEXED WHERE scene=? AND branch=? AND ${dialogueWhere}

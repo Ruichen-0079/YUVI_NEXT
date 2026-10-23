@@ -1,3 +1,4 @@
+import { terms, type ArchiveIndex, type SearchMeta } from './archive-index.js';
 import type { Archive, Event } from './archive.js';
 import type { Config } from './config.js';
 import { requestParameters, type Message, type ToolCall, type RequestParameters } from './model.js';
@@ -134,7 +135,7 @@ export function assembleBase(input: {
   }
   const parameters = requestParameters(input.purpose === 'dialogue' ? {} : { mode: 'consolidation', maxTokens: input.maxTokens });
   return { messages, parameters, manifest: {
-    format: 1 as const, rules: 'p7', purpose: input.purpose, ...(input.purpose === 'dialogue' ? { step: 0 } : {}),
+    format: 1 as const, rules: 'p8', purpose: input.purpose, ...(input.purpose === 'dialogue' ? { step: 0 } : {}),
     now, time_zone: timeZone, node_major: nodeMajor, writing_chars: config.writingChars ?? 16000, owner_name: config.ownerName ?? '负责人',
     request: { tools: parameters.tools?.map(tool => tool.function.name) ?? [],
       ...(parameters.max_tokens === undefined ? {} : { max_tokens: parameters.max_tokens }) },
@@ -177,7 +178,7 @@ function dateBound(value: unknown): number {
   if (!Number.isFinite(parsed)) throw new Error('invalid date');
   return parsed;
 }
-export function check(archive: Archive, rawArguments: string, owner: string) {
+export function check(archive: Archive, rawArguments: string, owner: string, options?: { index?: ArchiveIndex; engine?: 'scan' }) {
   let args: unknown;
   try { args = JSON.parse(rawArguments); } catch { args = rawArguments; }
   let params: Record<string, unknown>, from: number, to: number;
@@ -192,7 +193,34 @@ export function check(archive: Archive, rawArguments: string, owner: string) {
   } catch {
     return { meta: { arguments: args, invalid: true, result_seqs: [], total: 0 }, content: '查阅参数无效；请使用子串及有效的日期范围。' };
   }
-  const { results, total } = archive.search(params.query as string ?? '', from, to);
-  return { meta: { arguments: args, result_seqs: results.map(e => e.seq), total },
-    content: `共匹配${total}条，返回${results.length}条。\n\n${results.map(e => record(e, owner, true)).join('\n\n')}` };
+  const query = params.query as string ?? '';
+  // The three-argument form remains the P6 scan helper for differential tests.
+  if (!options) {
+    const { results, total } = archive.search(query, from, to);
+    return { meta: { arguments: args, result_seqs: results.map(e => e.seq), total },
+      content: `共匹配${total}条，返回${results.length}条。\n\n${results.map(e => record(e, owner, true)).join('\n\n')}` };
+  }
+  const words = terms(query, true);
+  const found = options.engine === 'scan' ? { fallback: 'index_unavailable' as const } :
+    query && !words.length ? { fallback: 'no_terms' as const } : options.index!.search(query, from, to);
+  let results: Event[], total: number, selection: SearchMeta;
+  if ('fallback' in found) {
+    ({ results, total } = archive.search(query, from, to));
+    // Recover the top 100 matching seqs without decoding the whole archive.
+    const candidates = archive.scanRanks(query, from, to);
+    selection = { rules: 'p8', engine: 'scan', mode: 'substring', terms: [], dropped: [], fallback: found.fallback, rank_seqs: candidates };
+  } else { ({ results, total } = found); selection = found.meta; }
+  const meta = { arguments: args, result_seqs: results.map(e => e.seq), total, ...selection };
+  return { meta, content: checkedText(meta, results, owner) };
+}
+
+export function checkedText(meta: { total: number; rules?: unknown; mode?: unknown; engine?: unknown; fallback?: unknown; dropped?: unknown; terms_limited?: unknown }, results: Event[], owner: string, zone?: string): string {
+  const records = results.map(e => record(e, owner, true, zone)).join('\n\n');
+  if (meta.rules !== 'p8') return `共匹配${meta.total}条，返回${results.length}条。\n\n${records}`;
+  let description = meta.mode === 'relevance' ? '按相关度选出、按时间排列' : meta.mode === 'substring' ? '逐字查找、按时间排列' : '按时间从近到远选出、按时间排列';
+  if (meta.engine === 'index' && meta.mode === 'recent' && Array.isArray((meta as Record<string, unknown>).terms) && ((meta as Record<string, unknown>).terms as unknown[]).length) description += '。这些词都太常见，只按时间从近到远返回';
+  if (meta.engine === 'scan') description += '。已退回逐字查找：' + (meta.fallback === 'no_terms' ? '查询没有可检索的字词' : meta.fallback === 'index_building' ? '检索目录正在建立' : '检索目录暂不可用');
+  if (Array.isArray(meta.dropped) && meta.dropped.length) description += '。已裁剪的检索词：' + meta.dropped.join('、');
+  if (meta.terms_limited) description += '。检索词超过上限，只用了前32个';
+  return `共匹配${meta.total}条，返回${results.length}条。${description}。\n\n${records}`;
 }
