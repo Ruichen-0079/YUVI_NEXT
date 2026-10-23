@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CURRENT_SCOPE, type Event } from './archive.js';
-import { assembleBase, renderStep, record, messageSize, sha256, type Section, type PresentationManifest } from './context.js';
+import { assembleBase, validTimeZone, renderStep, record, messageSize, sha256, type Section, type PresentationManifest } from './context.js';
 import type { Message } from './model.js';
 
 type Scope = { scene: string; branch: string };
@@ -126,6 +126,12 @@ export function presentedShow(db: DatabaseSync, seq: number, persona: string | u
       if (pm.rules !== 'p7' || pm.format !== 1 || pm.step !== m.step! - 1 || previous.reply_to !== event.reply_to) throw Error();
       base = previous; m = pm;
     }
+    if (!validTimeZone(meta.time_zone) || !validTimeZone(m.time_zone)) {
+      result.reconstruction = { status: status === 'exact' ? 'time_zone_unrecorded' : status,
+        reason: 'A usable historical IANA time zone was not recorded; messages cannot be verified.' };
+      return result;
+    }
+    const zone = m.time_zone;
     const source = (name: string) => {
       const section = m.sections.find((s: Section) => s.name === name); if (!section) return [];
       const filter = name === 'writings' ? "class='inner' AND kind='wrote'" : dialogue;
@@ -134,15 +140,16 @@ export function presentedShow(db: DatabaseSync, seq: number, persona: string | u
       if (events.length !== section.count) throw Error(); return events;
     };
     const config = { persona: persona !== undefined && sha256(persona) === m.persona.sha256 ? persona : '', ownerName: m.owner_name, writingChars: m.writing_chars };
-    let assembled;
+    let assembled, currentHeardHasReplacement = false;
     if (m.purpose === 'dialogue') {
       const heard = db.prepare("SELECT *,CAST(content AS BLOB) AS original_content FROM events WHERE id=? AND seq<? AND scene=? AND branch=? AND class='experience' AND kind='heard'")
         .get(base.reply_to!, base.seq, scope.scene, scope.branch);
       if (!heard) throw Error();
+      currentHeardHasReplacement = Buffer.from(heard.original_content as Uint8Array).toString('utf8').includes('\uFFFD');
       assembled = assembleBase({ purpose: 'dialogue', selected: { writings: source('writings'), window: source('window') }, heard: { ...decode(heard), content: Buffer.from(heard.original_content as Uint8Array).toString('utf8') } },
-        config, m.now, m.time_zone, m.node_major);
+        config, m.now, zone, m.node_major, zone);
     } else assembled = assembleBase({ purpose: 'consolidation', selected: { writings: source('writings'), material: source('material') }, maxTokens: m.request.max_tokens! },
-      config, m.now, m.time_zone, m.node_major);
+      config, m.now, zone, m.node_major, zone);
     const messages: Message[] = assembled.messages;
     for (const section of meta.sections as Section[]) {
       if (section.name !== 'step') continue;
@@ -156,7 +163,7 @@ export function presentedShow(db: DatabaseSync, seq: number, persona: string | u
           const found = db.prepare('SELECT * FROM events WHERE seq=? AND seq<? AND scene=? AND branch=?').get(n, checked.seq, scope.scene, scope.branch);
           if (!found) throw Error(); return decode(found);
         });
-        return `共匹配${cm.total}条，返回${records.length}条。\n\n${records.map(e => record(e, m.owner_name, true, m.time_zone)).join('\n\n')}`;
+        return `共匹配${cm.total}条，返回${records.length}条。\n\n${records.map(e => record(e, m.owner_name, true, zone)).join('\n\n')}`;
       });
       messages.push(...renderStep(section.assistant_text!, section.tool_calls!, replies));
     }
@@ -167,8 +174,9 @@ export function presentedShow(db: DatabaseSync, seq: number, persona: string | u
       return size.messages === section.messages && size.chars === section.chars;
     });
     if (status === 'exact' && (digest !== meta.messages_sha256 || !sectionsMatch || offset !== messages.length ||
-      JSON.stringify(messageSize(messages)) !== JSON.stringify(meta.total))) status = 'mismatch';
-    result.reconstruction = { status, messages_sha256: digest, scope: 'messages only; other HTTP fields are not a historical byte-for-byte reconstruction' };
+      JSON.stringify(messageSize(messages)) !== JSON.stringify(meta.total)))
+      status = digest !== meta.messages_sha256 && currentHeardHasReplacement ? 'source_lossy' : 'mismatch';
+    result.reconstruction = { status, ...(status === 'source_lossy' ? { reason: 'Digest mismatch and archived current heard contains U+FFFD: possible source loss, not proof; an implementation defect is not excluded.' } : {}), messages_sha256: digest, scope: 'messages only; other HTTP fields are not a historical byte-for-byte reconstruction' };
     if (includeMessages) result.messages = messages;
   } catch {
     result.reconstruction = { status: status === 'exact' ? 'mismatch' : status, reason: 'Cannot reproduce sources, chain or time-zone presentation.' };

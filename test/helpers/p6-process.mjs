@@ -20,12 +20,13 @@ export async function legacyCheckout(root, ref='190a272') {
   execFileSync(process.execPath,[resolve('node_modules/typescript/bin/tsc'),'-p',join(dir,'tsconfig.json')]);
   return dir;
 }
-export async function startService(root,{ checkout=resolve('.'), data, baseUrl, context=20, writing=16000, hook, idle=2147483647, snapshots }={}) {
+export async function startService(root,{ checkout=resolve('.'), data, baseUrl, context=20, writing=16000, hook, idle=2147483647, snapshots, tz='Asia/Shanghai' }={}) {
   const reserve=createServer(),url=await listen(reserve);await new Promise(r=>reserve.close(r));
   const persona=join(root,'persona.txt');await writeFile(persona,'测试人设原文\n');
   const env={...process.env,YUVI_DATA_DIR:data,YUVI_PERSONA_FILE:persona,YUVI_MODEL_BASE_URL:baseUrl+'/v1',YUVI_MODEL:'fake-p6',YUVI_MODEL_API_KEY:'fake-p6-key-only',
     YUVI_PORT:new URL(url).port,YUVI_HOST:'127.0.0.1',YUVI_OWNER_NAME:'小林',YUVI_CONTEXT_EVENTS:String(context),YUVI_CONTEXT_WRITING_CHARS:String(writing),
-    YUVI_CONSOLIDATION_IDLE_MS:String(idle),YUVI_MODEL_IDLE_TIMEOUT_MS:'600000',YUVI_MODEL_MAX_DURATION_MS:'600000',YUVI_SNAPSHOT_INTERVAL_MS:'2147483647',TZ:'Asia/Shanghai'};
+    YUVI_CONSOLIDATION_IDLE_MS:String(idle),YUVI_MODEL_IDLE_TIMEOUT_MS:'600000',YUVI_MODEL_MAX_DURATION_MS:'600000',YUVI_SNAPSHOT_INTERVAL_MS:'2147483647',TZ:tz};
+  if(tz===null)delete env.TZ;
   delete env.YUVI_LOCAL_ENV_FILE; delete env.NODE_OPTIONS;
   if(snapshots)env.YUVI_SNAPSHOT_DIR=snapshots;else delete env.YUVI_SNAPSHOT_DIR;
   const start=performance.now();const child=spawn(process.execPath,[...(hook?['--import',hook]:[]),join(checkout,'dist/main.js')],{env,stdio:['ignore','pipe','pipe']});

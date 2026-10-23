@@ -83,10 +83,11 @@ test('G5: P6/P7 500, unavailable, SIGKILL before/after delta, consolidation kill
        assert.equal(presentedShow(db,cs[1].seq,'测试人设原文\n').outcome.status,'completed');
       }
      }finally{db.close();}
-     // Commands while live must leave all data bytes and mtimes unchanged.
-     const files=async()=>Promise.all((await readdir(data)).sort().map(async name=>({name,mtime:(await stat(join(data,name))).mtimeMs,bytes:(await stat(join(data,name))).isFile()?digest((await readFile(join(data,name))).toString('base64')):null})));
-     const before=await files();cliPresented(data,null,['summary']);cliPresented(data,null,['writings']);cliPresented(data,join(root,'persona.txt'),['show',String(ps[0].seq)]);
-     assert.deepEqual(await files(),before);
+     // Logical readonly permits SQLite WAL/SHM coordination, not archive/lock changes.
+     const files=async()=>Promise.all(['archive.sqlite','archive.sqlite-wal','service.lock'].map(async name=>({name,
+      ...(name==='service.lock'?{mtime:(await stat(join(data,name))).mtimeMs}:{}),bytes:digest((await readFile(join(data,name))).toString('base64'))})));
+     const before=await files(),beforeEvents=readEvents(data);cliPresented(data,null,['summary']);cliPresented(data,null,['writings']);cliPresented(data,join(root,'persona.txt'),['show',String(ps[0].seq)]);
+     assert.deepEqual(await files(),before);assert.deepEqual(readEvents(data),beforeEvents);
      await writeFile(join(root,'changed.txt'),'不同人设');assert.equal(cliPresented(data,join(root,'changed.txt'),['show',String(ps[0].seq)]).reconstruction.status,'persona_mismatch');
     }
    }finally{await service.stop();}
@@ -126,7 +127,7 @@ test('G4 reconstruction refusal: missing persona, unknown rules, Node mismatch, 
  const data=join(root,'data'),service=await startService(root,{data,baseUrl:base});await service.post('原句');await service.stop();
  const p=readEvents(data).find(e=>e.kind==='presented'),a=new Archive(data);
  try{
-  for(const [patch,status] of [[{rules:'future'},'rules_unsupported'],[{node_major:999},'node_mismatch'],[{messages_sha256:'0'.repeat(64)},'mismatch'],[{time_zone:'invalid/zone'},'mismatch']]){
+  for(const [patch,status] of [[{rules:'future'},'rules_unsupported'],[{node_major:999},'node_mismatch'],[{messages_sha256:'0'.repeat(64)},'mismatch'],[{time_zone:'invalid/zone'},'time_zone_unrecorded'],[{time_zone:null},'time_zone_unrecorded'],[{time_zone:undefined},'time_zone_unrecorded']]){
    const e=a.append({class:'control',kind:'presented',actor:'system',reply_to:p.reply_to,model:p.model,meta:{...p.meta,...patch}});
    const result=cliPresented(data,join(root,'persona.txt'),['show',String(e.seq),'--messages']);assert.equal(result.reconstruction.status,status);
   }
@@ -142,7 +143,7 @@ test('G4 reported legacy boundary: unpaired UTF-16 is lost by P6 SQLite binding;
   const data=join(root,label),s=await startService(root,{checkout,data,baseUrl:base,hook});
   try{await s.post('原文\ud800尾部');const db=new DatabaseSync(join(data,'archive.sqlite'),{readOnly:true});
    try{assert.equal(db.prepare("SELECT hex(CAST(content AS BLOB)) bytes FROM events WHERE kind='heard'").get().bytes,'E58E9FE69687EFBFBDE5B0BEE983A8');
-    if(label==='p7'){const seq=Number(db.prepare("SELECT seq FROM events WHERE kind='presented'").get().seq);assert.equal(presentedShow(db,seq,'测试人设原文\n').reconstruction.status,'mismatch');}
+    if(label==='p7'){const seq=Number(db.prepare("SELECT seq FROM events WHERE kind='presented'").get().seq);assert.equal(presentedShow(db,seq,'测试人设原文\n').reconstruction.status,'source_lossy');}
    }finally{db.close();}
   }finally{await s.stop();}
  }

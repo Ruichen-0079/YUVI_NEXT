@@ -177,11 +177,13 @@ YUVI_DATA_DIR=/tmp/yuvi-data YUVI_PERSONA_FILE=/tmp/persona.txt npm run --silent
 
 三个命令输出 JSON。`summary` 汇总清单数量、用途/步骤/结局、时间及 meta 字节数；`writings` 按请求统计每条非空文字的呈现次数和完成次数，给出从未有记录的条数。P7 之前的请求没有记录，不按规则推测它们曾呈现过什么。
 
-`show` 按历史范围和 `previous` 链重建消息，以 SHA-256 核对。成功为 `exact`；人设缺失/不同为 `persona_mismatch`，Node 主版本不同为 `node_mismatch`，未知规则为 `rules_unsupported`，来源/时区/摘要无法核对为 `mismatch`。它只核验 messages；工具描述等未逐条保存的常量不能被扩大声称为任意历史版本 HTTP 请求的精确副本。结局从后续事件推导：`completed`、`failed`、`unknown` 或整理的 `incomplete`；失败的 reason/outcome/http_status 沿用实际 error。
+`show` 按历史范围和 `previous` 链重建消息，以 SHA-256 核对。成功为 `exact`；人设缺失/不同为 `persona_mismatch`，Node 主版本不同为 `node_mismatch`，未知规则为 `rules_unsupported`，有效 IANA 时区未记录（缺失、无效或 `null`）为 `time_zone_unrecorded`，其余来源/摘要无法核对为 `mismatch`。它只核验 messages；工具描述等未逐条保存的常量不能被扩大声称为任意历史版本 HTTP 请求的精确副本。结局从后续事件推导：`completed`、`failed`、`unknown` 或整理的 `incomplete`；失败的 reason/outcome/http_status 沿用实际 error。
 
-已知重建边界：P6 及更早版本把孤立 UTF-16 代理项绑定到 SQLite TEXT 时会丢失原码元，当前回合指示却可能已经使用原字符串。P7 保持请求行为，并如实报告此类 `mismatch`；该验收边界已向 Claude 提出，未擅自改写输入或旧档案。Node 22 的 NUL 读回差异则通过区分原始回合指示与历史窗口处理，已有真实请求重建测试。
+运行时时间文字沿用 P6 的原生 Date 行为，不依赖时区名字；可用的 IANA 名仅供历史重建，不可用时明确记录 `time_zone: null`。工具后续步骤的基础时间仍取第 0 步。
 
-另有严格零文件变化边界：SQLite 的只读连接在已关闭的 WAL 目录上可能创建或更新 WAL/SHM 协调侧文件，主库与服务锁不变。此行为已复现并向 Claude 请求验收澄清；运行中服务的文件/mtime 检查已通过。不能将当前实现宣称为任何状态下零文件变化。
+源数据边界：仅当重建摘要不符、且档案当前 `heard` 含 U+FFFD 时报告 `source_lossy`。这表示可能的源数据损失，不能证明原输入含孤立 UTF-16 代理项，也不能排除实现缺陷。真实 U+FFFD、NUL、emoji 的正常请求仍应精确重建；P7 不改写输入或旧档案。Node 22 的 NUL 读回差异通过区分当前回合指示与历史窗口处理。
+
+诊断按逻辑只读执行：不改变事件、主库、空闲 WAL 的已提交内容或服务锁。原生 SQLite 可以创建 WAL/SHM，或维护 SHM 协调字节；这不表示诊断写入了档案事实。运行中和关闭后的目录均有检查，并验证随后服务仍能正常对话。
 
 离线性能与存储复现（全新 scratch 目录，Node 22.23.3；分项插桩使用其内置 registerHooks）：
 

@@ -22,8 +22,8 @@ test('P7 pure base assembly: selection, exact P4 messages, sections, parameters 
     const material = rows.slice(0, 2), expectedConsolidation = p4.consolidationMessages(rows, material, config);
     Date.now = () => { throw Error('Presentation must use the explicit clock'); };
     try {
-      const dialogue = assembleBase({ purpose: 'dialogue', selected: selectDialogue(archive, config), heard }, config, now, 'Asia/Shanghai', Number(process.versions.node.split('.')[0]));
-      const consolidation = assembleBase({ purpose: 'consolidation', selected: selectConsolidation(archive, material, config), maxTokens: 4000 }, config, now, 'Asia/Shanghai', Number(process.versions.node.split('.')[0]));
+      const dialogue = assembleBase({ purpose: 'dialogue', selected: selectDialogue(archive, config), heard }, config, now, 'Asia/Shanghai', Number(process.versions.node.split('.')[0]), 'Asia/Shanghai');
+      const consolidation = assembleBase({ purpose: 'consolidation', selected: selectConsolidation(archive, material, config), maxTokens: 4000 }, config, now, 'Asia/Shanghai', Number(process.versions.node.split('.')[0]), 'Asia/Shanghai');
       assert.deepEqual(dialogue.messages, expectedDialogue);
       assert.deepEqual(consolidation.messages, expectedConsolidation);
       for (const assembled of [dialogue, consolidation]) {

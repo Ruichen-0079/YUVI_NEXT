@@ -12,6 +12,15 @@ export function state(archive: Archive, n: number) {
   return { ...progress, rawStart: Math.min(desiredStart, progress.coveredCount),
     pressure: desiredStart > progress.coveredCount };
 }
+export function validTimeZone(value: unknown): value is string {
+  if (typeof value !== 'string' || !value) return false;
+  try { new Intl.DateTimeFormat('en', { timeZone: value }).format(0); return true; }
+  catch { return false; }
+}
+export function recordedTimeZone(): string | null {
+  try { const zone = Intl.DateTimeFormat().resolvedOptions().timeZone; return validTimeZone(zone) ? zone : null; }
+  catch { return null; }
+}
 const clocks = new Map<string, Intl.DateTimeFormat>();
 export function localTime(ms: number, timeZone?: string): string {
   const d = new Date(ms), pad = (n: number) => String(n).padStart(2, '0');
@@ -81,7 +90,7 @@ export interface Section {
 }
 export interface PresentationManifest extends Record<string, unknown> {
   format: number; rules: string; purpose: 'dialogue' | 'consolidation'; step?: number; previous?: string;
-  now: number; time_zone: string; owner_name: string; writing_chars: number; node_major: number;
+  now: number; time_zone: string | null; owner_name: string; writing_chars: number; node_major: number;
   request: { tools: string[]; max_tokens?: number }; persona: { sha256: string; chars: number };
   sections: Section[]; total: { messages: number; chars: number }; messages_sha256: string;
 }
@@ -89,15 +98,16 @@ export interface Assembly { messages: Message[]; parameters: RequestParameters; 
 export function messageSize(messages: Message[]) {
   return { messages: messages.length, chars: messages.reduce((sum, m) => sum + m.content.length, 0) };
 }
-// Pure presentation: every source event and the clock value are explicit.
+// Runtime uses P6 native Date formatting; replay explicitly supplies the recorded zone.
+// Source events and the clock value are explicit in both paths.
 // The same messages drive the section counts, request parameters and digest.
 export function assembleBase(input: {
   purpose: 'dialogue'; selected: { writings: Event[]; window: Event[] }; heard: Event;
 } | {
   purpose: 'consolidation'; selected: { writings: Event[]; material: Event[] }; maxTokens: number;
-}, config: PresentationConfig, now: number, timeZone: string, nodeMajor: number): Assembly {
-  const messages = input.purpose === 'dialogue' ? renderDialogue(input.selected, input.heard, config, now, timeZone) :
-    renderConsolidation(input.selected, config, now, timeZone);
+}, config: PresentationConfig, now: number, timeZone: string | null, nodeMajor: number, renderTimeZone?: string): Assembly {
+  const messages = input.purpose === 'dialogue' ? renderDialogue(input.selected, input.heard, config, now, renderTimeZone) :
+    renderConsolidation(input.selected, config, now, renderTimeZone);
   const sections: Section[] = [];
   let offset = 0;
   const part = (name: Section['name'], count: number, references: Partial<Section> = {}) => {
@@ -135,8 +145,8 @@ export function renderStep(text: string, calls: NonNullable<Section['tool_calls'
 // previous messages; neither archive selection nor base rendering is repeated.
 export function assembleContext(input: Parameters<typeof assembleBase>[0] | {
   previous: Assembly; previousId: string; text: string; calls: ToolCall[]; results: StepResult[];
-}, config: PresentationConfig, now: number, timeZone: string, nodeMajor: number): Assembly {
-  if (!('previous' in input)) return assembleBase(input, config, now, timeZone, nodeMajor);
+}, config: PresentationConfig, now: number, timeZone: string | null, nodeMajor: number, renderTimeZone?: string): Assembly {
+  if (!('previous' in input)) return assembleBase(input, config, now, timeZone, nodeMajor, renderTimeZone);
   const prior = input.previous, index = prior.manifest.step!;
   const calls = input.calls.map((call, i) => ({ id: call.id || `call_${index}_${i}`, name: call.name, arguments: call.arguments }));
   const appended = renderStep(input.text, calls, input.results.map(result => result.content));

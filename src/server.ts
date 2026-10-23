@@ -2,7 +2,7 @@ import { createServer, type ServerResponse, type IncomingMessage } from 'node:ht
 import { Archive, type Event } from './archive.js';
 import type { Config } from './config.js';
 import { streamModel, silenceReason, type Usage, ModelFailure } from './model.js';
-import { state, assembleContext, selectDialogue, selectConsolidation, check, type StepResult } from './context.js';
+import { state, recordedTimeZone, assembleContext, selectDialogue, selectConsolidation, check, type StepResult } from './context.js';
 import { page } from './page.js';
 
 async function readText(req: IncomingMessage): Promise<string | null> {
@@ -33,7 +33,7 @@ export function createApp(config: Config, archive = new Archive(config.dataDir))
   let failed = false;
   let pendingTurns = 0, receiving = 0, consolidating = false;
   let retryAfter = 0;
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const zone = recordedTimeZone();
   const nodeMajor = Number(process.versions.node.split('.')[0]);
   const range = (material: Event[]) => ({ from_seq: material[0].seq, through_seq: material.at(-1)!.seq });
   async function consolidate(): Promise<boolean> {

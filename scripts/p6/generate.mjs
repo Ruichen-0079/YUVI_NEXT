@@ -33,7 +33,7 @@ export function generate(file, { count = 1_000_000, seed = 67, shape = 'typical'
     const text = (label, common = false) => `${label} 中文经历 ${common ? '散步' : '阅读'} English Ab_%_é 😀 ` +
       ['看雨 reading window。','茶杯与猫 tea and cat。','路上听到轻声 hello。'][rand() % 3].repeat(1 + rand() % 18);
     function present(input, heard=null) {
-      const assembled=assembleContext(input,config,timestamp(seq+1),'UTC',Number(process.versions.node.split('.')[0]));
+      const assembled=assembleContext(input,config,timestamp(seq+1),'UTC',Number(process.versions.node.split('.')[0]),'UTC');
       const event=add('control','presented','system','',heard?.id??null,assembled.manifest);return {assembled,event};
     }
     function presentDialogue(heard){
