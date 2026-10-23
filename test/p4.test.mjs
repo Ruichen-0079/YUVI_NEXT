@@ -273,9 +273,11 @@ test('D7/D8/D6: thirty turns, stable bounded suffix, failure backoff and determi
   assert.ok(!(await f.events()).some(e => e.kind === 'unconsolidated'));
   assert.match(f.output, /HTTP 500/);
   failing = false;
-  await delay(Math.max(0, firstFailure.time + 30_100 - Date.now()));
+  const retryAt = firstFailure.time + 30_100;
+  while (Date.now() < retryAt) await delay(retryAt - Date.now());
   for (let i = 16; i <= 30; i++) await turn(i);
   const retries = f.requests.filter(r => !r.body.tools && r.time > firstFailure.time);
+  assert.ok(retries.length > 0, 'Consolidation must retry after backoff');
   assert.ok(retries[0].time - firstFailure.time >= 30_000);
   let events = await f.events();
   const materials = events.filter(e => e.kind === 'wrote').map(e => e.meta.material);
