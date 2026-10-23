@@ -18,7 +18,7 @@
 | `act/silent`        | YUVI 在这一回合选择不回复（通过 `stay_silent`）；`content` 为它给出的理由，可为空，不对外发送                              | 失败；对方知道它在沉默                     | P2   |
 | `control/restored`  | 此档案由一份快照恢复而来：在它之前的事件来自该快照（`meta.through_seq`、`meta.snapshot_sha256`），之后的事件发生在恢复之后 | 原档案在快照之后没有别的事件；有事件被删除 | P3   |
 | `inner/wrote`       | YUVI 写下的文字。P4 中只在整理时产生：`meta.material` 为它这次读到的本场景对话事件范围（`from_seq`–`through_seq`）；`content` 为它写下的全部文字，可以为空（读过，没有写）；`meta.finish_reason="length"` 表示写到长度上限时停止 | 对材料的摘要或准确记录；它的全部记忆；任何类型 | P4   |
-| `act/checked`       | YUVI 在一个回合中调用 `check` 查阅档案原文；`meta.arguments` 为查询条件，`meta.result_seqs` 为返回给它的事件；`meta.invalid=true` 表示参数无效、没有查询 | 它相信或采用了这些内容；档案是它全部经历的完整记录 | P4   |
+| `act/checked`       | YUVI 在一个回合中调用 `check` 查阅档案原文；`meta.arguments` 为查询条件，`meta.result_seqs` 为返回给它的事件；`meta.invalid=true` 表示参数无效、没有查询。P8 起，`meta.rules`、`engine`、`mode` 说明这次怎样选取，`meta.rank_seqs` 为按选取顺序排列的候选（最多 100 个） | 它相信或采用了这些内容；档案是它全部经历的完整记录；`rank_seqs` 中的事件被返回给了它 | P4   |
 | `control/unconsolidated` | 一批对话事件（`meta.material`）没有经过整理，就因积压上限离开了原文窗口                                              | 事件被删除；它从未看到过它们（它们曾在对话上下文中） | P4   |
 | `control/presented` | 程序为一次模型请求组装好了内容，即将交给请求发送；`meta` 为呈现清单（用途、步骤、各部分引用的档案事件与长度、组装规则版本、请求参数、消息摘要，见 P7 §3.2）；对话请求的 `reply_to` 为当前 `heard` | 请求已发出或对方已收到；模型读了、注意到、采纳或使用了其中任何内容 | P7 |
 

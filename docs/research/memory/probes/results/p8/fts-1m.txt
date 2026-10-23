@@ -1,0 +1,53 @@
+{"count":1000000,"chars":112023957,"tokCount":131070923,"buildMs":117496,"tokMs":12090,"optimizeMs":11667,"bytes":560156672}
+{"term":"年糕","df":1}
+{"term":"4a87","df":1}
+{"term":"amber","df":1}
+{"term":"一","df":899018}
+{"term":"泯","df":821669}
+{"term":"骋","df":586863}
+{"term":"豎","df":131622}
+{"term":"騬","df":15162}
+{"term":"一泯","df":283234}
+{"label":"rare bigram","match":"\"年糕\"","total":1,"med_ms":0.01,"max_ms":0.29,"count_med_ms":0.01,"top":[150000]}
+{"label":"identifier","match":"\"露川\" OR \"4a87\"","total":1,"med_ms":0.02,"max_ms":0.11,"count_med_ms":0.01,"top":[150000]}
+{"label":"natural q","match":"\"我的\" OR \"的猫\" OR \"猫叫\" OR \"叫什\" OR \"什么\" OR \"么来\" OR \"来着\"","total":2,"med_ms":0.04,"max_ms":0.17,"count_med_ms":0.02,"top":[700000,150000]}
+{"label":"mid char","match":"\"豎\"","total":131622,"med_ms":88.95,"max_ms":157.51,"count_med_ms":4.77,"top":[70560,813260,730260]}
+{"label":"common char","match":"\"一\"","total":899018,"med_ms":639.89,"max_ms":714.9,"count_med_ms":38.92,"top":[818334,731894,992936]}
+{"label":"two common","match":"\"一\" OR \"泯\"","total":924618,"med_ms":843.88,"max_ms":880.56,"count_med_ms":73.76,"top":[944308,665133,449537]}
+{"label":"5 common OR","match":"\"一\" OR \"泯\" OR \"诞\" OR \"岭\" OR \"箜\"","total":941256,"med_ms":1254.72,"max_ms":1357.02,"count_med_ms":137.13,"top":[47481,232918,244080]}
+{"label":"common recency","match":"\"一\"","total":899018,"med_ms":0.03,"max_ms":0.11,"count_med_ms":35.42,"top":[1000000,999999,999998]}
+{"label":"5 common recency","match":"\"一\" OR \"泯\" OR \"诞\" OR \"岭\" OR \"箜\"","total":941256,"med_ms":0.1,"max_ms":0.35,"count_med_ms":137.31,"top":[1000000,999999,999998]}
+file:///tmp/claude-0/-home-user/af0d0503-1722-5c43-b3ff-981a3d50b7f9/scratchpad/p8probe/fts1m.mjs:48
+  const st = db.prepare(sql), cs = db.prepare(`SELECT count(*) n FROM terms ${extra} WHERE terms MATCH ? ${params.length ? 'AND ' + params[0] : ''}`);
+                ^
+
+Error: ambiguous column name: rowid
+    at q (file:///tmp/claude-0/-home-user/af0d0503-1722-5c43-b3ff-981a3d50b7f9/scratchpad/p8probe/fts1m.mjs:48:17)
+    at file:///tmp/claude-0/-home-user/af0d0503-1722-5c43-b3ff-981a3d50b7f9/scratchpad/p8probe/fts1m.mjs:66:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  code: 'ERR_SQLITE_ERROR',
+  errcode: 1,
+  errstr: 'SQL logic error'
+}
+
+Node.js v22.22.0
+{"label":"bounds lookup","rows":1,"med_ms":24.29,"max_ms":29.31,"first":{"a":1,"b":400000}}
+{"label":"rare rank, rowid-range + t join","rows":1,"med_ms":0.03,"max_ms":0.19,"first":{"s":150000}}
+{"label":"rare count, rowid-range + t join","rows":1,"med_ms":0.01,"max_ms":0.06,"first":{"n":1}}
+{"label":"rare rank only wrote (kind join)","rows":1,"med_ms":0.02,"max_ms":0.04,"first":{"s":150000}}
+{"label":"rare recency, rowid-range","rows":1,"med_ms":0.01,"max_ms":0.02,"first":{"s":150000}}
+{"label":"mid rank, rowid-range + t join","rows":40,"med_ms":12.54,"max_ms":13.22,"first":{"s":393667}}
+{"label":"mid count, rowid-range + t join","rows":1,"med_ms":4.23,"max_ms":5.17,"first":{"n":6030}}
+{"label":"mid rank only wrote (kind join)","rows":40,"med_ms":11.73,"max_ms":14.14,"first":{"s":807800}}
+{"label":"mid recency, rowid-range","rows":40,"med_ms":0.59,"max_ms":0.63,"first":{"s":400000}}
+{"label":"common rank, rowid-range + t join","rows":40,"med_ms":350.63,"max_ms":458.4,"first":{"s":137355}}
+{"label":"common count, rowid-range + t join","rows":1,"med_ms":76.53,"max_ms":88.41,"first":{"n":359608}}
+{"label":"common rank only wrote (kind join)","rows":40,"med_ms":130.54,"max_ms":141.29,"first":{"s":270000}}
+{"label":"common recency, rowid-range","rows":40,"med_ms":31.78,"max_ms":33.95,"first":{"s":400000}}
+{"label":"empty query recency in range","rows":40,"med_ms":64.8,"max_ms":70.12,"first":{"seq":400000}}
+{"label":"vocab df lookup x7","rows":3,"med_ms":0.03,"max_ms":0.17,"first":{"term":"我的","doc":2}}
+{"label":"docs count","rows":1,"med_ms":3.63,"max_ms":5.96,"first":{"n":1000000}}
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"batches":2000,"events_per_batch":4,"p50":0.055,"p95":0.215,"p99":1.95,"max":402.31}
