@@ -18,7 +18,15 @@ export function validTimeZone(value: unknown): value is string {
   catch { return false; }
 }
 export function recordedTimeZone(): string | null {
-  try { const zone = Intl.DateTimeFormat().resolvedOptions().timeZone; return validTimeZone(zone) ? zone : null; }
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!validTimeZone(zone)) return null;
+    const now = Date.now(), year = new Date(now).getFullYear();
+    // POSIX GMT signs can be inverted by Intl resolution. Check native Date
+    // presentation, including both seasons, before recording a replay zone.
+    return [now, Date.UTC(year, 0, 1), Date.UTC(year, 6, 1)]
+      .every(t => localTime(t) === localTime(t, zone)) ? zone : null;
+  }
   catch { return null; }
 }
 const clocks = new Map<string, Intl.DateTimeFormat>();

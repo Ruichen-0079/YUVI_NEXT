@@ -23,7 +23,7 @@ test('G3/G4: P6/P7 process differential for empty, POSIX, invalid, IANA and abse
   if(!body.tools){res.end(text('留下早晨散步的经历')+done({prompt_tokens:4}));return;}
   res.end(body.messages.some(m=>m.role==='tool')?text('查到原文')+done({prompt_tokens:3}):tool('check',{query:'早晨'})+done({prompt_tokens:2}));
  });const base=await listen(fake);t.after(()=>new Promise(r=>fake.close(r)));
- for(const [i,tz] of ['', 'CST-8','Garbage/Zone','EST5EDT','Asia/Shanghai','America/New_York',null].entries()){
+ for(const [i,tz] of ['', 'CST-8','Garbage/Zone','EST5EDT','GMT+8','GMT-3','Etc/GMT+8','UTC-3','Asia/Shanghai','America/New_York',null].entries()){
   let expected;
   for(const [label,checkout] of [['old',legacy],['new',resolve('.')]]){
    const data=join(root,i+'-'+label);active={data,label};requests=[];captured=[];
@@ -37,7 +37,7 @@ test('G3/G4: P6/P7 process differential for empty, POSIX, invalid, IANA and abse
      assert.equal(captured.length,5);assert.ok(events.some(e=>e.kind==='wrote'));
      for(const p of events.filter(e=>e.kind==='presented')){
       assert.ok(Object.hasOwn(p.meta,'time_zone'));
-      const invalid=['','CST-8','Garbage/Zone'].includes(tz);
+      const invalid=['','CST-8','Garbage/Zone','GMT+8','GMT-3','UTC-3'].includes(tz);
       if(invalid)assert.equal(p.meta.time_zone,null);
       const show=cliPresented(data,join(root,'persona.txt'),['show',String(p.seq),'--messages']);
       assert.equal(show.reconstruction.status,invalid?'time_zone_unrecorded':'exact',String(tz));
