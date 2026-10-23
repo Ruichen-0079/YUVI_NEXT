@@ -1,3 +1,4 @@
+import { legacyP8Requests } from './helpers/p8-scan-equivalence.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -9,9 +10,10 @@ import { DatabaseSync } from 'node:sqlite';
 import { Archive } from '../dist/archive.js';
 import { createSnapshot, restoreSnapshot } from '../dist/snapshots.js';
 import { presentedShow } from '../dist/presented.js';
-import { legacyCheckout, listen, startService, text, tool, done } from './helpers/p6-process.mjs';
+import { legacyCheckout, listen, startService as startRawService, text, tool, done } from './helpers/p6-process.mjs';
 import { normaliseP7Events, withoutRecordedTime } from './helpers/p7-equivalence.mjs';
 import { capturePresentation, digest, readEvents, assertPresentations, cliPresented } from './helpers/p7-records.mjs';
+const startService=(root,options)=>startRawService(root,{...options,scan:true});
 async function until(fn,ms=10000){const end=performance.now()+ms;while(performance.now()<end){if(await fn())return;await delay(20);}throw Error('probe timeout');}
 
 test('G5: P6/P7 500, unavailable, SIGKILL before/after delta, consolidation kill/retry, disconnected browser', async t=>{
@@ -69,6 +71,7 @@ test('G5: P6/P7 500, unavailable, SIGKILL before/after delta, consolidation kill
     const usage=await(await fetch(service.url+'/api/usage')).json(),events=readEvents(data);
     if(label==='old')expected={events:withoutRecordedTime(events),requests:structuredClone(requests),rawRequests:[...rawRequests],frames:frames.map(g=>g.map(({event,data})=>({event,data}))),usage,raw:events};
     else{
+     requests=legacyP8Requests(requests);rawRequests=rawRequests.map(raw=>JSON.stringify(legacyP8Requests([JSON.parse(raw)])[0]));
      const mapping=normaliseP7Events(expected.raw,events);
      assert.deepEqual({events:mapping.events,requests,rawRequests,frames:mapping.frames(frames),usage},
       {events:expected.events,requests:expected.requests,rawRequests:expected.rawRequests,frames:expected.frames,usage:expected.usage},scenario);

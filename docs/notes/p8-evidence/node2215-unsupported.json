@@ -1,0 +1,27 @@
+{
+  "node": "v22.15.0",
+  "fts5": false,
+  "last_frame": "done",
+  "check": {
+    "arguments": {
+      "query": "不支持"
+    },
+    "result_seqs": [
+      1
+    ],
+    "total": 1,
+    "rules": "p8",
+    "engine": "scan",
+    "mode": "substring",
+    "terms": [],
+    "dropped": [],
+    "fallback": "index_unavailable",
+    "rank_seqs": [
+      1
+    ]
+  },
+  "verification": {
+    "status": "unsupported"
+  },
+  "passed": true
+}

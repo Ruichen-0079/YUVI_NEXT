@@ -1,3 +1,4 @@
+import { legacyP8Requests } from './helpers/p8-scan-equivalence.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -7,10 +8,11 @@ import { join, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { Archive } from '../dist/archive.js';
 import { presentedShow } from '../dist/presented.js';
-import { legacyCheckout, listen, startService, text, tool, done } from './helpers/p6-process.mjs';
+import { legacyCheckout, listen, startService as startRawService, text, tool, done } from './helpers/p6-process.mjs';
 import { readEvents, cliPresented, capturePresentation, digest } from './helpers/p7-records.mjs';
 import { normaliseP7Events, withoutRecordedTime } from './helpers/p7-equivalence.mjs';
 
+const startService=(root,options)=>startRawService(root,{...options,scan:true});
 // Fresh processes are essential: Date/Intl timezone resolution depends on process TZ.
 test('G3/G4: P6/P7 process differential for empty, POSIX, invalid, IANA and absent TZ', async t => {
  const root=await mkdtemp(join(tmpdir(),'yuvi-p7-tz-')),legacy=await legacyCheckout(root,'9f67b81');
@@ -32,6 +34,7 @@ test('G3/G4: P6/P7 process differential for empty, POSIX, invalid, IANA and abse
     const frames=[await s.post('早晨去散步'),await s.post('再核对早晨的事')],events=readEvents(data),usage=await(await fetch(s.url+'/api/usage')).json();
     if(label==='old')expected={events:withoutRecordedTime(events),raw:events,requests:[...requests],frames:frames.map(g=>g.map(({event,data})=>({event,data}))),usage};
     else{
+     requests=requests.map(raw=>JSON.stringify(legacyP8Requests([JSON.parse(raw)])[0]));
      const mapped=normaliseP7Events(expected.raw,events);
      assert.deepEqual({events:mapped.events,requests,frames:mapped.frames(frames),usage},{events:expected.events,requests:expected.requests,frames:expected.frames,usage:expected.usage},String(tz));
      assert.equal(captured.length,5);assert.ok(events.some(e=>e.kind==='wrote'));

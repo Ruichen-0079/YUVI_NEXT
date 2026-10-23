@@ -4,17 +4,17 @@ YUVI 的第二代（V2）。一个持续运行的人工个体：发生的事按�
 
 - 给参与开发的代理：先读 [`AGENTS.md`](AGENTS.md)。
 - 开发周期：[`docs/ROADMAP.md`](docs/ROADMAP.md)
-- 工作包：[`docs/P1.md`](docs/P1.md)、[`docs/P2.md`](docs/P2.md)、[`docs/P3.md`](docs/P3.md)、[`docs/P4.md`](docs/P4.md)、[`docs/P6.md`](docs/P6.md)（WP-A）、[`docs/P7.md`](docs/P7.md)（WP-B，待实施）
+- 工作包：[`docs/P1.md`](docs/P1.md)、[`docs/P2.md`](docs/P2.md)、[`docs/P3.md`](docs/P3.md)、[`docs/P4.md`](docs/P4.md)、[`docs/P6.md`](docs/P6.md)（WP-A）、[`docs/P7.md`](docs/P7.md)（WP-B，验收中）、[`docs/P8.md`](docs/P8.md)（WP-C + WP-D，待实施）
 - 事件与用语：[`docs/TERMS.md`](docs/TERMS.md)
 - 记忆架构研究与依赖选型：[`docs/research/memory/`](docs/research/memory/README.md)
 - V1 知识归档（历史、子系统的真实能力、工程教训、继承分类、来源）：[`docs/history/v1/`](docs/history/v1/README.md)
 - 设计背景（只作参考）：[V2 蓝图，YUVI PR #339](https://github.com/Ruichen-0079/YUVI/pull/339)
 
-当前能力（P4）：本地浏览器文字对话、流式回复、可选择的沉默、只追加 SQLite 档案、按日 token 用量，自动/手动快照、校验和恢复，以及自行整理经历和工具查档。
+当前能力（P8）：本地浏览器文字对话、流式回复、可选择的沉默、只追加 SQLite 档案、按日 token 用量，自动/手动快照、校验和恢复，以及自行整理经历和工具查档。
 
 ## 安装与运行
 
-需要 **Node.js 22.13 或更新的 22.x**（使用内置 `node:sqlite`）及 npm。SQLite 在部分 Node 22 版本会输出实验性 API 提示。
+需要 **Node.js 22.16 或更新的 22.x**（使用内置 `node:sqlite`）及 npm。SQLite 在部分 Node 22 版本会输出实验性 API 提示。
 
 ```sh
 npm ci
@@ -90,7 +90,9 @@ YUVI_LOCAL_ENV_FILE=/absolute/path/to/local.env npm run start:local
 
 每次对话和整理都按字数预算放入最近的非空内部文字：从最新往前整条选择，遇到放不下的下一条即停止，再按时间顺序呈现。最新一条无论长短总是完整放入；长度停止的说明位于原文之外。它们属于档案，**页面不显示**，负责人可用 `/api/events` 或只读档案查阅；未选入的旧文字仍可通过 `check` 找到。这是自行整理的文字载体，不是完整记忆或 recall。
 
-模型可调用 `check({query?, from?, to?})`：本分支、本场景的对话和非空内部文字，按区分大小写的完整子串匹配，不拆词；时间为 ISO 日期或日期时间，包含端点，无时区按主机本地时区，单独日期表示当地午夜。返回最新匹配的最多 40 条、16000 字原文，按时间顺序显示；最近一条始终整条返回。工具结果给出匹配总数及返回条数，不截断单条。每次调用记录 `act/checked`；无效参数如实记录并返回说明，不执行查询。网页不展示查阅与积压控制事件。
+模型可调用 `check({query?, from?, to?})`：查阅本分支、本场景的对话和非空内部文字。P8 使用可重建的 FTS5 派生索引，按规范化的字词匹配，大小写和全角字符会规范化；按相关度选出、按档案顺序呈现。最相关的一条和最近的一条始终整条返回，其余受最多 40 条、16000 字预算限制，不截断单条。时间为 ISO 日期或日期时间，包含端点；无时区按主机本地时区，单独日期表示当地午夜。没有查询时按最近记录选取；查询只有符号、索引正在建立或不可用时，保留原有区分大小写的子串扫描，工具结果明确说明降级原因、词语裁剪和选取方式。
+
+每次调用记录 `act/checked`，包括候选排名与实际返回的引用，两者分开记录。无效参数如实记录并返回说明，不执行查询。网页不展示查阅与控制事件。
 
 **查得到不等于被纠正。** 更正与旧说法都原样保留，符合条件时一起返回；程序不判断哪条正确，不保证模型会查、会相信或采用更正。各部分按事件数或字数有界，但不保证整个请求能放进模型上下文；超限如实失败，不裁剪重发。
 
@@ -194,3 +196,30 @@ node scripts/p6/generate.mjs /tmp/yuvi-presented.sqlite 1000000 presented 67
 ```
 
 脚本复用 P6 两种档案，在真实服务入口比较 P6 与 P7；另生成带呈现记录的百万档案测量只读诊断。它只使用回环假模型，保留 results.json 和合成数据。[实施说明](docs/notes/P7.md)、[原始性能数据](docs/notes/P7-results.json)。
+
+
+## 派生索引与离线生活评测（P8）
+
+`index.sqlite` 与 SQLite 的协调文件仅保存词元倒排和结构元数据，不能作为第二份原文档案；结果始终从 `archive.sqlite` 读取。索引敏感程度与档案相同，文件权限不宽于 0600，不进入快照。启动时校验，不符则重建；运行中追平，失败不阻止对话。重建及扫描降级在工作线程执行；扫描按发起时的档案位置读取一致前缀。
+
+```sh
+npm run build
+YUVI_DATA_DIR=/tmp/yuvi-data npm run --silent index -- verify
+YUVI_DATA_DIR=/tmp/yuvi-data npm run --silent index -- verify --full
+# 必须先停服务；重建取得现有服务锁，在目录内临时文件建立后原子替换。
+YUVI_DATA_DIR=/tmp/yuvi-data npm run --silent index -- rebuild
+```
+
+`verify` 逻辑只读，可在线执行；结果为 ok、behind、version、mismatch、corrupt、missing 或 unsupported。低于 Node 22.16、没有 FTS5 时仍能启动并退回扫描，但完整功能与验收要求使用 22.16 以上的 22.x。
+
+评测只使用冻结的合成生活、模拟时钟和回环假模型，不加载本机密钥，不调用真实模型。新输出目录必须不存在：
+
+```sh
+npm run eval -- run life-a --arm A2 --out /tmp/yuvi-life-a
+npm run eval -- measure /tmp/yuvi-life-a
+npm run eval -- explain /tmp/yuvi-life-a P04
+npm run eval -- baseline
+npm run eval -- regress
+```
+
+baseline 运行完整九周的八种生活/臂/写作组合，生成基线 JSON 与报告；regress 重跑并逐字节比较冻结 JSON。墙钟与文件大小另存 timing.json，不参与确定性比较。数据保留在忽略的独立评测目录中。结果只能说明检索与呈现，不能证明假模型理解或使用了记忆。

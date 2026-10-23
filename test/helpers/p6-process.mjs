@@ -15,12 +15,12 @@ export async function listen(server) {
 }
 export async function legacyCheckout(root, ref='190a272') {
   const dir=join(root,'legacy');await mkdir(dir);
-  execFileSync('tar',['-x','-C',dir],{input:execFileSync('git',['archive',ref])});
+  execFileSync('tar',['-x','-C',dir],{input:execFileSync('git',['archive',ref],{maxBuffer:64*1024*1024})});
   await symlink(resolve('node_modules'),join(dir,'node_modules'),'dir');
   execFileSync(process.execPath,[resolve('node_modules/typescript/bin/tsc'),'-p',join(dir,'tsconfig.json')]);
   return dir;
 }
-export async function startService(root,{ checkout=resolve('.'), data, baseUrl, context=20, writing=16000, hook, idle=2147483647, snapshots, tz='Asia/Shanghai' }={}) {
+export async function startService(root,{ checkout=resolve('.'), data, baseUrl, context=20, writing=16000, hook, idle=2147483647, snapshots, scan=false, tz='Asia/Shanghai' }={}) {
   const reserve=createServer(),url=await listen(reserve);await new Promise(r=>reserve.close(r));
   const persona=join(root,'persona.txt');await writeFile(persona,'测试人设原文\n');
   const env={...process.env,YUVI_DATA_DIR:data,YUVI_PERSONA_FILE:persona,YUVI_MODEL_BASE_URL:baseUrl+'/v1',YUVI_MODEL:'fake-p6',YUVI_MODEL_API_KEY:'fake-p6-key-only',
@@ -29,7 +29,9 @@ export async function startService(root,{ checkout=resolve('.'), data, baseUrl, 
   if(tz===null)delete env.TZ;
   delete env.YUVI_LOCAL_ENV_FILE; delete env.NODE_OPTIONS;
   if(snapshots)env.YUVI_SNAPSHOT_DIR=snapshots;else delete env.YUVI_SNAPSHOT_DIR;
-  const start=performance.now();const child=spawn(process.execPath,[...(hook?['--import',hook]:[]),join(checkout,'dist/main.js')],{env,stdio:['ignore','pipe','pipe']});
+  const scanHook=join(root,'force-scan.mjs');
+  if(scan)await writeFile(scanHook,`import{registerHooks}from'node:module';registerHooks({load(url,context,next){const r=next(url,context);if(url.endsWith('/main.js'))return {...r,source:String(r.source).replace('createApp(config, archive)',"createApp(config, archive, {checkEngine:'scan'})")};return r;}});`);
+  const start=performance.now();const child=spawn(process.execPath,[...(scan?['--import',scanHook]:[]),...(hook?['--import',hook]:[]),join(checkout,'dist/main.js')],{env,stdio:['ignore','pipe','pipe']});
   let output='',readyAt;
   const ready=new Promise((resolve,reject)=>{
     child.stdout.on('data',d=>{output+=d;if(output.includes('YUVI is ready.')&&readyAt===undefined){readyAt=performance.now();resolve();}});
