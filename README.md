@@ -4,7 +4,7 @@ YUVI 的第二代（V2）。一个持续运行的人工个体：发生的事按�
 
 - 给参与开发的代理：先读 [`AGENTS.md`](AGENTS.md)。
 - 开发周期：[`docs/ROADMAP.md`](docs/ROADMAP.md)
-- 工作包：[`docs/P1.md`](docs/P1.md)、[`docs/P2.md`](docs/P2.md)、[`docs/P3.md`](docs/P3.md)、[`docs/P4.md`](docs/P4.md)、[`docs/P6.md`](docs/P6.md)（WP-A）、[`docs/P7.md`](docs/P7.md)（WP-B，验收中）、[`docs/P8.md`](docs/P8.md)（WP-C + WP-D，待实施）
+- 工作包：[`docs/P1.md`](docs/P1.md)、[`docs/P2.md`](docs/P2.md)、[`docs/P3.md`](docs/P3.md)、[`docs/P4.md`](docs/P4.md)、[`docs/P6.md`](docs/P6.md)（WP-A）、[`docs/P7.md`](docs/P7.md)（WP-B）、[`docs/P8.md`](docs/P8.md)（WP-C + WP-D，待独立验收）
 - 事件与用语：[`docs/TERMS.md`](docs/TERMS.md)
 - 记忆架构研究与依赖选型：[`docs/research/memory/`](docs/research/memory/README.md)
 - V1 知识归档（历史、子系统的真实能力、工程教训、继承分类、来源）：[`docs/history/v1/`](docs/history/v1/README.md)
@@ -148,7 +148,7 @@ P4 专项使用真实服务进程覆盖空闲和压力整理、空文字、失�
 
 回合、整理和空闲检查使用从档案重建的数字元数据及按序号读取的有限原文，不缓存历史内容。重启仍执行原有完整性检查，再重建进度；不新增档案索引或持久状态文件。场景和分支仍固定为原有值，不增加配置。
 
-`check` 仍为区分大小写的子串查询，预算与原文呈现不变；匹配总数需要 SQLite 扫描。启动、`/api/events`、`/api/usage` 及快照校验的既有规模成本未在本轮消除。实现选择、实测数字和限制见 [P6 实测说明](docs/notes/P6.md)。
+P6 当时的 `check` 为区分大小写的子串查询，匹配总数需要 SQLite 扫描；当前 P8 的索引检索见下文，降级仍保留这一扫描路径。启动、`/api/events`、`/api/usage` 及快照校验的既有规模成本未在本轮消除。实现选择、实测数字和限制见 [P6 实测说明](docs/notes/P6.md)。
 
 从仓库根目录运行（Node 22；本地 Git 历史须包含基线 `190a272`；脚本不联网、不加载本机模型凭据）：
 

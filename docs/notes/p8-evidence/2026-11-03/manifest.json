@@ -1,6 +1,6 @@
 {
   "date": "2026-11-03",
-  "implementation_commit": "93cfb0bba835d68f52730fe840729d8b6f3ad528",
+  "implementation_commit": "8a2ab2d01bbf6fde2ebce23d079408bc269b882c",
   "base": "3343efa032e3c5e927666e5c7099ab10786cfaa5",
   "spec": "7944701a883b01d9fa1b48dfe74a434142262b74",
   "node": [
@@ -38,5 +38,13 @@
     "scripts/p8/benchmark.mjs": "e2975cb59fa39d9e0cc5e7897b182b3899937f00f088b23425dfc5d362559491",
     "scripts/p8/scan-probe.mjs": "bb76be4044e3e8d0c745e61829aee96cb87f9ab9a712468283c3cdff2d74680d",
     "scripts/p8/audit-evaluation.mjs": "2406faf152ace0ba36e43388e65435049be7d6307cf7c8148070fa4166118abb"
+  },
+  "test_sha256": {
+    "test/p8-eval.test.mjs": "109c9dabcab3d11c589028d312c91e4f822f7f82c8b97d2ecdee98d852f07e85",
+    "test/p8-retrieval.test.mjs": "6df1bc6e411338947a65866dc9f13ad7882955627b65f4213f1154da6b0ffd72",
+    "test/p8-index.test.mjs": "2b6b360ba8c50cb0e749c226d16bf7ebea4a5f431dad922d27e66b0f7b874a10",
+    "test/p8-service.test.mjs": "1420e21a61756fe8c314c55c5afd1d105d811836d0cd2bca459678d7f67507b8",
+    "test/p8-integrity.test.mjs": "38e74f216b325cfe6b30f973b7316f5f8ec573ca5cd8f7ffc1e0c37196e9f1d6",
+    "test/p8-measure.test.mjs": "59e13249d2c3763d184dba8c60bfa5d746725c00cc4bce6002f53cdbe00b5fae"
   }
 }

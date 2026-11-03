@@ -12,8 +12,8 @@
 - `evaluation-runs.json`：baseline与regress两个完整63天/8组合的各自driver计数与timing，墙钟不进入确定性比较。
 - `independent-audit.json`、`regress-independent-audit.json`：不导入产品/驱动/统计器的独立档案核对，两次各8组合全通过。核对主答案、四种渠道、全部文字消费记录、实际check参数/engine、请求/事件计数、UUID引用规范化摘要。不是声称Claude已经完成E4；独立验收仍由其另写驱动重算。
 - `explanations.json`：5次实际`explain`命令及完整输出，覆盖no_check、substring_miss、no_overlap、recency_cut、ranked_out。
-- `npm-test-node*.log`：Node22.16与22.23的完整`npm test`，各149/149通过。
-- `certified-node*.log`：同一完整套件以`node --test --test-concurrency=1 test/*.test.mjs`再运行，参数位于文件列表之前，是真正逐文件串行；各149/149通过。
+- `npm-test-node*.log`：Node22.16与22.23的完整`npm test`，各149/149通过；这是将E1测试改为冻结摘要、避免依赖未合并Git对象后的最终发布前运行。
+- `certified-node*.log`：同一完整套件以`node --test --test-concurrency=1 test/*.test.mjs`再运行，参数位于文件列表之前，是真正逐文件串行；各149/149通过；该次串行检查早于最后一处E1夹具可移植性修正，判据相同，修正后已完整重跑上项npm test。
 - `pre-fix-node*.log`：新E1断言检出F8仅1122字时的完整失败记录，修复为1500字后才生成最终基线。
 - `targeted.log`：评测/索引/检索定向41项通过。
 - `baseline.log`、`regress.log`、`audit.log`、`regress-audit.log`、`explain.log`、`million-validation.log`、`scan-worker.log`、`offline-ci.log`：相应命令原始结果。
