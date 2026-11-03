@@ -29,7 +29,7 @@ export async function retrieval(directory){
   });
  }finally{await index?.close();a.close();}
 }
-function report(result,root){
+export function report(result,root){
  let md='# P8 九周合成生活基线\n\n本报告只证明检索与呈现，不证明模型理解、注意或使用。假模型查询由脚本给定，比真实模型理想；excerpt 只是固定摘抄策略。\n\n';
  md+='| 生活/臂/写作 | 呈现答案 | 检索候选有交集 | 排进前100 | 未解释遗漏 |\n| --- | ---: | ---: | ---: | ---: |\n';
  for(const [key,r]of Object.entries(result.runs))md+=`| ${key} | ${r.coverage.overall.presented}/${r.coverage.overall.total} | ${r.retrieval_gap.overlap} | ${r.retrieval_gap.ranked_100} | ${r.reasons.unexplained} |\n`;
@@ -37,7 +37,7 @@ function report(result,root){
  md+='\n## Q2：新旧材料的竞争\n\n逐版本的排序位置与是否呈现见下表及 JSON 的 corrections。没有按“当前事实”替换旧记录；排序只由词元统计与时间决定。\n';
  md+='\n## Q3：更正前后能否同时呈现\n\n';for(const[key,r]of Object.entries(result.runs))md+=`- ${key}（呈现）：${r.corrections.filter(c=>c.all_presented).length}/${r.corrections.length} 个更正探针呈现全部版本。\n`;
  md+='\n同一事实随探针时间的变化（呈现/排名；排名不可跨scan与index解释为相同量）：\n';
- for(const[key,r]of Object.entries(result.runs))for(const fact of ['F1','F2','F3','F5','F11']){const rows=r.probes.flatMap(p=>p.answers.filter(a=>a.target===fact||a.target.startsWith(fact)&&/[a-c]$/.test(a.target)).map(a=>`${p.id}/${a.target} d${p.day}: ${a.presented?'呈现':'遗漏'}, rank=${a.rank??'无'}`));md+=`- ${key}/${fact}：${rows.join('；')}。\n`;}
+ for(const[key,r]of Object.entries(result.runs))for(const fact of ['F1','F2','F3','F5','F11']){const rows=r.probes.flatMap(p=>p.answers.filter(a=>new RegExp('^'+fact+'[a-d]?$').test(a.target)).map(a=>`${p.id}/${a.target} d${p.day}: ${a.presented?'呈现':'遗漏'}, rank=${a.rank??'无'}`));md+=`- ${key}/${fact}：${rows.join('；')}。\n`;}
  md+='\n## Q4：高频日常的干扰\n\n相同事实、时间与探针在两段生活中保持不变；下表按臂比较，不把差异解释成语义能力。\n';
  for(const arm of ['A0','A1','A2']){const a=result.runs[`life-a-${arm}-excerpt`],b=result.runs[`life-b-${arm}-excerpt`];md+=`- ${arm}（呈现）：高频标签答案 life-a ${a.coverage.tags.high_frequency.presented}/${a.coverage.tags.high_frequency.total}；life-b ${b.coverage.tags.high_frequency.presented}/${b.coverage.tags.high_frequency.total}。\n`;}
  md+='\n## Q5：候选、前100与实际呈现的损失\n\n检索候选与所有渠道呈现不是严格的漏斗：文字与窗口可能直接呈现；强制最近条也可能排在前100之外。\n\n| 生活/臂 | 全部词相交 | 保留词相交 | 排进前100 | check呈现但不在前100 | 无check主答案仍呈现 | 全渠道呈现 |\n| --- | ---: | ---: | ---: | ---: | ---: | ---: |\n';
@@ -45,6 +45,10 @@ function report(result,root){
  md+='\n## A2 相对 A1 的逐探针对照\n\n下表只比较检索/呈现事实。rank=无表示不在所记录前100，不能当成没有候选；旧版scan按时间排序。\n\n| 生活 | 探针/答案 | A1 呈现 / rank / 原因 | A2 呈现 / rank / 原因 |\n| --- | --- | --- | --- |\n';
  for(const life of ['life-a','life-b']){const before=result.runs[`${life}-A1-excerpt`],after=result.runs[`${life}-A2-excerpt`];
   for(const p of after.probes)for(const a of p.answers){const old=before.probes.find(v=>v.id===p.id).answers.find(v=>v.target===a.target);const cell=v=>`${v.presented?'是':'否'} / ${v.rank??'无'} / ${v.reason??'已呈现'}`;md+=`| ${life} | ${p.id}/${a.target} | ${cell(old)} | ${cell(a)} |\n`;}}
+ md+='\n对照变化的机械原因：A1 是区分大小写的整段子串与时间截取，A2 是 NFKC/小写词元并集与 bm25 排序；因此两者的 rank 不是同一种量。下列变化只描述选取与呈现，不是模型理解的改变。\n';
+ for(const life of ['life-a','life-b']){const before=result.runs[`${life}-A1-excerpt`],after=result.runs[`${life}-A2-excerpt`];let changes=0;
+  for(const p of after.probes)for(const a of p.answers){const old=before.probes.find(v=>v.id===p.id).answers.find(v=>v.target===a.target);if(a.presented!==old.presented){changes++;md+=`- ${life} ${p.id}/${a.target}：${old.presented?'呈现':old.reason} → ${a.presented?'呈现':a.reason}；A1 rank=${old.rank??'无'}，A2 rank=${a.rank??'无'}。\n`;}}
+  if(!changes)md+=`- ${life}：A1/A2 的最终答案呈现相同；候选、排名与渠道仍按逐探针表分别报告。\n`;}
  md+='\n## 整理、文字呈现与成本\n\n| 生活/臂 | 空闲/压力整理 | 非空文字 | 从未呈现 | 经check呈现 | 请求数 | 第0步字数均值/p95 | 续步字数均值/p95 | 工具结果字数 |\n| --- | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: |\n';
  for(const[key,r]of Object.entries(result.runs)){const c=r.cost;md+=`| ${key} | ${r.consolidation.idle}/${r.consolidation.pressure} | ${r.writings.rows.length} | ${r.writings.never_presented} | ${r.writings.via_check} | ${c.requests} | ${c.zero_chars.mean}/${c.zero_chars.p95} | ${c.later_chars.mean}/${c.later_chars.p95} | ${c.tool_result_chars} |\n`;}
  md+='\n更正探针的呈现顺序（true为所有版本均呈现且按原事件时间顺序；null为不能作此判断）：\n';
@@ -68,6 +72,7 @@ export async function baseline(regress=false){
  else {writeFileSync('docs/notes/P8-baseline.json',serialized);writeFileSync('docs/notes/P8-baseline.md',report(result,'.local-data/'+basename(root)));}
  return {root,wall_ms:performance.now()-wall};
 }
+if(process.argv[1]&&resolve(process.argv[1])===new URL(import.meta.url).pathname){
 const [command,...args]=process.argv.slice(2);
 try{
  if(command==='run'){
@@ -78,3 +83,5 @@ try{
  else if((command==='baseline'||command==='regress')&&!args.length)console.log(JSON.stringify(await baseline(command==='regress')));
  else throw Error('Invalid evaluation command');
 }catch(error){console.error(error.message);process.exitCode=1;}
+
+}
