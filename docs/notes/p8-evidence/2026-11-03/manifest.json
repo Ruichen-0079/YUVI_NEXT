@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-03",
+  "implementation_commit": "93cfb0bba835d68f52730fe840729d8b6f3ad528",
+  "base": "3343efa032e3c5e927666e5c7099ab10786cfaa5",
+  "spec": "7944701a883b01d9fa1b48dfe74a434142262b74",
+  "node": [
+    "v22.16.0",
+    "v22.23.3"
+  ],
+  "host": {
+    "os": "Linux x86_64",
+    "cpu": "Intel Core Ultra 9 275HX",
+    "logical_cpus": 24,
+    "performance_affinity": "0-7",
+    "life_affinity": "12-23",
+    "scan_worker_comparison_affinity": "8-11"
+  },
+  "all_tests": {
+    "per_version": 149,
+    "passed": 149,
+    "failed": 0,
+    "skipped": 0
+  },
+  "baseline_sha256": "c7f2a5a6a99f4c026b957319640b927fff13a7942862f5339a4b6b7a1c55a93c",
+  "source_sha256": {
+    "src/archive-index.ts": "c0bfbf153e7064ee2b018ed94e445c665f29ccfdb35f28fe816a9568764e00ec",
+    "src/archive-index-worker.ts": "b3df4c0a0dbe28dcd8aec40556a3157cd9b91dc40b5ecf945dbd28efa21db7ca",
+    "src/archive.ts": "57143b9544f571f4600d0d3c8bd7d0262335a3222934908bca61b3eeed1d77d1",
+    "src/context.ts": "2110837a8f41eb03e7d2596d882584894b2de34cdf46a890a9ba50cf183b005d",
+    "src/server.ts": "6460a87a7c5ef2414cc9a0bec5f5a3ce9a237065cca5820a370c39d067b7e04c",
+    "eval/life.mjs": "41ed3aa05c0baa6ccc819a926802206d2fa2ca35247d2fe3ca374c28777c1634",
+    "eval/run.mjs": "0eee1f350f64e9944b89df26ad98e5d122061d5edd4f3d8c41c2702c652b6c96",
+    "eval/measure.mjs": "ef333f28334710f803debe7470fade0853b3a3fa42164356113e8133e044376c",
+    "eval/cli.mjs": "5b1a199a0e2b8b968c473cb0efd1dbb02d96477774a8bae052ee806a644d0ead",
+    "eval/lives/life-a.json": "b70e6acead309c6b600cbb2ddd51406a948e470cd3853aabf2a933278b9b874d",
+    "eval/lives/life-b.json": "dabef87b37f74bb3e938d0983e4428eb8cc0cf3be2e394691c3ece1b4cc1d7ad",
+    "scripts/p8/corpus.mjs": "6d2f653876d8710ee0410d4ed704885b535074afd9142fec806b9174c1da0062",
+    "scripts/p8/benchmark.mjs": "e2975cb59fa39d9e0cc5e7897b182b3899937f00f088b23425dfc5d362559491",
+    "scripts/p8/scan-probe.mjs": "bb76be4044e3e8d0c745e61829aee96cb87f9ab9a712468283c3cdff2d74680d",
+    "scripts/p8/audit-evaluation.mjs": "2406faf152ace0ba36e43388e65435049be7d6307cf7c8148070fa4166118abb"
+  }
+}

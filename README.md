@@ -223,3 +223,5 @@ npm run eval -- regress
 ```
 
 baseline 运行完整九周的八种生活/臂/写作组合，生成基线 JSON 与报告；regress 重跑并逐字节比较冻结 JSON。墙钟与文件大小另存 timing.json，不参与确定性比较。数据保留在忽略的独立评测目录中。结果只能说明检索与呈现，不能证明假模型理解或使用了记忆。
+
+P8 的[九周基线报告](docs/notes/P8-baseline.md)、[确定性结果](docs/notes/P8-baseline.json)、[完整自查](docs/notes/P8-self-check.md)与[原始证据](docs/notes/p8-evidence/2026-11-03/README.md)已提交。普通/高干扰生活的 A2 呈现分别为37/38、28/38；遗漏按原样保留，不代表模型理解或使用记忆。

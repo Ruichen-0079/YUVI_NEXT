@@ -1,0 +1,720 @@
+{
+  "examples": [
+    {
+      "run": "life-a-A0-excerpt",
+      "probe": "P11",
+      "reason": "no_check",
+      "command": "npm run eval -- explain .local-data/p8-baseline-F0vnyO/life-a-A0-excerpt P11",
+      "explanation": {
+        "id": "P11",
+        "heard_seq": 7863,
+        "day": 58,
+        "tags": [],
+        "base_sections": [
+          {
+            "name": "persona",
+            "messages": 1,
+            "chars": 12
+          },
+          {
+            "name": "writings",
+            "messages": 5,
+            "chars": 2017,
+            "first_seq": 7569,
+            "last_seq": 7824,
+            "count": 5
+          },
+          {
+            "name": "window",
+            "messages": 21,
+            "chars": 689,
+            "first_seq": 7822,
+            "last_seq": 7863,
+            "count": 21
+          },
+          {
+            "name": "instruction",
+            "messages": 1,
+            "chars": 91,
+            "heard_seq": 7863
+          }
+        ],
+        "checks": [],
+        "requests": 1,
+        "answers": [
+          {
+            "target": "F4",
+            "seq": 158,
+            "age_days": 56.979166666666664,
+            "age_group": ">28d",
+            "channels": {
+              "writings": false,
+              "window": false
+            },
+            "first_position": null,
+            "window": false,
+            "writing": false,
+            "check": false,
+            "check_writing": false,
+            "presented": false,
+            "overlap": true,
+            "used_overlap": false,
+            "rank": null,
+            "reason": "no_check"
+          }
+        ],
+        "all_presented": false,
+        "presentation_order": [],
+        "chronological": null
+      }
+    },
+    {
+      "run": "life-a-A1-excerpt",
+      "probe": "P20",
+      "reason": "substring_miss",
+      "command": "npm run eval -- explain .local-data/p8-baseline-F0vnyO/life-a-A1-excerpt P20",
+      "explanation": {
+        "id": "P20",
+        "heard_seq": 7095,
+        "day": 53,
+        "tags": [
+          "expected_miss"
+        ],
+        "base_sections": [
+          {
+            "name": "persona",
+            "messages": 1,
+            "chars": 12
+          },
+          {
+            "name": "writings",
+            "messages": 6,
+            "chars": 2108,
+            "first_seq": 6650,
+            "last_seq": 7020,
+            "count": 6
+          },
+          {
+            "name": "window",
+            "messages": 39,
+            "chars": 1231,
+            "first_seq": 7018,
+            "last_seq": 7095,
+            "count": 39
+          },
+          {
+            "name": "instruction",
+            "messages": 1,
+            "chars": 88,
+            "heard_seq": 7095
+          }
+        ],
+        "checks": [
+          {
+            "seq": 7097,
+            "arguments": {
+              "query": "茶叶偏好"
+            },
+            "result_seqs": [],
+            "total": 0,
+            "rules": "p8",
+            "engine": "scan",
+            "mode": "substring",
+            "terms": [],
+            "dropped": [],
+            "fallback": "index_unavailable",
+            "rank_seqs": [],
+            "usage": {
+              "prompt_tokens": 3439,
+              "completion_tokens": 0
+            }
+          }
+        ],
+        "requests": 2,
+        "answers": [
+          {
+            "target": "F10",
+            "seq": 2991,
+            "age_days": 35.208333333333336,
+            "age_group": ">28d",
+            "channels": {
+              "writings": false,
+              "window": false
+            },
+            "first_position": null,
+            "window": false,
+            "writing": false,
+            "check": false,
+            "check_writing": false,
+            "presented": false,
+            "overlap": false,
+            "used_overlap": false,
+            "rank": null,
+            "reason": "substring_miss"
+          }
+        ],
+        "all_presented": false,
+        "presentation_order": [],
+        "chronological": null
+      }
+    },
+    {
+      "run": "life-a-A2-excerpt",
+      "probe": "P20",
+      "reason": "no_overlap",
+      "command": "npm run eval -- explain .local-data/p8-baseline-F0vnyO/life-a-A2-excerpt P20",
+      "explanation": {
+        "id": "P20",
+        "heard_seq": 7095,
+        "day": 53,
+        "tags": [
+          "expected_miss"
+        ],
+        "base_sections": [
+          {
+            "name": "persona",
+            "messages": 1,
+            "chars": 12
+          },
+          {
+            "name": "writings",
+            "messages": 6,
+            "chars": 2108,
+            "first_seq": 6650,
+            "last_seq": 7020,
+            "count": 6
+          },
+          {
+            "name": "window",
+            "messages": 39,
+            "chars": 1231,
+            "first_seq": 7018,
+            "last_seq": 7095,
+            "count": 39
+          },
+          {
+            "name": "instruction",
+            "messages": 1,
+            "chars": 88,
+            "heard_seq": 7095
+          }
+        ],
+        "checks": [
+          {
+            "seq": 7097,
+            "arguments": {
+              "query": "茶叶偏好"
+            },
+            "result_seqs": [],
+            "total": 0,
+            "rules": "p8",
+            "engine": "index",
+            "mode": "relevance",
+            "terms": [
+              "茶叶",
+              "叶偏",
+              "偏好"
+            ],
+            "dropped": [],
+            "rank_seqs": [],
+            "usage": {
+              "prompt_tokens": 3439,
+              "completion_tokens": 0
+            }
+          }
+        ],
+        "requests": 2,
+        "answers": [
+          {
+            "target": "F10",
+            "seq": 2991,
+            "age_days": 35.208333333333336,
+            "age_group": ">28d",
+            "channels": {
+              "writings": false,
+              "window": false
+            },
+            "first_position": null,
+            "window": false,
+            "writing": false,
+            "check": false,
+            "check_writing": false,
+            "presented": false,
+            "overlap": false,
+            "used_overlap": false,
+            "rank": null,
+            "reason": "no_overlap"
+          }
+        ],
+        "all_presented": false,
+        "presentation_order": [],
+        "chronological": null
+      }
+    },
+    {
+      "run": "life-b-A1-excerpt",
+      "probe": "P09",
+      "reason": "recency_cut",
+      "command": "npm run eval -- explain .local-data/p8-baseline-F0vnyO/life-b-A1-excerpt P09",
+      "explanation": {
+        "id": "P09",
+        "heard_seq": 13678,
+        "day": 17,
+        "tags": [
+          "high_frequency"
+        ],
+        "base_sections": [
+          {
+            "name": "persona",
+            "messages": 1,
+            "chars": 12
+          },
+          {
+            "name": "writings",
+            "messages": 3,
+            "chars": 2067,
+            "first_seq": 13336,
+            "last_seq": 13579,
+            "count": 3
+          },
+          {
+            "name": "window",
+            "messages": 51,
+            "chars": 1585,
+            "first_seq": 13577,
+            "last_seq": 13678,
+            "count": 51
+          },
+          {
+            "name": "instruction",
+            "messages": 1,
+            "chars": 89,
+            "heard_seq": 13678
+          }
+        ],
+        "checks": [
+          {
+            "seq": 13680,
+            "arguments": {
+              "query": "咖啡馆"
+            },
+            "result_seqs": [
+              12367,
+              12375,
+              12431,
+              12486,
+              12488,
+              12544,
+              12599,
+              12609,
+              12656,
+              12712,
+              12730,
+              12773,
+              12829,
+              12851,
+              12886,
+              12942,
+              12971,
+              12999,
+              13028,
+              13088,
+              13094,
+              13114,
+              13138,
+              13161,
+              13185,
+              13209,
+              13215,
+              13235,
+              13259,
+              13336,
+              13470,
+              13494,
+              13518,
+              13542,
+              13566,
+              13579,
+              13591,
+              13615,
+              13639,
+              13678
+            ],
+            "total": 360,
+            "rules": "p8",
+            "engine": "scan",
+            "mode": "substring",
+            "terms": [],
+            "dropped": [],
+            "fallback": "index_unavailable",
+            "rank_seqs": [
+              13678,
+              13639,
+              13615,
+              13591,
+              13579,
+              13566,
+              13542,
+              13518,
+              13494,
+              13470,
+              13336,
+              13259,
+              13235,
+              13215,
+              13209,
+              13185,
+              13161,
+              13138,
+              13114,
+              13094,
+              13088,
+              13028,
+              12999,
+              12971,
+              12942,
+              12886,
+              12851,
+              12829,
+              12773,
+              12730,
+              12712,
+              12656,
+              12609,
+              12599,
+              12544,
+              12488,
+              12486,
+              12431,
+              12375,
+              12367,
+              12318,
+              12262,
+              12247,
+              12205,
+              12124,
+              12118,
+              12062,
+              12003,
+              11981,
+              11922,
+              11882,
+              11864,
+              11841,
+              11785,
+              11761,
+              11728,
+              11648,
+              11641,
+              11591,
+              11536,
+              11520,
+              11510,
+              11454,
+              11397,
+              11344,
+              11328,
+              11304,
+              11280,
+              11276,
+              11254,
+              11227,
+              11035,
+              10953,
+              10930,
+              10914,
+              10904,
+              10880,
+              10856,
+              10833,
+              10809,
+              10793,
+              10783,
+              10759,
+              10736,
+              10549,
+              10543,
+              10488,
+              10429,
+              10407,
+              10351,
+              10308,
+              10294,
+              10238,
+              10187,
+              10181,
+              10126,
+              10070,
+              10066,
+              10013,
+              9957
+            ],
+            "usage": {
+              "prompt_tokens": 3753,
+              "completion_tokens": 0
+            }
+          }
+        ],
+        "requests": 2,
+        "answers": [
+          {
+            "target": "F3",
+            "seq": 1899,
+            "age_days": 14.444444444444445,
+            "age_group": "7-28d",
+            "channels": {
+              "writings": false,
+              "window": false
+            },
+            "first_position": null,
+            "window": false,
+            "writing": false,
+            "check": false,
+            "check_writing": false,
+            "presented": false,
+            "overlap": true,
+            "used_overlap": false,
+            "rank": null,
+            "reason": "recency_cut"
+          }
+        ],
+        "all_presented": false,
+        "presentation_order": [],
+        "chronological": null
+      }
+    },
+    {
+      "run": "life-b-A2-excerpt",
+      "probe": "P17",
+      "reason": "ranked_out",
+      "command": "npm run eval -- explain .local-data/p8-baseline-F0vnyO/life-b-A2-excerpt P17",
+      "explanation": {
+        "id": "P17",
+        "heard_seq": 27465,
+        "day": 43,
+        "tags": [
+          "high_frequency"
+        ],
+        "base_sections": [
+          {
+            "name": "persona",
+            "messages": 1,
+            "chars": 12
+          },
+          {
+            "name": "writings",
+            "messages": 3,
+            "chars": 2018,
+            "first_seq": 27167,
+            "last_seq": 27409,
+            "count": 3
+          },
+          {
+            "name": "window",
+            "messages": 29,
+            "chars": 846,
+            "first_seq": 27407,
+            "last_seq": 27465,
+            "count": 29
+          },
+          {
+            "name": "instruction",
+            "messages": 1,
+            "chars": 87,
+            "heard_seq": 27465
+          }
+        ],
+        "checks": [
+          {
+            "seq": 27467,
+            "arguments": {
+              "query": "备用钥匙"
+            },
+            "result_seqs": [
+              5,
+              93,
+              182,
+              354,
+              528,
+              617,
+              704,
+              798,
+              5864,
+              5945,
+              6028,
+              6194,
+              6273,
+              6359,
+              6527,
+              6608,
+              11415,
+              11494,
+              11660,
+              11744,
+              11825,
+              12078,
+              12159,
+              15382,
+              15467,
+              15556,
+              15645,
+              15732,
+              15821,
+              20984,
+              21145,
+              21226,
+              21468,
+              21634,
+              26868,
+              26954,
+              27037,
+              27118,
+              27367,
+              27465
+            ],
+            "total": 98,
+            "rules": "p8",
+            "engine": "index",
+            "mode": "relevance",
+            "terms": [
+              "备用",
+              "用钥",
+              "钥匙"
+            ],
+            "dropped": [],
+            "rank_seqs": [
+              27465,
+              182,
+              12159,
+              6273,
+              5864,
+              617,
+              15821,
+              15556,
+              6608,
+              15732,
+              11494,
+              11415,
+              704,
+              6527,
+              27367,
+              93,
+              27037,
+              11825,
+              11744,
+              15645,
+              12078,
+              15467,
+              528,
+              5,
+              27118,
+              6194,
+              5945,
+              798,
+              26868,
+              15382,
+              21634,
+              20984,
+              6359,
+              354,
+              21468,
+              11660,
+              26954,
+              6028,
+              21226,
+              21145,
+              15906,
+              11910,
+              11579,
+              16083,
+              27282,
+              21715,
+              21547,
+              21064,
+              11993,
+              21305,
+              27453,
+              6444,
+              6109,
+              267,
+              443,
+              15994,
+              21386,
+              16172,
+              27203,
+              12176,
+              11520,
+              15399,
+              726,
+              122,
+              11761,
+              6545,
+              27047,
+              15641,
+              6062,
+              5941,
+              15762,
+              21740,
+              243,
+              605,
+              12124,
+              15520,
+              847,
+              11882,
+              27409,
+              6303,
+              15883,
+              27167,
+              12003,
+              364,
+              21101,
+              27288,
+              21343,
+              21584,
+              11239,
+              6182,
+              21222,
+              6424,
+              21707,
+              11641,
+              21464,
+              16124,
+              16245,
+              16003
+            ],
+            "usage": {
+              "prompt_tokens": 2963,
+              "completion_tokens": 0
+            }
+          }
+        ],
+        "requests": 2,
+        "answers": [
+          {
+            "target": "F8",
+            "seq": 11239,
+            "age_days": 28.958333333333332,
+            "age_group": ">28d",
+            "channels": {
+              "writings": false,
+              "window": false
+            },
+            "first_position": null,
+            "window": false,
+            "writing": false,
+            "check": false,
+            "check_writing": false,
+            "presented": false,
+            "overlap": true,
+            "used_overlap": true,
+            "rank": 89,
+            "reason": "ranked_out"
+          }
+        ],
+        "all_presented": false,
+        "presentation_order": [],
+        "chronological": null
+      }
+    }
+  ]
+}
