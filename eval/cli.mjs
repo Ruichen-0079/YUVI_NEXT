@@ -31,16 +31,17 @@ export async function retrieval(directory){
 }
 export function report(result,root){
  let md='# P8 九周合成生活基线\n\n本报告只证明检索与呈现，不证明模型理解、注意或使用。假模型查询由脚本给定，比真实模型理想；excerpt 只是固定摘抄策略。\n\n';
- md+='| 生活/臂/写作 | 呈现答案 | 检索候选有交集 | 排进前100 | 未解释遗漏 |\n| --- | ---: | ---: | ---: | ---: |\n';
+ md+='| 生活/臂/写作 | 呈现答案 | 理论词元相交 | 排进前100 | 未解释遗漏 |\n| --- | ---: | ---: | ---: | ---: |\n';
  for(const [key,r]of Object.entries(result.runs))md+=`| ${key} | ${r.coverage.overall.presented}/${r.coverage.overall.total} | ${r.retrieval_gap.overlap} | ${r.retrieval_gap.ranked_100} | ${r.reasons.unexplained} |\n`;
  md+='\n## Q1：旧信息的检索与呈现\n\n';for(const [key,r]of Object.entries(result.runs))md+=`- ${key}（呈现）：`+Object.entries(r.coverage.age).map(([age,v])=>`${age} ${v.presented}/${v.total}`).join('；')+'。\n';
  md+='\n## Q2：新旧材料的竞争\n\n逐版本的排序位置与是否呈现见下表及 JSON 的 corrections。没有按“当前事实”替换旧记录；排序只由词元统计与时间决定。\n';
  md+='\n## Q3：更正前后能否同时呈现\n\n';for(const[key,r]of Object.entries(result.runs))md+=`- ${key}（呈现）：${r.corrections.filter(c=>c.all_presented).length}/${r.corrections.length} 个更正探针呈现全部版本。\n`;
+ md+='\n这里的顺序按完整请求里各版本的首次出现位置判定，位置为“消息位置、工具结果内记录位置、原文内anchor位置”。check内部仍按时间排列；先前文字在工具结果之前时，新版本可能先出现在文字中。这是呈现事实，不说明模型会优先采用哪个版本。\n';
  md+='\n同一事实随探针时间的变化（呈现/排名；排名不可跨scan与index解释为相同量）：\n';
  for(const[key,r]of Object.entries(result.runs))for(const fact of ['F1','F2','F3','F5','F11']){const rows=r.probes.flatMap(p=>p.answers.filter(a=>new RegExp('^'+fact+'[a-d]?$').test(a.target)).map(a=>`${p.id}/${a.target} d${p.day}: ${a.presented?'呈现':'遗漏'}, rank=${a.rank??'无'}`));md+=`- ${key}/${fact}：${rows.join('；')}。\n`;}
  md+='\n## Q4：高频日常的干扰\n\n相同事实、时间与探针在两段生活中保持不变；下表按臂比较，不把差异解释成语义能力。\n';
  for(const arm of ['A0','A1','A2']){const a=result.runs[`life-a-${arm}-excerpt`],b=result.runs[`life-b-${arm}-excerpt`];md+=`- ${arm}（呈现）：高频标签答案 life-a ${a.coverage.tags.high_frequency.presented}/${a.coverage.tags.high_frequency.total}；life-b ${b.coverage.tags.high_frequency.presented}/${b.coverage.tags.high_frequency.total}。\n`;}
- md+='\n## Q5：候选、前100与实际呈现的损失\n\n检索候选与所有渠道呈现不是严格的漏斗：文字与窗口可能直接呈现；强制最近条也可能排在前100之外。\n\n| 生活/臂 | 全部词相交 | 保留词相交 | 排进前100 | check呈现但不在前100 | 无check主答案仍呈现 | 全渠道呈现 |\n| --- | ---: | ---: | ---: | ---: | ---: | ---: |\n';
+ md+='\n## Q5：候选、前100与实际呈现的损失\n\n理论词元相交不等于实际查询到：A0没有查询；emoji等scan回退可能没有可用词元而仍被返回。检索与所有渠道呈现也不是严格的漏斗：文字与窗口可能直接呈现；强制最近条可能排在前100之外。\n\n| 生活/臂 | 全部词相交 | 保留词相交 | 排进前100 | check呈现但不在前100 | 无check主答案仍呈现 | 全渠道呈现 |\n| --- | ---: | ---: | ---: | ---: | ---: | ---: |\n';
  for(const[key,r]of Object.entries(result.runs)){const g=r.retrieval_gap;md+=`| ${key} | ${g.overlap}/${g.total} | ${g.used_overlap} | ${g.ranked_100} | ${g.check_presented_outside_top100} | ${g.presented_without_check} | ${g.presented} |\n`;}
  md+='\n## A2 相对 A1 的逐探针对照\n\n下表只比较检索/呈现事实。rank=无表示不在所记录前100，不能当成没有候选；旧版scan按时间排序。\n\n| 生活 | 探针/答案 | A1 呈现 / rank / 原因 | A2 呈现 / rank / 原因 |\n| --- | --- | --- | --- |\n';
  for(const life of ['life-a','life-b']){const before=result.runs[`${life}-A1-excerpt`],after=result.runs[`${life}-A2-excerpt`];
