@@ -58,7 +58,7 @@ export function varied(file,{count=50000,seed=67}={}) {
   const spec=structuredClone(queries);
   spec[20].from=time(targets.T1)+1;spec[20].to=Infinity;
   spec[21].from=time(targets.T1);spec[21].to=time(targets.T1);
-  spec[25].query=filler(500);spec[27].from=time(Math.floor(count*.4));spec[27].to=time(Math.floor(count*.42));
+  spec[25].query=filler(500).slice(0,500);spec[27].from=time(Math.floor(count*.4));spec[27].to=time(Math.floor(count*.42));
   spec[29].kinds=['wrote'];
   return {count,seed,targets,privacy,queries:spec,first:base};
  }finally{db.close();}

@@ -19,7 +19,7 @@ const stats=xs=>({samples:xs,median_ms:percentile(xs,.5),p95_ms:percentile(xs,.9
 const result={node:process.version,baseline:'3343efa',count,trials,shapes:{},method:'monotonic performance.now; one warmup then20 samples; immediate loopback fake; service T1/T2/T3/T4 separate model time'};
 const save=()=>writeFileSync(join(root,'results.json'),JSON.stringify(result,null,2)+'\n');
 const legacy=await legacyCheckout(root,'3343efa');
-const hook=join(root,'increment-probe.mjs');writeFileSync(hook,`import{ArchiveIndex}from${JSON.stringify(resolve('dist/archive-index.js'))};const original=ArchiveIndex.prototype.catchUp;ArchiveIndex.prototype.catchUp=function(...args){const start=performance.now();try{return original.apply(this,args);}finally{console.log('P8_INCREMENT '+(performance.now()-start));}};`);let mode='ordinary',currentCalls=[],calls=[];
+const hook=join(root,'increment-probe.mjs');writeFileSync(hook,`import{ArchiveIndex}from${JSON.stringify(resolve('dist/archive-index.js'))};const original=ArchiveIndex.prototype.catchUp;ArchiveIndex.prototype.catchUp=function(...args){const start=performance.now();try{return original.apply(this,args);}finally{console.log('P8_INCREMENT '+(performance.now()-start));if(this.state==='ready')console.log('P8_READY');}};`);let mode='ordinary',currentCalls=[],calls=[];
 const fake=createServer(async(req,res)=>{
  const chunks=[];for await(const c of req)chunks.push(c);const body=JSON.parse(Buffer.concat(chunks).toString('utf8')),t2=performance.now();
  const wants=mode==='check'&&!body.messages.some(m=>m.role==='tool');
@@ -47,11 +47,11 @@ try{
    while(performance.now()<limit){
     try{const db=new DatabaseSync(join(live,'index.sqlite'),{readOnly:true});try{position=JSON.parse(db.prepare("SELECT value FROM metadata WHERE key='through_seq'").get().value);}finally{db.close();}}catch{ /* worker may not yet have created metadata */ }
     const archive=new DatabaseSync(join(live,'archive.sqlite'),{readOnly:true});let last;try{last=Number(archive.prepare("SELECT max(seq) n FROM events WHERE kind IN ('heard','said','silent','wrote')").get().n);}finally{archive.close();}
-    if(position>=last)break;await delay(100);
+    if(position>=last&&service.output.includes('P8_READY'))break;await delay(100);
    }
    shapeResult.rebuild={elapsed_from_process_start_ms:performance.now()-beforeStart,through_seq:position,health:stats(health),health_failures:healthFailures,turns};
   }finally{healthActive=false;clearInterval(timer);await Promise.allSettled([...pendingHealth]);await service.stop();}
-  const liveArchive=new Archive(live);try{shapeResult.rebuild.verification=verifyIndex(liveArchive.db,join(live,'index.sqlite'));}finally{liveArchive.close();}
+  const liveArchive=new Archive(live);try{shapeResult.rebuild.verification=verifyIndex(liveArchive.db,join(live,'index.sqlite'));shapeResult.rebuild.checks=liveArchive.db.prepare("SELECT meta FROM events WHERE kind='checked' AND seq>? ORDER BY seq").all(count).map(r=>JSON.parse(r.meta));}finally{liveArchive.close();}
   save();
   // Independent synchronous empty build measures CPU/wall without HTTP work.
   console.error(JSON.stringify({shape,stage:'empty-build'}));
@@ -84,7 +84,7 @@ try{
   }
   const rare=new Set(['R1','R3','R4','R8','R9','R11','R12','R20','R21','R22']);
   shapeResult.scan_comparison=shapeResult.queries.filter(q=>q.responses.index.engine==='scan').map(q=>({id:q.id,p95_ratio:q.index.p95_ms/q.scan.p95_ms,within_1_25:q.index.p95_ms<=q.scan.p95_ms*1.25,...q.comparison,threshold_status:'reported; owner requests Claude final review of mandatory status'}));
-  shapeResult.passed={retrieval:shapeResult.queries.filter(q=>q.responses.index.engine==='index').every(q=>q.index.p95_ms<=(rare.has(q.id)?20:200)),scan_semantics:shapeResult.scan_comparison.every(q=>q.same_total&&q.same_results),build:shapeResult.empty_build_ms<=300000,health:shapeResult.rebuild.health.p99_ms<=100&&healthFailures.length===0,turns:turns.every(t=>t.last==='done'),ordinary:shapeResult.service.p8.program.p95_ms<100,startup_increment:shapeResult.service.p8.startup_ms-shapeResult.service.p7.startup_ms<=1000,index_size:shape==='typical'||shapeResult.index.bytes<=1.5*shapeResult.index.archive_bytes};save();
+  shapeResult.passed={retrieval:shapeResult.queries.filter(q=>q.responses.index.engine==='index').every(q=>q.index.p95_ms<=(rare.has(q.id)?20:200)),scan_semantics:shapeResult.scan_comparison.every(q=>q.same_total&&q.same_results),build:shapeResult.empty_build_ms<=300000,health:shapeResult.rebuild.health.p99_ms<=100&&healthFailures.length===0,turns:turns.every(t=>t.last==='done')&&shapeResult.rebuild.checks.length===5&&shapeResult.rebuild.checks.every(c=>c.engine==='scan'&&c.fallback==='index_building'),ordinary:shapeResult.service.p8.program.p95_ms<100,startup_increment:shapeResult.service.p8.startup_ms-shapeResult.service.p7.startup_ms<=1000,index_size:shape==='typical'||shapeResult.index.bytes<=1.5*shapeResult.index.archive_bytes};save();
  }
  console.log(JSON.stringify(result,null,2));
  if(Object.values(result.shapes.varied.passed).some(v=>!v))process.exitCode=1;

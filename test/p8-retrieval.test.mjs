@@ -33,7 +33,7 @@ test('P8 R1–R30: deterministic 50000-event corpus and declared retrieval expec
     if(q.id==='R23')assert.equal(r.total,60);
    }
    if(q.id==='R24')assert.equal(r.meta.mode,'relevance');
-   if(q.id==='R26')assert.ok(r.meta.terms.length<=32);
+   if(q.id==='R26'){assert.equal(q.query.length,500);assert.ok(r.meta.terms.length<=32);assert.equal(r.meta.terms_limited,true);}
    if(q.id==='R30')assert.equal(index.search('年糕',-Infinity,Infinity,['wrote']).total,0);
   });
  }finally{await index?.close();a?.close();rmSync(dir,{recursive:true,force:true});}
