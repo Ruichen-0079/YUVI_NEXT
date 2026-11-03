@@ -129,14 +129,14 @@
           "day": 2,
           "time": "09:12",
           "text": "跟你说，我家猫叫团子，今年三岁了。",
-          "anchor": "团子"
+          "anchor": "我家猫叫团子"
         },
         {
           "version": "b",
           "day": 33,
           "time": "20:05",
           "text": "更正一下：我家猫其实叫年糕，团子是邻居家的猫。",
-          "anchor": "年糕",
+          "anchor": "其实叫年糕",
           "correction": true
         }
       ]
@@ -149,7 +149,7 @@
           "day": 5,
           "time": "08:40",
           "text": "新的门禁码是 4A87，记一下。",
-          "anchor": "4A87"
+          "anchor": "门禁码是 4A87"
         }
       ]
     },
@@ -161,7 +161,7 @@
           "day": 3,
           "time": "10:20",
           "text": "楼下那家咖啡馆叫 amber spruce，拿铁不错。",
-          "anchor": "amber spruce"
+          "anchor": "咖啡馆叫 amber spruce"
         }
       ]
     },
@@ -173,7 +173,7 @@
           "day": 1,
           "time": "21:30",
           "text": "明年夏天想去喀纳斯看看。",
-          "anchor": "喀纳斯"
+          "anchor": "想去喀纳斯看看"
         }
       ]
     },
@@ -185,14 +185,14 @@
           "day": 8,
           "time": "19:00",
           "text": "我的车牌尾号是 3721。",
-          "anchor": "3721"
+          "anchor": "尾号是 3721"
         },
         {
           "version": "b",
           "day": 40,
           "time": "12:15",
           "text": "更正：车牌尾号是 3712，之前说错了。",
-          "anchor": "3712",
+          "anchor": "尾号是 3712",
           "correction": true
         }
       ]
@@ -205,7 +205,7 @@
           "day": 10,
           "time": "13:00",
           "text": "我对芒果过敏，吃了会起疹子。",
-          "anchor": "芒果过敏"
+          "anchor": "对芒果过敏"
         }
       ]
     },
@@ -217,7 +217,7 @@
           "day": 12,
           "time": "22:10",
           "text": "把 VS Code 主题换成了 Solarized。",
-          "anchor": "Solarized"
+          "anchor": "主题换成了 Solarized"
         }
       ]
     },
@@ -229,8 +229,9 @@
           "day": 14,
           "time": "21:00",
           "text": null,
-          "anchor": "蓝色鞋盒",
-          "generated_length": 1500
+          "anchor": "放在蓝色鞋盒里",
+          "generated_length": 1500,
+          "tail": true
         }
       ]
     },
@@ -242,7 +243,7 @@
           "day": 16,
           "time": "18:30",
           "text": "妈妈的生日是三月九号，别忘了。",
-          "anchor": "三月九号"
+          "anchor": "生日是三月九号"
         }
       ]
     },
@@ -254,7 +255,7 @@
           "day": 18,
           "time": "15:00",
           "text": "最近比较喜欢喝乌龙。",
-          "anchor": "乌龙"
+          "anchor": "喜欢喝乌龙"
         }
       ]
     },
@@ -266,14 +267,14 @@
           "day": 4,
           "time": "11:00",
           "text": "新项目代号叫青鸟。",
-          "anchor": "青鸟"
+          "anchor": "代号叫青鸟"
         },
         {
           "version": "b",
           "day": 30,
           "time": "10:30",
           "text": "项目改名了，现在叫白鹭。",
-          "anchor": "白鹭",
+          "anchor": "现在叫白鹭",
           "correction": true
         },
         {
@@ -281,7 +282,7 @@
           "day": 50,
           "time": "16:45",
           "text": "项目最后定名为夜航。",
-          "anchor": "夜航",
+          "anchor": "定名为夜航",
           "correction": true
         }
       ]
@@ -294,7 +295,7 @@
           "day": 19,
           "time": "20:00",
           "text": "今天好开心🎉",
-          "anchor": "🎉"
+          "anchor": "好开心🎉"
         }
       ]
     }
@@ -309,7 +310,7 @@
           "day": 11,
           "time": "14:00",
           "text": "下午去见了王老师，他建议我多读论文。",
-          "anchor": "王老师"
+          "anchor": "见了王老师"
         }
       ]
     },
@@ -322,28 +323,28 @@
           "day": 3,
           "time": "12:00",
           "text": "小周今天请我吃饭。",
-          "anchor": "请我吃饭"
+          "anchor": "小周今天请我吃饭"
         },
         {
           "version": "b",
           "day": 15,
           "time": "19:00",
           "text": "小周搬家了。",
-          "anchor": "搬家"
+          "anchor": "小周搬家了"
         },
         {
           "version": "c",
           "day": 35,
           "time": "18:00",
           "text": "小周换了工作。",
-          "anchor": "换了工作"
+          "anchor": "小周换了工作"
         },
         {
           "version": "d",
           "day": 55,
           "time": "13:00",
           "text": "小周下个月结婚。",
-          "anchor": "结婚"
+          "anchor": "小周下个月结婚"
         }
       ]
     },
@@ -356,7 +357,7 @@
           "day": 6,
           "time": "10:00",
           "text": "林姐的工位在七楼东侧。",
-          "anchor": "七楼东侧"
+          "anchor": "工位在七楼东侧"
         }
       ]
     }

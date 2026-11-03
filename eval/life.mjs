@@ -12,7 +12,7 @@ export function expand(life,days=life.days){
  const inGap=d=>life.gaps.some(g=>d>=g.from_day&&d<g.from_day+g.days);
  const events=[],answers={};
  for(const entity of [...life.facts,...life.people])for(const v of entity.versions??entity.mentions){
-  const id=entity.id+v.version,tail='最后提一句，备用钥匙放在蓝色鞋盒里。',text=v.text??filler(1000).slice(0,v.generated_length-tail.length)+tail;
+  const id=entity.id+v.version,tail='最后提一句，备用钥匙放在蓝色鞋盒里。',text=v.text??filler(v.generated_length).slice(0,v.generated_length-tail.length)+tail;
   answers[id]={...v,id,text,t:at(v.day,v.time)};
   if(v.day<=days){assert.ok(!inGap(v.day));events.push({t:at(v.day,v.time),text,type:'fact',target:id});}
  }
@@ -33,7 +33,9 @@ export function expand(life,days=life.days){
     const n=Math.min(count,p.per_day),slot=(i+k*17)%count;
     return Math.floor((slot+1)*n/count)>Math.floor(slot*n/count)?[p.words[i%p.words.length]]:[];
    });
-   const text=filler(8+Math.floor(rand()*16))+(topic.length?topic.join('，')+'。':'');
+   let text;
+   do { text=filler(8+Math.floor(rand()*16))+(topic.length?topic.join('，')+'。':''); }
+   while(Object.values(answers).some(a=>text.includes(a.anchor)));
    events.push({t:at(day,time),text,type:'ordinary',day});
   }
  }
@@ -44,6 +46,7 @@ export function expand(life,days=life.days){
   const occurrences=events.filter(e=>e.text.includes(a.anchor));
   assert.equal(occurrences.length,1,`Anchor ${a.id} must identify exactly one message: ${a.anchor}`);
   assert.equal(occurrences[0].type,'fact');
+  assert.ok(a.tail || [...a.text].slice(0,32).join('').includes(a.anchor),`Anchor ${a.id} must fit the excerpt`);
  }
  return {events,answers,end:midnight+days*86400000,start};
 }

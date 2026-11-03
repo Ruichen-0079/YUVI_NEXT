@@ -21,7 +21,7 @@ try{
    assert.ok(meta);for(const id of q.expected)assert.ok(seqs.includes(targets[id].seq),q.id+' '+id);
    if(['R13','R20','R21'].includes(q.id))assert.equal(response.total??meta.total,0);
    if(q.id==='R9')assert.equal(meta.rank_seqs[0],targets.T6.seq);
-   if(q.id==='R10')assert.equal(a.search(q.query,from,to).total,0,'Formal R10 scan expectation');
+   if(q.id==='R10'){const scan=a.search(q.query,from,to);assert.equal(scan.total,1);assert.deepEqual(scan.results.map(e=>e.seq),[targets.T6.seq]);}
    if(q.id==='R17'){assert.equal(meta.engine,'scan');assert.equal(meta.fallback,'no_terms');}
    if(q.id==='R23'){assert.equal(response.total,60);assert.equal(seqs.length,40);}
    if(q.id==='R24')assert.equal(meta.mode,'recent');

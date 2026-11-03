@@ -36,6 +36,8 @@ function report(result,root){
  md+='\n## Q1：旧信息的检索与呈现\n\n';for(const [key,r]of Object.entries(result.runs))md+=`- ${key}（呈现）：`+Object.entries(r.coverage.age).map(([age,v])=>`${age} ${v.presented}/${v.total}`).join('；')+'。\n';
  md+='\n## Q2：新旧材料的竞争\n\n逐版本的排序位置与是否呈现见下表及 JSON 的 corrections。没有按“当前事实”替换旧记录；排序只由词元统计与时间决定。\n';
  md+='\n## Q3：更正前后能否同时呈现\n\n';for(const[key,r]of Object.entries(result.runs))md+=`- ${key}（呈现）：${r.corrections.filter(c=>c.all_presented).length}/${r.corrections.length} 个更正探针呈现全部版本。\n`;
+ md+='\n同一事实随探针时间的变化（呈现/排名；排名不可跨scan与index解释为相同量）：\n';
+ for(const[key,r]of Object.entries(result.runs))for(const fact of ['F1','F2','F3','F5','F11']){const rows=r.probes.flatMap(p=>p.answers.filter(a=>a.target===fact||a.target.startsWith(fact)&&/[a-c]$/.test(a.target)).map(a=>`${p.id}/${a.target} d${p.day}: ${a.presented?'呈现':'遗漏'}, rank=${a.rank??'无'}`));md+=`- ${key}/${fact}：${rows.join('；')}。\n`;}
  md+='\n## Q4：高频日常的干扰\n\n相同事实、时间与探针在两段生活中保持不变；下表按臂比较，不把差异解释成语义能力。\n';
  for(const arm of ['A0','A1','A2']){const a=result.runs[`life-a-${arm}-excerpt`],b=result.runs[`life-b-${arm}-excerpt`];md+=`- ${arm}（呈现）：高频标签答案 life-a ${a.coverage.tags.high_frequency.presented}/${a.coverage.tags.high_frequency.total}；life-b ${b.coverage.tags.high_frequency.presented}/${b.coverage.tags.high_frequency.total}。\n`;}
  md+='\n## Q5：候选、前100与实际呈现的损失\n\n检索候选与所有渠道呈现不是严格的漏斗：文字与窗口可能直接呈现；强制最近条也可能排在前100之外。\n\n| 生活/臂 | 全部词相交 | 保留词相交 | 排进前100 | check呈现但不在前100 | 无check主答案仍呈现 | 全渠道呈现 |\n| --- | ---: | ---: | ---: | ---: | ---: | ---: |\n';
@@ -57,10 +59,11 @@ function report(result,root){
 }
 export async function baseline(regress=false){
  mkdirSync('.local-data',{recursive:true,mode:0o700});const root=mkdtempSync(resolve('.local-data/p8-baseline-')),wall=performance.now(),runs={};
- for(const[id,arm,policy]of combinations){const key=`${id}-${arm}-${policy}`;runs[key]=runLife(id,arm,join(root,key),63,policy);assert.equal(runs[key].reasons.unexplained,0);assert.ok(runs[key].sanity.every(s=>s.all_presented));}
+ for(const[id,arm,policy]of combinations){const key=`${id}-${arm}-${policy}`;runs[key]=runLife(id,arm,join(root,key),63,policy);assert.equal(runs[key].reasons.unexplained,0);assert.equal(runs[key].sanity.length,7);assert.ok(runs[key].sanity.every(s=>s.all_presented));assert.ok(runs[key].consolidation.idle>0&&runs[key].consolidation.pressure>0&&runs[key].consolidation.wrote>0);}
  const result={format:1,runs,retrieval:await retrieval(join(root,'retrieval'))};
  const serialized=JSON.stringify(result,null,2)+'\n';writeFileSync(join(root,'baseline.json'),serialized);
  writeFileSync(join(root,'timing.json'),JSON.stringify({wall_ms:performance.now()-wall},null,2)+'\n');
+ assert.ok(performance.now()-wall<=1200000,'The full baseline exceeds 20 minutes');
  if(regress)assert.equal(serialized,readFileSync('docs/notes/P8-baseline.json','utf8'),'Full nine-week baseline changed');
  else {writeFileSync('docs/notes/P8-baseline.json',serialized);writeFileSync('docs/notes/P8-baseline.md',report(result,'.local-data/'+basename(root)));}
  return {root,wall_ms:performance.now()-wall};

@@ -63,6 +63,8 @@ test('P8 forced newest result remains truthful when its relevance rank is beyond
   const newest=a.append({class:'experience',kind:'heard',actor:'owner',content:'橙色信封'+'日常'.repeat(10000)});
   index=new ArchiveIndex(a.db,dir);const r=index.search('橙色信封',-Infinity,Infinity);
   assert.deepEqual(r.results.map(e=>e.seq),[first.seq,newest.seq]);assert.equal(r.meta.rank_seqs.length,100);assert.equal(r.meta.rank_seqs.includes(newest.seq),false);
+  const db=new DatabaseSync(index.file,{readOnly:true});try{const ranks=db.prepare('SELECT rowid FROM terms WHERE terms MATCH ? ORDER BY rank,rowid DESC').all('"橙色" OR "色信" OR "信封"').map(e=>Number(e.rowid));assert.deepEqual(r.meta.rank_seqs,ranks.slice(0,100));assert.equal(ranks.indexOf(newest.seq),106);}finally{db.close();}
+  assert.ok(r.results.every(e=>r.meta.rank_seqs.includes(e.seq)||e.seq===newest.seq));
   assert.ok(r.results.reduce((n,e)=>n+e.content.length,0)>16000,'The two mandatory records are never truncated');
  }finally{await index?.close();a.close();rmSync(dir,{recursive:true,force:true});}
 });

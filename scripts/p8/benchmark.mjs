@@ -62,12 +62,14 @@ try{
    shapeResult.queries=[];
    const qs=shape==='varied'?fixture.queries:queries;
    for(const q of qs){
-    const samples={index:[],scan:[]};let last;
+    const samples={index:[],scan:[]},responses={};let last;
     for(const engine of ['index','scan'])for(let i=-1;i<trials;i++){
      const args=JSON.stringify({query:q.query,...(Number.isFinite(q.from)?{from:new Date(q.from).toISOString()}:{}),...(Number.isFinite(q.to)?{to:new Date(q.to).toISOString()}:{})});
      const begin=performance.now();last=engine==='index'?(q.kinds?index.search(q.query,q.from??-Infinity,q.to??Infinity,q.kinds):check(archive,args,'负责人',{index})):check(archive,args,'负责人');const elapsed=performance.now()-begin;if(i>=0)samples[engine].push(elapsed);
+     if(i===0)responses[engine]={engine:last.meta?.engine??'scan',fallback:last.meta?.fallback??null,total:last.total??last.meta.total,result_seqs:last.results?.map(e=>e.seq)??last.meta.result_seqs};
     }
-    shapeResult.queries.push({id:q.id,query:q.query,index:stats(samples.index),scan:stats(samples.scan),expected:q.expected});save();
+    const comparison={same_total:responses.index.total===responses.scan.total,same_results:JSON.stringify(responses.index.result_seqs)===JSON.stringify(responses.scan.result_seqs)};
+    shapeResult.queries.push({id:q.id,query:q.query,index:stats(samples.index),scan:stats(samples.scan),responses,comparison,expected:q.expected});save();
    }
   }finally{await index.close();archive.close();}
   console.error(JSON.stringify({shape,stage:'ordinary-and-startup'}));mode='ordinary';
@@ -81,7 +83,8 @@ try{
    save();
   }
   const rare=new Set(['R1','R3','R4','R8','R9','R11','R12','R20','R21','R22']);
-  shapeResult.passed={retrieval:shapeResult.queries.every(q=>q.index.p95_ms<=(rare.has(q.id)?20:200)),build:shapeResult.empty_build_ms<=300000,health:shapeResult.rebuild.health.p99_ms<=100&&healthFailures.length===0,turns:turns.every(t=>t.last==='done'),ordinary:shapeResult.service.p8.program.p95_ms<100,startup_increment:shapeResult.service.p8.startup_ms-shapeResult.service.p7.startup_ms<=1000,index_size:shape==='typical'||shapeResult.index.bytes<=1.5*shapeResult.index.archive_bytes};save();
+  shapeResult.scan_comparison=shapeResult.queries.filter(q=>q.responses.index.engine==='scan').map(q=>({id:q.id,p95_ratio:q.index.p95_ms/q.scan.p95_ms,within_1_25:q.index.p95_ms<=q.scan.p95_ms*1.25,...q.comparison,threshold_status:'reported; owner requests Claude final review of mandatory status'}));
+  shapeResult.passed={retrieval:shapeResult.queries.filter(q=>q.responses.index.engine==='index').every(q=>q.index.p95_ms<=(rare.has(q.id)?20:200)),scan_semantics:shapeResult.scan_comparison.every(q=>q.same_total&&q.same_results),build:shapeResult.empty_build_ms<=300000,health:shapeResult.rebuild.health.p99_ms<=100&&healthFailures.length===0,turns:turns.every(t=>t.last==='done'),ordinary:shapeResult.service.p8.program.p95_ms<100,startup_increment:shapeResult.service.p8.startup_ms-shapeResult.service.p7.startup_ms<=1000,index_size:shape==='typical'||shapeResult.index.bytes<=1.5*shapeResult.index.archive_bytes};save();
  }
  console.log(JSON.stringify(result,null,2));
  if(Object.values(result.shapes.varied.passed).some(v=>!v))process.exitCode=1;

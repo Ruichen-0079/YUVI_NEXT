@@ -18,7 +18,7 @@ test('P8 R1–R30: deterministic 50000-event corpus and declared retrieval expec
    for(const target of q.expected)assert.ok(r.results.some(e=>e.seq===fixture.targets[target]),q.id+' '+target);
    if(['R13','R20','R21'].includes(q.id))assert.equal(r.total,0,q.id);
    if(q.id==='R9')assert.equal(r.meta.rank_seqs[0],fixture.targets.T6);
-   if(q.id==='R10')assert.equal(a.search(q.query,-Infinity,Infinity).total,0);
+   if(q.id==='R10'){const scan=a.search(q.query,-Infinity,Infinity);assert.equal(scan.total,1);assert.deepEqual(scan.results.map(e=>e.seq),[fixture.targets.T6]);}
    if(['R23','R28'].includes(q.id)){
     const db=new DatabaseSync(index.file,{readOnly:true});try{
      const clause=q.query?'terms MATCH ? AND ':'';
