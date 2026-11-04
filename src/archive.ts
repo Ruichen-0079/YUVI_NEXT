@@ -161,11 +161,11 @@ export class Archive {
     return this.bySeq(seqs.reverse());
   }
   private nonempty(): string { return this.truncatesAtNul ? 'length(content)>0' : "content<>''"; }
-  search(query: string, from: number, to: number): { results: Event[]; total: number } {
-    return scanArchive(this.db, this.scope, query, from, to) as { results: Event[]; total: number };
+  search(query: string, from: number, to: number, options?: ScanOptions): { results: Event[]; total: number } {
+    return scanArchive(this.db, this.scope, query, from, to, Infinity, false, options) as { results: Event[]; total: number };
   }
-  scanRanks(query: string, from: number, to: number): number[] {
-    return scanArchive(this.db, this.scope, query, from, to, Infinity, true) as number[];
+  scanRanks(query: string, from: number, to: number, options?: ScanOptions): number[] {
+    return scanArchive(this.db, this.scope, query, from, to, Infinity, true, options) as number[];
   }
   context(limit: number): Event[] {
     return this.decode(this.db.prepare(`SELECT * FROM (
@@ -223,7 +223,9 @@ export class Archive {
   }
 }
 
-export function scanArchive(db: DatabaseSync, scope: { scene: string; branch: string }, query: string, from: number, to: number, through = Infinity, rankOnly = false): { results: Event[]; total: number } | number[] {
+export interface ScanOptions { kinds?: string[]; limit?: number; chars?: number; }
+export class ArchiveSourceFailure extends Error { constructor() { super('Archive read failed.'); } }
+export function scanArchive(db: DatabaseSync, scope: { scene: string; branch: string }, query: string, from: number, to: number, through = Infinity, rankOnly = false, options: ScanOptions = {}): { results: Event[]; total: number } | number[] {
   const nul = (db.prepare("SELECT CAST(x'610062' AS TEXT) AS value").get()!.value as string).length === 1;
     // instr is case-sensitive, treats %/_ literally, and preserves embedded NUL.
     // Lone UTF-16 surrogates cannot be bound losslessly as UTF-8. In that rare case
@@ -235,15 +237,15 @@ export function scanArchive(db: DatabaseSync, scope: { scene: string; branch: st
     const match = loneSurrogate ? 'check_substring(content)>0' :
       `instr(content,?)>0${nul ? ' AND (instr(content,char(0))=0 OR instr(content,?)+length(?)<=instr(content,char(0)))' : ''}`;
     const predicate = `scene=? AND branch=? AND (${dialogueWhere} OR (class='inner' AND kind='wrote' AND ${(nul ? 'length(content)>0' : "content<>''")}))
-      AND t_recorded>=? AND t_recorded<=? AND seq<=? AND ${match}`;
-    const params = [scope.scene, scope.branch, from, to, through, ...(loneSurrogate ? [] : nul ? [query, query, query] : [query])];
+      AND t_recorded>=? AND t_recorded<=? AND seq<=?${options.kinds ? ` AND kind IN (${options.kinds.map(() => '?').join(',')})` : ''} AND ${match}`;
+    const params = [scope.scene, scope.branch, from, to, through, ...(options.kinds ?? []), ...(loneSurrogate ? [] : nul ? [query, query, query] : [query])];
     if (rankOnly) return db.prepare(`SELECT seq FROM events NOT INDEXED WHERE ${predicate} ORDER BY seq DESC LIMIT 100`).all(...params).map(r => Number(r.seq));
     const total = Number(db.prepare(`SELECT count(*) AS n FROM events NOT INDEXED WHERE ${predicate}`).get(...params)!.n);
     if (!total) return { results: [], total };
     const results: Event[] = []; let chars = 0;
-    for (const row of db.prepare(`SELECT * FROM events NOT INDEXED WHERE ${predicate} ORDER BY seq DESC LIMIT 40`).iterate(...params)) {
+    for (const row of db.prepare(`SELECT * FROM events NOT INDEXED WHERE ${predicate} ORDER BY seq DESC LIMIT ${options.limit ?? 40}`).iterate(...params)) {
       const length = (row.content as string).length;
-      if (results.length && chars + length > 16000) break;
+      if (results.length && chars + length > (options.chars ?? 16000)) break;
       results.push({ ...row, meta: JSON.parse(row.meta as string) } as unknown as Event); chars += length;
     }
     return { results: results.reverse(), total };

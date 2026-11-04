@@ -54,7 +54,7 @@ export function assertPresentations(data,captured,persona,{allowUnsent=false,cli
       assert.equal(p.meta.sections.reduce((n,s)=>n+s.messages,0),p.meta.total.messages);
       assert.equal(p.meta.sections.reduce((n,s)=>n+s.chars,0),p.meta.total.chars);
       assert.ok(!Object.hasOwn(p.meta,'usage'));assert.equal(p.actor,'system');assert.equal(p.content,'');
-      if(p.meta.purpose==='dialogue'&&p.meta.step===0)assert.ok(Buffer.byteLength(JSON.stringify(p.meta))<=1500);
+      if(p.meta.purpose==='dialogue'&&p.meta.step===0)assert.ok(Buffer.byteLength(JSON.stringify(p.meta))<=(p.meta.rules==='p9'?2500:1500));
     }
     const summary=presentedSummary(db);assert.equal(summary.count,presented.length);
     assert.equal(summary.meta_bytes.total,presented.reduce((n,p)=>n+Buffer.byteLength(JSON.stringify(p.meta)),0));

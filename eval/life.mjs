@@ -2,7 +2,7 @@ import { alphabet,latin } from '../scripts/p8/corpus.mjs';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const ordinary=[...alphabet,...latin];
-export function loadLife(id){if(!['life-a','life-b'].includes(id))throw Error('Unknown synthetic life');return JSON.parse(readFileSync(new URL(`./lives/${id}.json`,import.meta.url),'utf8'));}
+export function loadLife(id){if(!['life-a','life-b','life-r'].includes(id))throw Error('Unknown synthetic life');return JSON.parse(readFileSync(new URL(`./lives/${id}.json`,import.meta.url),'utf8'));}
 export function expand(life,days=life.days){
  let random=life.seed>>>0;const rand=()=>((random=(Math.imul(random,1664525)+1013904223)>>>0)/4294967296);
  const harmonic=ordinary.reduce((n,_,i)=>n+1/(i+1),0);

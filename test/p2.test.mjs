@@ -47,7 +47,7 @@ async function fixture(t, settings = {}) {
   const reserve = createServer(); const url = await listen(reserve); await new Promise(r => reserve.close(r));
   const personaFile = join(dir, 'persona.txt'); await writeFile(personaFile, '人设全文\n');
   const env = { ...process.env, YUVI_DATA_DIR: join(dir, 'data'), YUVI_PERSONA_FILE: personaFile,
-    YUVI_MODEL_BASE_URL: base + '/v1', YUVI_MODEL_API_KEY: key, YUVI_MODEL: 'fake-p2',
+    YUVI_RECALL:'off', YUVI_SURFACING:'off', YUVI_MODEL_BASE_URL: base + '/v1', YUVI_MODEL_API_KEY: key, YUVI_MODEL: 'fake-p2',
     YUVI_HOST: '127.0.0.1', YUVI_PORT: new URL(url).port,
     YUVI_MODEL_IDLE_TIMEOUT_MS: '3000', YUVI_MODEL_MAX_DURATION_MS: '600000', ...settings };
   let child, output = '';

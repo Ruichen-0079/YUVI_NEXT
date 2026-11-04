@@ -1,3 +1,4 @@
+import { writings } from '../p9/corpus.mjs';
 import { varied } from '../p8/corpus.mjs';
 // Deterministic synthetic P4 archive. No real data or credentials. Never overwrites.
 import { DatabaseSync } from 'node:sqlite';
@@ -7,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { assembleContext } from '../../dist/context.js';
 import { ARCHIVE_SCHEMA } from '../../dist/schema.js';
 export function generate(file, { count = 1_000_000, seed = 67, shape = 'typical' } = {}) {
+  if (shape === 'writings') return writings(file, {count,seed});
   if (shape === 'varied') return varied(file, {count,seed});
   if (!Number.isSafeInteger(count) || count < 100 || !['typical','empty','presented'].includes(shape)) throw Error('Invalid synthetic archive options');
   if (existsSync(file)) throw Error('Synthetic archive already exists');

@@ -75,7 +75,7 @@ try{
   console.error(JSON.stringify({shape,stage:'ordinary-and-startup'}));mode='ordinary';
   shapeResult.service={};
   for(const [label,checkout]of[['p7',legacy],['p8',resolve('.')]]){
-   const s=await startService(dir,{checkout,data,baseUrl:base,snapshots:join(dir,'snapshots'),context:200,...(label==='p8'?{hook}:{})}),program=[],model=[];
+   const s=await startService(dir,{checkout,data,baseUrl:base,snapshots:join(dir,'snapshots'),context:200,...(label==='p8'?{hook,recall:options.recall===1}:{})}),program=[],model=[];
    try{
     for(let i=-2;i<trials;i++){currentCalls=[];const frames=await s.post('普通性能测试'+i),heard=frames.find(f=>f.event==='heard'),last=frames.at(-1);if(last.event!=='done')throw Error('Turn failed');if(i>=0){program.push(currentCalls[0].t2-heard.at+last.at-currentCalls.at(-1).t3);model.push(currentCalls.reduce((n,c)=>n+c.t3-c.t2,0));}}
     shapeResult.service[label]={startup_ms:s.startupMs,rss_bytes:await s.rss(),program:stats(program),model:stats(model),...(label==='p8'?{incremental:stats(s.output.split('\n').filter(line=>line.startsWith('P8_INCREMENT ')).map(line=>Number(line.slice(13))))}:{})};

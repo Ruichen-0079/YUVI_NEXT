@@ -106,22 +106,22 @@ export function presentedWritings(db: DatabaseSync, scope: Scope = CURRENT_SCOPE
     never_presented: writings.filter(w => w.dialogue + w.consolidation === 0).length };
 }
 
-export function presentedShow(db: DatabaseSync, seq: number, persona: string | undefined, includeMessages = false) {
-  const row = db.prepare("SELECT * FROM events WHERE seq=? AND class='control' AND kind='presented'").get(seq);
+export function presentedShow(db: DatabaseSync, seq: number, persona: string | undefined, includeMessages = false, scope: Scope = CURRENT_SCOPE) {
+  const row = db.prepare("SELECT * FROM events WHERE seq=? AND class='control' AND kind='presented' AND scene=? AND branch=?").get(seq, scope.scene, scope.branch);
   if (!row) throw new Error('Presented record not found.');
-  const event = decode(row), meta = event.meta as unknown as PresentationManifest, scope = { scene: event.scene, branch: event.branch };
+  const event = decode(row), meta = event.meta as unknown as PresentationManifest;
   let outcome: Outcome = { status: meta.purpose === 'consolidation' ? 'incomplete' : 'unknown' };
   visit(db, scope, (p, value) => { if (p.seq === seq) outcome = value; });
   const result: Record<string, unknown> = { seq, manifest: meta, outcome,
     reconstruction: { status: 'rules_unsupported', scope: 'messages only; tool definitions are current rule constants, not saved historical HTTP bytes' } };
-  if (meta.format !== 1 || !['p7', 'p8'].includes(meta.rules)) return result;
+  if (meta.format !== 1 || !['p7', 'p8', 'p9'].includes(meta.rules)) return result;
   let status = meta.node_major !== Number(process.versions.node.split('.')[0]) ? 'node_mismatch' :
     persona === undefined || sha256(persona) !== meta.persona?.sha256 ? 'persona_mismatch' : 'exact';
   try {
     let base = event, m = meta;
     for (let depth = 0; (m.step ?? 0) > 0; depth++) {
       if (depth >= 3) throw Error();
-      const prior = db.prepare("SELECT * FROM events WHERE id=? AND seq<? AND class='control' AND kind='presented'").get(m.previous!, base.seq);
+      const prior = db.prepare("SELECT * FROM events WHERE id=? AND seq<? AND class='control' AND kind='presented' AND scene=? AND branch=?").get(m.previous!, base.seq, scope.scene, scope.branch);
       if (!prior) throw Error(); const previous = decode(prior), pm = previous.meta as unknown as PresentationManifest;
       if (pm.rules !== meta.rules || pm.format !== 1 || pm.step !== m.step! - 1 || previous.reply_to !== event.reply_to) throw Error();
       base = previous; m = pm;
@@ -139,14 +139,18 @@ export function presentedShow(db: DatabaseSync, seq: number, persona: string | u
         .all(section.first_seq!, section.last_seq!, base.seq, scope.scene, scope.branch).map(decode).filter(e => name !== 'writings' || e.content !== '');
       if (events.length !== section.count) throw Error(); return events;
     };
-    const config = { persona: persona !== undefined && sha256(persona) === m.persona.sha256 ? persona : '', ownerName: m.owner_name, writingChars: m.writing_chars };
+    const config = { persona: persona !== undefined && sha256(persona) === m.persona.sha256 ? persona : '', ownerName: m.owner_name, writingChars: m.writing_chars, recall: m.request.tools.includes('recall'), surfacing: m.surfacing?.strategy };
+    const surfaced = (m.sections.find(s => s.name === 'surfaced')?.seqs ?? []).map(n => {
+      const found = db.prepare("SELECT * FROM events WHERE seq=? AND seq<? AND scene=? AND branch=? AND class='inner' AND kind='wrote'").get(n, base.seq, scope.scene, scope.branch);
+      if (!found || !found.content) throw Error(); return decode(found);
+    });
     let assembled, currentHeardHasReplacement = false;
     if (m.purpose === 'dialogue') {
       const heard = db.prepare("SELECT *,CAST(content AS BLOB) AS original_content FROM events WHERE id=? AND seq<? AND scene=? AND branch=? AND class='experience' AND kind='heard'")
         .get(base.reply_to!, base.seq, scope.scene, scope.branch);
       if (!heard) throw Error();
       currentHeardHasReplacement = Buffer.from(heard.original_content as Uint8Array).toString('utf8').includes('\uFFFD');
-      assembled = assembleBase({ purpose: 'dialogue', selected: { writings: source('writings'), window: source('window') }, heard: { ...decode(heard), content: Buffer.from(heard.original_content as Uint8Array).toString('utf8') } },
+      assembled = assembleBase({ purpose: 'dialogue', selected: { writings: source('writings'), window: source('window'), surfaced, surfacing: m.surfacing }, heard: { ...decode(heard), content: Buffer.from(heard.original_content as Uint8Array).toString('utf8') } },
         config, m.now, zone, m.node_major, zone);
     } else assembled = assembleBase({ purpose: 'consolidation', selected: { writings: source('writings'), material: source('material') }, maxTokens: m.request.max_tokens! },
       config, m.now, zone, m.node_major, zone);
@@ -155,13 +159,14 @@ export function presentedShow(db: DatabaseSync, seq: number, persona: string | u
       if (section.name !== 'step') continue;
       const replies = section.results!.map(reference => {
         if ('ignored' in reference) return '本步继续查阅；这个调用没有作为回合结局。';
-        const checkedRow = db.prepare("SELECT * FROM events WHERE id=? AND seq<? AND scene=? AND branch=? AND class='act' AND kind='checked'")
-          .get(reference.checked, seq, scope.scene, scope.branch);
+        const recalled = 'recalled' in reference;
+        const checkedRow = db.prepare("SELECT * FROM events WHERE id=? AND seq<? AND scene=? AND branch=? AND class='act' AND kind=?")
+          .get(recalled ? reference.recalled : reference.checked, seq, scope.scene, scope.branch, recalled ? 'recalled' : 'checked');
         if (!checkedRow) throw Error(); const checked = decode(checkedRow), cm = checked.meta as { invalid?: boolean; result_seqs: number[]; total: number };
         if (cm.invalid) return '查阅参数无效；请使用子串及有效的日期范围。';
         const records = (cm.result_seqs as number[]).map(n => {
           const found = db.prepare('SELECT * FROM events WHERE seq=? AND seq<? AND scene=? AND branch=?').get(n, checked.seq, scope.scene, scope.branch);
-          if (!found) throw Error(); return decode(found);
+          if (!found || (recalled && (found.class !== 'inner' || found.kind !== 'wrote' || !found.content))) throw Error(); return decode(found);
         });
         return checkedText(cm, records, m.owner_name, zone);
       });
