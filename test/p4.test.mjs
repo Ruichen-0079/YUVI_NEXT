@@ -322,7 +322,10 @@ test('D20/D6: persistent consolidation failure is bounded, recorded, searchable 
   const failure = f.requests.find(r => r.failed);
   assert.equal(f.requests.filter(r => !r.body.tools).length, 1);
   assert.equal(events.filter(e => e.kind === 'wrote').length, 0);
-  await delay(Math.max(0, failure.time + 30_100 - Date.now()));
+  // Backoff begins after the service observes the failed response, not when
+  // the fake provider first received it. Wait from the observed failure.
+  await waitFor(() => f.output.includes('Consolidation failed'));
+  await delay(30_100);
   f.dialogue.push((res, r) => res.end(tools(['check', { query: '积压消息-0' }]) + end(r.usage)));
   await f.post('恢复并查阅');
   await waitFor(async () => (await f.events()).some(e => e.kind === 'wrote'));

@@ -69,7 +69,7 @@ export function measure(directory,{write=true}={}){
     const excluded=surface?.excluded??[];
     if(!carriers.length)reason='no_carrier';
     else if(arm==='E-R'&&!recalls.length)reason='no_recall';
-    else if(!matching.length)reason='not_candidate';
+    else if((used.length||recalls[0]?.meta.engine==='scan')&&!matching.length)reason='not_candidate';
     else if(['no_terms','common'].includes(surface?.reason))reason='cue_'+surface.reason;
     else if(matching.some(w=>excluded.some(e=>e.seq===w.seq&&e.why==='window')))reason='excluded_window';
     else if(matching.some(w=>excluded.some(e=>e.seq===w.seq&&e.why==='budget')))reason='budget_skip';
@@ -97,7 +97,7 @@ export function measure(directory,{write=true}={}){
   if(probe.tags.includes('sanity'))sanity.push(out);else probeRows.push(out);
  }
  const reasons={};for(const a of allAnswers)if(a.reason)reasons[a.reason]=(reasons[a.reason]??0)+1;
- const writingRows=writings.map(w=>{const seen=ps.filter(p=>p.seq>w.seq&&p.meta.sections.some(s=>s.name==='writings'&&includes(s,w.seq))),viaCheck=ps.filter(p=>p.seq>w.seq&&p.meta.sections.some(s=>s.results?.some(r=>{const c=byId.get(r.checked);return c?.meta.result_seqs?.includes(w.seq);})));return{seq:w.seq,presentations:seen.length,first:seen[0]?.t_recorded??null,last:seen.at(-1)?.t_recorded??null,check_presentations:viaCheck.length};});
+ const writingRows=writings.map(w=>{const seen=ps.filter(p=>p.seq>w.seq&&p.meta.sections.some(s=>s.name==='writings'&&includes(s,w.seq))),viaCheck=ps.filter(p=>p.seq>w.seq&&p.meta.sections.some(s=>s.results?.some(r=>{const c=byId.get(r.checked);return c?.meta.result_seqs?.includes(w.seq);})));return{seq:w.seq,presentations:seen.length,first:seen[0]?.t_recorded??null,last:seen.at(-1)?.t_recorded??null,check_presentations:viaCheck.length,...(p9?{recall_presentations:ps.filter(p=>p.seq>w.seq&&p.meta.sections.some(s=>s.results?.some(r=>byId.get(r.recalled)?.meta.result_seqs?.includes(w.seq)))).length,surfaced_presentations:ps.filter(p=>p.seq>w.seq&&p.meta.sections.some(s=>s.name==='surfaced'&&s.seqs.includes(w.seq))).length}: {})};});
  let idle=0,pressure=0,lastTime;
  for(const e of events){
   if(e.kind==='heard'||(e.class==='act'&&['said','silent'].includes(e.kind)))lastTime=e.t_recorded;
@@ -111,9 +111,9 @@ export function measure(directory,{write=true}={}){
   consolidation:{requests:idle+pressure,idle,pressure,wrote:events.filter(e=>e.kind==='wrote').length,nonempty:writings.length},
   probes:probeRows,sanity,coverage:{overall:coverage(allAnswers),age:Object.fromEntries(['<1d','1-7d','7-28d','>28d'].map(k=>[k,coverage(allAnswers.filter(a=>a.age_group===k))])),
    channels:Object.fromEntries(['window','writing','check','check_writing',...(p9?['recall_writing','surfaced_writing']:[])].map(k=>[k,{total:allAnswers.length,presented:allAnswers.filter(a=>a[k]).length}])),tags:Object.fromEntries(['high_frequency','correction','expected_miss'].map(k=>[k,coverage(allAnswers.filter(a=>a.tags.includes(k)))]))},
-  corrections:probeRows.filter(p=>p.tags.includes('correction')).map(p=>({probe:p.id,all_presented:p.all_presented,chronological:p.chronological,presentation_order:p.presentation_order,versions:p.answers.map(a=>({target:a.target,rank:a.rank,presented:a.presented}))})),
+  corrections:probeRows.filter(p=>p.tags.includes('correction')).map(p=>({probe:p.id,all_presented:p.all_presented,chronological:p.chronological,presentation_order:p.presentation_order,versions:p.answers.map(a=>({target:a.target,rank:a.rank,presented:a.presented,...(p9?{surfaced_writing:a.surfaced_writing,recall_writing:a.recall_writing}: {})}))})),
   retrieval_gap:{total:allAnswers.length,overlap:allAnswers.filter(a=>a.overlap).length,used_overlap:allAnswers.filter(a=>a.used_overlap).length,ranked_100:allAnswers.filter(a=>a.rank!==null).length,check_presented_outside_top100:allAnswers.filter(a=>a.check&&a.rank===null).length,presented_without_check:allAnswers.filter(a=>a.presented&&!a.check).length,presented:allAnswers.filter(a=>a.presented).length},
-  reasons:{...reasons,unexplained:reasons.unexplained??0},writings:{rows:writingRows,never_in_writings:writingRows.filter(w=>!w.presentations).length,never_presented:writingRows.filter(w=>!w.presentations&&!w.check_presentations).length,never_presented_rate:writingRows.length?writingRows.filter(w=>!w.presentations&&!w.check_presentations).length/writingRows.length:null,via_check_rate:writingRows.length?writingRows.filter(w=>w.check_presentations).length/writingRows.length:null,via_check:writingRows.filter(w=>w.check_presentations).length},
+  reasons:{...reasons,unexplained:reasons.unexplained??0},writings:{rows:writingRows,never_in_writings:writingRows.filter(w=>!w.presentations).length,never_presented:writingRows.filter(w=>!w.presentations&&!w.check_presentations&&(!p9||!w.recall_presentations&&!w.surfaced_presentations)).length,never_presented_rate:writingRows.length?writingRows.filter(w=>!w.presentations&&!w.check_presentations&&(!p9||!w.recall_presentations&&!w.surfaced_presentations)).length/writingRows.length:null,via_check_rate:writingRows.length?writingRows.filter(w=>w.check_presentations).length/writingRows.length:null,via_check:writingRows.filter(w=>w.check_presentations).length},
   cost:{requests:ps.length,turn_requests:distribution(heard.map(h=>ps.filter(p=>p.reply_to===h.id).length)),zero_chars:distribution(ps.filter(p=>p.meta.step===0).map(p=>p.meta.total.chars)),later_chars:distribution(ps.filter(p=>p.meta.step>0).map(p=>p.meta.total.chars)),check_calls:events.filter(e=>e.kind==='checked').length,tool_result_chars:ps.reduce((n,p)=>n+p.meta.sections.filter(s=>s.name==='step').reduce((sum,s)=>sum+s.chars-(s.assistant_text?.length??0),0),0)}};
  if(p9)Object.assign(result,p9Statistics({events,heard,writings,ps,probeRows,sanity,timeline,bySeq,byId,life}));
  if(write)writeFileSync(join(directory,'metrics.json'),JSON.stringify(result,null,2)+'\n');return result;

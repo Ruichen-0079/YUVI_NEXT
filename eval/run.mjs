@@ -2,6 +2,8 @@
 // writes are exercised; the driver never calls selection or consolidation itself.
 import { mock } from 'node:test';
 import { createServer } from 'node:http';
+import { createHash } from 'node:crypto';
+import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { mkdirSync,writeFileSync,statSync } from 'node:fs';
 import { join,resolve } from 'node:path';
@@ -18,9 +20,11 @@ const budget=plan?new UsageBudget(plan):null;
 const life=loadLife(id);if(policy)life.writing_policy=policy;
 const {events,start,end}=expand(life,days);mkdirSync(out,{recursive:false,mode:0o700});writeFileSync(join(out,'life.json'),JSON.stringify({...life,evaluation:{arm,days}},null,2)+'\n');
 const frame=value=>'data: '+JSON.stringify(value)+'\n\n';
+const requestEvidence=[];
 let current,ordinary=0,requests=0,idleConsolidations=0,pressureConsolidations=0,advancing=false;
 const fake=createServer(async(req,res)=>{
  const chunks=[];for await(const c of req)chunks.push(c);const body=JSON.parse(Buffer.concat(chunks).toString('utf8'));requests++;
+ const presented=app.archive.db.prepare("SELECT seq,meta FROM events WHERE kind='presented' ORDER BY seq DESC LIMIT 1").get();const digest=createHash('sha256').update(JSON.stringify(body.messages)).digest('hex');assert.equal(JSON.parse(presented.meta).messages_sha256,digest);requestEvidence.push({seq:presented.seq,messages_sha256:digest});
  if(real){
   if(budget.stopped){res.writeHead(429);res.end();return;}
   try{
@@ -52,7 +56,7 @@ const fake=createServer(async(req,res)=>{
  res.end(frame({choices:[{delta:tool_calls?{tool_calls}:{content}}]})+frame({choices:[{delta:{},finish_reason:tool_calls?'tool_calls':'stop'}],usage})+'data: [DONE]\n\n');
 });fake.listen(0,'127.0.0.1');await once(fake,'listening');
 mock.timers.enable({apis:['Date','setTimeout','setInterval'],now:start});
-const config={recall:arm.startsWith('E-')||['R1','R2'].includes(arm),surfacing:arm==='E-SR'?'recency':['E-S','E-SC','R2'].includes(arm)?'relevance':'off',dataDir:join(out,'data'),persona:'这是隔离的合成生活评测。',ownerName:life.owner_name,model:'offline-life',apiKey:'fake-offline-only',baseUrl:`http://127.0.0.1:${fake.address().port}/v1`,
+const config={recall:arm.startsWith('E-')||['R1','R2'].includes(arm),surfacing:arm==='E-SR'?'recency':['E-S','E-SC','R2'].includes(arm)?'relevance':'off',dataDir:join(out,'data'),persona:'这是隔离的合成生活评测。',ownerName:life.owner_name,model:real?process.env.YUVI_MODEL:'offline-life',apiKey:'fake-offline-only',baseUrl:`http://127.0.0.1:${fake.address().port}/v1`,
  host:'127.0.0.1',port:0,contextEvents:life.config.YUVI_CONTEXT_EVENTS,writingChars:life.config.YUVI_CONTEXT_WRITING_CHARS,consolidationIdleMs:life.config.YUVI_CONSOLIDATION_IDLE_MS,
  consolidationMaxTokens:life.config.YUVI_CONSOLIDATION_MAX_TOKENS,idleTimeoutMs:60000,maxDurationMs:600000};
 const app=createApp(config,undefined,{checkEngine:arm==='A1'?'scan':undefined});app.server.listen(0,'127.0.0.1');await once(app.server,'listening');
@@ -69,6 +73,7 @@ try{
  }
  if(!budget?.stopped){advancing=true;mock.timers.tick(end-Date.now());}await app.idle();await new Promise(r=>setImmediate(r));
  if(budget)writeFileSync(join(out,'budget.json'),JSON.stringify(budget.result(),null,2)+'\n');
+ writeFileSync(join(out,'requests.json'),JSON.stringify(requestEvidence,null,2)+'\n');
  writeFileSync(join(out,'run.json'),JSON.stringify({format:1,life:id,arm,days,writing_policy:life.writing_policy,owner_messages:events.length,requests,idle_consolidations:idleConsolidations,pressure_consolidations:pressureConsolidations,simulated_start:start,simulated_end:end},null,2)+'\n');
  writeFileSync(join(out,'timing.json'),JSON.stringify({wall_ms:performance.now()-wall,index_bytes:statSync(join(config.dataDir,'index.sqlite')).size},null,2)+'\n');
 }finally{

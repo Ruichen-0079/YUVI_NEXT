@@ -2,7 +2,7 @@
 import {mkdirSync,writeFileSync,statSync} from 'node:fs';import {join,resolve} from 'node:path';import {createServer} from 'node:http';import {performance} from 'node:perf_hooks';
 import {DatabaseSync} from 'node:sqlite';import {Archive} from '../../dist/archive.js';import {ArchiveIndex,buildIndex} from '../../dist/archive-index.js';import {check} from '../../dist/context.js';import {generate} from '../p6/generate.mjs';import {listen,startService,text,done} from '../../test/helpers/p6-process.mjs';
 const root=resolve(process.argv[2]),count=Number(process.argv[3]??1000000),trials=Number(process.argv[4]??20);mkdirSync(root,{recursive:false,mode:0o700});
-const percentile=(xs,p)=>[...xs].sort((a,b)=>a-b)[Math.max(0,Math.ceil(xs.length*p)-1)],stats=xs=>({samples:xs,p50_ms:percentile(xs,.5),p95_ms:percentile(xs,.95),max_ms:Math.max(...xs)});
+const percentile=(xs,p)=>[...xs].sort((a,b)=>a-b)[Math.max(0,Math.ceil(xs.length*p)-1)],stats=xs=>!xs.length?{samples:[],p50_ms:null,p95_ms:null,max_ms:null}:({samples:xs,p50_ms:percentile(xs,.5),p95_ms:percentile(xs,.95),max_ms:Math.max(...xs)});
 const result={node:process.version,count,trials,method:'one warmup; monotonic wall; actual service entry; loopback fake; program excludes provider residence; no concurrent benchmark',shapes:{}};const save=()=>writeFileSync(join(root,'results.json'),JSON.stringify(result,null,2)+'\n');
 let calls=[];const fake=createServer(async(req,res)=>{const chunks=[];for await(const c of req)chunks.push(c);const t2=performance.now(),body=JSON.parse(Buffer.concat(chunks).toString());res.end(text(body.tools?'正常回应':'独立性能整理')+done({prompt_tokens:1,completion_tokens:1}));calls.push({t2,t3:performance.now()});});const base=await listen(fake);
 try{for(const shape of ['writings','varied']){

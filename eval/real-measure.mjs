@@ -1,0 +1,17 @@
+// Mechanical P9-R proxies, not claims of understanding. Works for partial runs.
+import {DatabaseSync} from 'node:sqlite';import {readFileSync,writeFileSync} from 'node:fs';import {join} from 'node:path';import {expand} from './life.mjs';
+export function measureReal(directory){
+ const life=JSON.parse(readFileSync(join(directory,'life.json'),'utf8')),{events:timeline,answers}=expand(life),db=new DatabaseSync(join(directory,'data/archive.sqlite'),{readOnly:true});let events;
+ try{events=db.prepare('SELECT * FROM events ORDER BY seq').all().map(e=>({...e,meta:JSON.parse(e.meta)}));}finally{db.close();}
+ const heard=events.filter(e=>e.kind==='heard'),writings=events.filter(e=>e.kind==='wrote'),rows=[],calls=[];let nonprobe=0,intrusions=0;
+ for(const h of heard){const schedule=timeline.find(e=>e.t===h.t_recorded&&e.text===h.content);if(!schedule)throw Error('Synthetic schedule/source mismatch');
+  const tools=events.filter(e=>e.reply_to===h.id&&['checked','recalled'].includes(e.kind)),said=events.find(e=>e.reply_to===h.id&&e.kind==='said');
+  for(const tool of tools)calls.push({heard_seq:h.seq,probe:schedule.type==='probe',kind:tool.kind,query:tool.meta.arguments});
+  if(schedule.type==='probe')for(const id of schedule.targets){const a=answers[id],key=a.answer_key??a.anchor;rows.push({probe:schedule.probe,target:id,heard_seq:h.seq,complete:!!said,called_check:tools.some(e=>e.kind==='checked'),called_recall:tools.some(e=>e.kind==='recalled'),carrier:writings.some(w=>w.seq<h.seq&&w.content.includes(key)),mentioned:!!said?.content.includes(key),answer_key:key});}
+  else{nonprobe++;const p=events.find(e=>e.kind==='presented'&&e.reply_to===h.id&&e.meta.step===0),s=p?.meta.sections.find(s=>s.name==='surfaced'),window=p?.meta.sections.find(s=>s.name==='window');const windowText=events.filter(e=>window&&window.first_seq<=e.seq&&e.seq<=window.last_seq).map(e=>e.content).join('\n');
+   if(said&&s?.seqs.some(seq=>{const w=events.find(e=>e.seq===seq);return Object.values(answers).some(a=>a.answer_key&&w.content.includes(a.answer_key)&&!h.content.includes(a.answer_key)&&!windowText.includes(a.answer_key)&&said.content.includes(a.answer_key));}))intrusions++;
+  }
+ }
+ const result={evidence:'mechanical keyword proxies only; not proof of attention, comprehension or belief',observed_turns:heard.length,planned_turns:timeline.length,incomplete:heard.length<timeline.length,probes:rows,tools:calls,rates:{probe_check:rows.length?rows.filter(r=>r.called_check).length/rows.length:0,probe_recall:rows.length?rows.filter(r=>r.called_recall).length/rows.length:0,nonprobe_check:nonprobe?new Set(calls.filter(c=>!c.probe&&c.kind==='checked').map(c=>c.heard_seq)).size/nonprobe:0,nonprobe_recall:nonprobe?new Set(calls.filter(c=>!c.probe&&c.kind==='recalled').map(c=>c.heard_seq)).size/nonprobe:0,nonprobe_intrusion_proxy:nonprobe?intrusions/nonprobe:0}};
+ writeFileSync(join(directory,'real-metrics.json'),JSON.stringify(result,null,2)+'\n');return result;
+}
