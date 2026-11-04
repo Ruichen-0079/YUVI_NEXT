@@ -122,17 +122,27 @@ export function measure(directory,{write=true}={}){
 // Read-only independent accounting from recorded source references, never reruns
 // the production selector. Repeated continuation manifests count once per turn.
 function p9Statistics({events,heard,writings,ps,probeRows,sanity,timeline,bySeq,byId,life}){
- const bases=ps.filter(p=>p.meta.step===0),probes=[...probeRows,...sanity],probeIds=new Set(probes.map(p=>p.heard_seq));
- const seen=new Map(),ages={'<1d':0,'1-7d':0,'7-28d':0,'>28d':0};let selected=0,echo=0,repeated=0,adjacent=0,foreground=0,window=0,noncarrier=0;
- let previous=new Set();const chars=[],turns={probe:{all:0,surfaced:0},nonprobe:{all:0,surfaced:0}},carrierCandidates={total:0,candidate:0,selected:0,omitted:{}};
+ const bases=ps.filter(p=>p.meta.step===0),probes=[...probeRows,...sanity];
+ const probeExcerpts=timeline.filter(e=>e.type==='probe').map(e=>{const h=heard.find(h=>h.t_recorded===e.t&&h.content===e.text);return h?{seq:h.seq,text:[...h.content].slice(0,32).join('')}:null;}).filter(Boolean);
+ const seen=new Map(),ages={'<1d':0,'1-7d':0,'7-28d':0,'>28d':0};let selected=0,echo=0,repeated=0,foreground=0,window=0,noncarrier=0;
+ let previous=new Set();const chars=[],turns={probe:{all:0,surfaced:0},nonprobe:{all:0,surfaced:0}},carrierCandidates={total:0,with_carrier:0,candidate:0,selected:0,omitted:{}};
  for(const p of bases){const s=p.meta.sections.find(s=>s.name==='surfaced'),seqs=s?.seqs??[],h=byId.get(p.reply_to),probe=probes.find(v=>v.heard_seq===h.seq),kind=probe?'probe':'nonprobe';
   turns[kind].all++;if(seqs.length)turns[kind].surfaced++;chars.push(s?.chars??0);
-  if(seqs.some(n=>previous.has(n)))repeated++;if(previous.size&&seqs.length)adjacent++;
+  if(seqs.some(n=>previous.has(n)))repeated++;
   const carrierSeqs=new Set(probe?.answers.flatMap(a=>a.carrier_seqs)??[]);
-  if(probe)for(const a of probe.answers){carrierCandidates.total++;if(a.carrier_seqs.some(n=>p.meta.surfacing?.candidates.includes(n)))carrierCandidates.candidate++;if(a.surfaced_writing)carrierCandidates.selected++;else if(a.reason)carrierCandidates.omitted[a.reason]=(carrierCandidates.omitted[a.reason]??0)+1;}
+  if(probe)for(const a of probe.answers){
+   carrierCandidates.total++;if(a.carrier_seqs.length)carrierCandidates.with_carrier++;
+   if(a.carrier_seqs.some(n=>p.meta.surfacing?.candidates.includes(n)))carrierCandidates.candidate++;
+   if(a.surfaced_writing)carrierCandidates.selected++;
+   else if(p.meta.surfacing){
+    const m=p.meta.surfacing,matching=a.carrier_seqs.filter(n=>m.terms.some(t=>lex(bySeq.get(n).content).includes(t))),excluded=m.excluded.filter(e=>a.carrier_seqs.includes(e.seq));
+    const reason=!a.carrier_seqs.length?'no_carrier':m.terms.length&&!matching.length?'not_candidate':m.reason==='no_terms'?'cue_no_terms':m.reason==='common'?'cue_common':excluded.some(e=>e.why==='foreground')?'foreground':excluded.some(e=>e.why==='window')?'excluded_window':excluded.some(e=>e.why==='budget')?'budget_skip':['index_building','index_unavailable','error'].includes(m.reason)?m.reason:'ranked_out';
+    a.surfacing_reason=reason;carrierCandidates.omitted[reason]=(carrierCandidates.omitted[reason]??0)+1;
+   }
+  }
   for(const n of seqs){const w=bySeq.get(n);assert.ok(w&&w.kind==='wrote'&&w.content&&w.scene===p.scene&&w.branch===p.branch);seen.set(n,(seen.get(n)??0)+1);selected++;
    const age=(p.t_recorded-w.t_recorded)/86400000;ages[age<1?'<1d':age<=7?'1-7d':age<=28?'7-28d':'>28d']++;
-   if(timeline.some(e=>e.type==='probe'&&e.t<w.t_recorded&&w.content.includes([...e.text].slice(0,32).join(''))))echo++;
+   if(probeExcerpts.some(e=>e.seq<w.seq&&w.content.includes(e.text)))echo++;
    if(probe&&!carrierSeqs.has(n))noncarrier+=w.content.length;
    if(p.meta.sections.some(s=>s.name==='writings'&&includes(s,n)))foreground++;
    const range=p.meta.sections.find(s=>s.name==='window'),m=w.meta.material;
@@ -143,7 +153,8 @@ function p9Statistics({events,heard,writings,ps,probeRows,sanity,timeline,bySeq,
  const frequency=[...seen].sort((a,b)=>b[1]-a[1]||a[0]-b[0]),recalls=events.filter(e=>e.kind==='recalled'),fallbacks={};
  for(const r of recalls)if(r.meta.fallback)fallbacks[r.meta.fallback]=(fallbacks[r.meta.fallback]??0)+1;
  const manifestBytes=bases.map(p=>Buffer.byteLength(JSON.stringify(p.meta))),perTurn=heard.map(h=>ps.filter(p=>p.reply_to===h.id).reduce((n,p)=>n+p.meta.total.chars,0));
- return {surfacing:{turns,chars:distribution(chars),noncarrier_chars:noncarrier,occurrences:selected,unique:seen.size,top5:frequency.slice(0,5),top5_share:selected?frequency.slice(0,5).reduce((n,e)=>n+e[1],0)/selected:0,max_repeats:frequency[0]?.[1]??0,adjacent_repeated_turns:repeated,adjacent_repetition_rate:bases.length>1?repeated/(bases.length-1):0,ages,echo:{occurrences:echo,ratio:selected?echo/selected:0},duplicates:{foreground,window},carrier_candidates:carrierCandidates},
- recall:{calls:recalls.length,results:distribution(recalls.map(r=>r.meta.result_seqs.length)),chars:distribution(recalls.map(r=>r.meta.result_seqs.reduce((n,s)=>n+bySeq.get(s).content.length,0))),fallbacks,ranks:probeRows.flatMap(p=>p.answers.map(a=>({probe:p.id,target:a.target,rank:a.rank})))},
+ carrierCandidates.candidate_rate_over_carriers=carrierCandidates.with_carrier?carrierCandidates.candidate/carrierCandidates.with_carrier:0;carrierCandidates.selected_rate_over_carriers=carrierCandidates.with_carrier?carrierCandidates.selected/carrierCandidates.with_carrier:0;carrierCandidates.selected_given_candidate=carrierCandidates.candidate?carrierCandidates.selected/carrierCandidates.candidate:0;
+ return {surfacing:{enabled:bases.some(p=>p.meta.surfacing),turns,chars:distribution(chars),noncarrier_chars:noncarrier,occurrences:selected,unique:seen.size,top5:frequency.slice(0,5),top5_share:selected?frequency.slice(0,5).reduce((n,e)=>n+e[1],0)/selected:0,max_repeats:frequency[0]?.[1]??0,adjacent_repeated_turns:repeated,adjacent_repetition_rate:bases.length>1?repeated/(bases.length-1):0,ages,echo:{occurrences:echo,ratio:selected?echo/selected:0},duplicates:{foreground,window},carrier_candidates:carrierCandidates},
+ recall:{calls:recalls.length,results:distribution(recalls.map(r=>r.meta.result_seqs.length)),chars:distribution(recalls.map(r=>r.meta.result_seqs.reduce((n,s)=>n+bySeq.get(s).content.length,0))),fallbacks,ranks:probeRows.flatMap(p=>p.answers.map(a=>({probe:p.id,target:a.target,rank:a.rank,carriers:a.carrier_seqs.map(seq=>({seq,ranks:p.recalls.map(c=>{const n=c.rank_seqs.indexOf(seq);return n<0?null:n+1;})}))})))},
  p9cost:{turn_chars:distribution(perTurn),manifest_bytes:{...distribution(manifestBytes),median:quantile(manifestBytes,.5),max:manifestBytes.length?Math.max(...manifestBytes):0}}};
 }

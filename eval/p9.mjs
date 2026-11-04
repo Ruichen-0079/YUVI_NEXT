@@ -3,6 +3,7 @@ import {resolve,join,basename} from 'node:path';
 import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {performance} from 'node:perf_hooks';
+import {measure} from './measure.mjs';
 import {DatabaseSync} from 'node:sqlite';
 const distribution=a=>({mean:a.reduce((n,v)=>n+v,0)/a.length,p95:[...a].sort((a,b)=>a-b)[Math.ceil(a.length*.95)-1]});
 function p8Cost(directory){const db=new DatabaseSync(join(directory,'data/archive.sqlite'),{readOnly:true});try{
@@ -46,6 +47,17 @@ function writeResult(root,p8Run,runs,p8,regress,elapsedMs){
  if(regress)assert.equal(serialized,readFileSync('docs/notes/P9-baseline.json','utf8'),'P9 deterministic baseline changed');
  else{writeFileSync('docs/notes/P9-baseline.json',serialized);writeFileSync('docs/notes/P9-baseline.md',report(result,'.local-data/'+basename(root),p8));}
  return{root,...timing};
+}
+
+// Remeasure retained source archives after an accounting fix; no simulation,
+// selection, model calls or source archive writes take place here.
+export function refreshP9(root,p8Directory){
+ const p8Run=verifiedP8(p8Directory),p8=JSON.parse(readFileSync('docs/notes/P8-baseline.json','utf8')),runs={};
+ for(const life of ['life-a','life-b'])for(const arm of ['E-R','E-S','E-SR','E-SC']){const key=`${life}-${arm}-excerpt`,r=measure(join(root,key));
+  assert.equal(r.reasons.unexplained,0);assert.ok(r.sanity.every(p=>p.answers.every(a=>a.window)));assert.ok(r.p9cost.manifest_bytes.max<=2500);
+  const before=p8Cost(join(p8Run.root,`${life}-A0-excerpt`));r.p9cost.vs_p8_a0={baseline:before,mean_delta:r.p9cost.turn_chars.mean-before.mean,p95_delta:r.p9cost.turn_chars.p95-before.p95};runs[key]=r;
+ }
+ return writeResult(root,p8Run,runs,p8,false,JSON.parse(readFileSync(join(root,'timing.json'),'utf8')).wall_ms);
 }
 
 function report(result,root,p8){
