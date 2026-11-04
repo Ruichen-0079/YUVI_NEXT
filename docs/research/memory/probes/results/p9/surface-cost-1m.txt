@@ -1,0 +1,4 @@
+# node surface_probe.mjs <P8 varied 1M index.sqlite> <archive.sqlite>  (4 vCPU 2.8 GHz, Node 22.22.0)
+# cue = a real heard message from the archive; P8 term pruning (C=50,000); kind filter 'wrote'; top 20 by bm25
+cues 14 (of 30 sampled ids present), common-term skips 0
+p50 27.7 ms, p95 32.4 ms, max 32.4 ms (medians of 6 runs per cue; single-run max up to 40.5 ms)
