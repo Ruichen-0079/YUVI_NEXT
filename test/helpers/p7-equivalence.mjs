@@ -1,7 +1,8 @@
+import { legacyP8Events } from './p8-scan-equivalence.mjs';
 // P7 adds real archive rows. Normalize only declared ID/seq references, never
 // arbitrary content or numbers: masking those would conceal behavioral changes.
 export function normaliseP7Events(baseline, actual) {
-  const events = actual.filter(e => !(e.class === 'control' && e.kind === 'presented'));
+  const events = legacyP8Events(actual).filter(e => !(e.class === 'control' && e.kind === 'presented'));
   if (events.length !== baseline.length) throw Error('Non-presentation event count differs');
   const ids = new Map(events.map((e, i) => [e.id, baseline[i].id]));
   const seqs = new Map(events.map((e, i) => [e.seq, baseline[i].seq]));

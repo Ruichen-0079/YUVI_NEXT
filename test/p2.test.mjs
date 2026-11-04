@@ -132,11 +132,18 @@ test('B8: real process streams forty one-second chunks beyond P1 thirty-second c
   const f = await fixture(t);
   f.handlers.push(async res => {
     res.writeHead(200, { 'Content-Type': 'text/event-stream' });
-    for (let i = 0; i < 40; i++) { await delay(1000); res.write(text('字')); }
+    const begin = performance.now();
+    for (let i = 0; i < 40; i++) {
+      const deadline = begin + (i + 1) * 1000;
+      // Timer callbacks may arrive slightly early; enforce the actual duration
+      // with a monotonic clock, independently of wall-clock synchronization.
+      while (performance.now() < deadline) await delay(deadline - performance.now());
+      res.write(text('字'));
+    }
     res.end(done);
   });
-  const started = Date.now(); const frames = await f.post('长回复');
-  assert.ok(Date.now() - started >= 40_000);
+  const started = performance.now(); const frames = await f.post('长回复');
+  assert.ok(performance.now() - started >= 40_000);
   assert.equal(frames.filter(f => f.event === 'delta').length, 40);
   assert.equal(frames.at(-1).event, 'done');
   assert.equal((await f.events()).at(-1).content, '字'.repeat(40));

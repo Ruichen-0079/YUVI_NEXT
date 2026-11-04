@@ -1,0 +1,9 @@
+npm notice run yuvi-next@0.1.0 preeval
+npm notice run npm run build
+npm notice run yuvi-next@0.1.0 build
+npm notice run tsc
+npm notice run yuvi-next@0.1.0 eval
+npm notice run node eval/cli.mjs baseline
+{"root":"<repo>/.local-data/p8-baseline-F0vnyO","wall_ms":535016.608179}
+(node:92090) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)

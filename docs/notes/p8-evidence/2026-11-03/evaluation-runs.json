@@ -1,0 +1,324 @@
+{
+  "baseline": {
+    "root": ".local-data/p8-baseline-F0vnyO",
+    "timing": {
+      "wall_ms": 535014.484145
+    },
+    "runs": {
+      "life-a-A0-excerpt": {
+        "driver": {
+          "format": 1,
+          "life": "life-a",
+          "arm": "A0",
+          "days": 63,
+          "writing_policy": "excerpt",
+          "owner_messages": 2143,
+          "requests": 2265,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 70,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 42350.970698,
+          "index_bytes": 872448
+        }
+      },
+      "life-a-A0-none": {
+        "driver": {
+          "format": 1,
+          "life": "life-a",
+          "arm": "A0",
+          "days": 63,
+          "writing_policy": "none",
+          "owner_messages": 2143,
+          "requests": 2265,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 70,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 25519.948758000002,
+          "index_bytes": 946176
+        }
+      },
+      "life-a-A1-excerpt": {
+        "driver": {
+          "format": 1,
+          "life": "life-a",
+          "arm": "A1",
+          "days": 63,
+          "writing_policy": "excerpt",
+          "owner_messages": 2143,
+          "requests": 2300,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 70,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 32541.939354,
+          "index_bytes": 905216
+        }
+      },
+      "life-a-A2-excerpt": {
+        "driver": {
+          "format": 1,
+          "life": "life-a",
+          "arm": "A2",
+          "days": 63,
+          "writing_policy": "excerpt",
+          "owner_messages": 2143,
+          "requests": 2300,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 70,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 28407.04653,
+          "index_bytes": 868352
+        }
+      },
+      "life-a-A2-none": {
+        "driver": {
+          "format": 1,
+          "life": "life-a",
+          "arm": "A2",
+          "days": 63,
+          "writing_policy": "none",
+          "owner_messages": 2143,
+          "requests": 2300,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 70,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 24689.042443,
+          "index_bytes": 929792
+        }
+      },
+      "life-b-A0-excerpt": {
+        "driver": {
+          "format": 1,
+          "life": "life-b",
+          "arm": "A0",
+          "days": 63,
+          "writing_policy": "excerpt",
+          "owner_messages": 10523,
+          "requests": 10925,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 350,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 119788.656451,
+          "index_bytes": 4288512
+        }
+      },
+      "life-b-A1-excerpt": {
+        "driver": {
+          "format": 1,
+          "life": "life-b",
+          "arm": "A1",
+          "days": 63,
+          "writing_policy": "excerpt",
+          "owner_messages": 10523,
+          "requests": 10960,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 350,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 129214.74801699999,
+          "index_bytes": 4288512
+        }
+      },
+      "life-b-A2-excerpt": {
+        "driver": {
+          "format": 1,
+          "life": "life-b",
+          "arm": "A2",
+          "days": 63,
+          "writing_policy": "excerpt",
+          "owner_messages": 10523,
+          "requests": 10960,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 350,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 121175.136209,
+          "index_bytes": 4313088
+        }
+      }
+    }
+  },
+  "regress": {
+    "root": ".local-data/p8-baseline-kDzJeF",
+    "timing": {
+      "wall_ms": 499858.057949
+    },
+    "runs": {
+      "life-a-A0-excerpt": {
+        "driver": {
+          "format": 1,
+          "life": "life-a",
+          "arm": "A0",
+          "days": 63,
+          "writing_policy": "excerpt",
+          "owner_messages": 2143,
+          "requests": 2265,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 70,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 21114.213116,
+          "index_bytes": 872448
+        }
+      },
+      "life-a-A0-none": {
+        "driver": {
+          "format": 1,
+          "life": "life-a",
+          "arm": "A0",
+          "days": 63,
+          "writing_policy": "none",
+          "owner_messages": 2143,
+          "requests": 2265,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 70,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 25401.716915999998,
+          "index_bytes": 946176
+        }
+      },
+      "life-a-A1-excerpt": {
+        "driver": {
+          "format": 1,
+          "life": "life-a",
+          "arm": "A1",
+          "days": 63,
+          "writing_policy": "excerpt",
+          "owner_messages": 2143,
+          "requests": 2300,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 70,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 22491.553148,
+          "index_bytes": 905216
+        }
+      },
+      "life-a-A2-excerpt": {
+        "driver": {
+          "format": 1,
+          "life": "life-a",
+          "arm": "A2",
+          "days": 63,
+          "writing_policy": "excerpt",
+          "owner_messages": 2143,
+          "requests": 2300,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 70,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 25424.998158,
+          "index_bytes": 868352
+        }
+      },
+      "life-a-A2-none": {
+        "driver": {
+          "format": 1,
+          "life": "life-a",
+          "arm": "A2",
+          "days": 63,
+          "writing_policy": "none",
+          "owner_messages": 2143,
+          "requests": 2300,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 70,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 24261.732372,
+          "index_bytes": 929792
+        }
+      },
+      "life-b-A0-excerpt": {
+        "driver": {
+          "format": 1,
+          "life": "life-b",
+          "arm": "A0",
+          "days": 63,
+          "writing_policy": "excerpt",
+          "owner_messages": 10523,
+          "requests": 10925,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 350,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 122982.03015600001,
+          "index_bytes": 4288512
+        }
+      },
+      "life-b-A1-excerpt": {
+        "driver": {
+          "format": 1,
+          "life": "life-b",
+          "arm": "A1",
+          "days": 63,
+          "writing_policy": "excerpt",
+          "owner_messages": 10523,
+          "requests": 10960,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 350,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 125801.66531499999,
+          "index_bytes": 4288512
+        }
+      },
+      "life-b-A2-excerpt": {
+        "driver": {
+          "format": 1,
+          "life": "life-b",
+          "arm": "A2",
+          "days": 63,
+          "writing_policy": "excerpt",
+          "owner_messages": 10523,
+          "requests": 10960,
+          "idle_consolidations": 52,
+          "pressure_consolidations": 350,
+          "simulated_start": 1793577600000,
+          "simulated_end": 1798992000000
+        },
+        "timing": {
+          "wall_ms": 121299.289186,
+          "index_bytes": 4313088
+        }
+      }
+    },
+    "byte_identical_to_baseline": true
+  },
+  "baseline_sha256": "c7f2a5a6a99f4c026b957319640b927fff13a7942862f5339a4b6b7a1c55a93c"
+}

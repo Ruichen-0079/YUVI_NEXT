@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CURRENT_SCOPE, type Event } from './archive.js';
-import { assembleBase, validTimeZone, renderStep, record, messageSize, sha256, type Section, type PresentationManifest } from './context.js';
+import { assembleBase, checkedText, validTimeZone, renderStep, record, messageSize, sha256, type Section, type PresentationManifest } from './context.js';
 import type { Message } from './model.js';
 
 type Scope = { scene: string; branch: string };
@@ -114,7 +114,7 @@ export function presentedShow(db: DatabaseSync, seq: number, persona: string | u
   visit(db, scope, (p, value) => { if (p.seq === seq) outcome = value; });
   const result: Record<string, unknown> = { seq, manifest: meta, outcome,
     reconstruction: { status: 'rules_unsupported', scope: 'messages only; tool definitions are current rule constants, not saved historical HTTP bytes' } };
-  if (meta.format !== 1 || meta.rules !== 'p7') return result;
+  if (meta.format !== 1 || !['p7', 'p8'].includes(meta.rules)) return result;
   let status = meta.node_major !== Number(process.versions.node.split('.')[0]) ? 'node_mismatch' :
     persona === undefined || sha256(persona) !== meta.persona?.sha256 ? 'persona_mismatch' : 'exact';
   try {
@@ -123,7 +123,7 @@ export function presentedShow(db: DatabaseSync, seq: number, persona: string | u
       if (depth >= 3) throw Error();
       const prior = db.prepare("SELECT * FROM events WHERE id=? AND seq<? AND class='control' AND kind='presented'").get(m.previous!, base.seq);
       if (!prior) throw Error(); const previous = decode(prior), pm = previous.meta as unknown as PresentationManifest;
-      if (pm.rules !== 'p7' || pm.format !== 1 || pm.step !== m.step! - 1 || previous.reply_to !== event.reply_to) throw Error();
+      if (pm.rules !== meta.rules || pm.format !== 1 || pm.step !== m.step! - 1 || previous.reply_to !== event.reply_to) throw Error();
       base = previous; m = pm;
     }
     if (!validTimeZone(meta.time_zone) || !validTimeZone(m.time_zone)) {
@@ -163,7 +163,7 @@ export function presentedShow(db: DatabaseSync, seq: number, persona: string | u
           const found = db.prepare('SELECT * FROM events WHERE seq=? AND seq<? AND scene=? AND branch=?').get(n, checked.seq, scope.scene, scope.branch);
           if (!found) throw Error(); return decode(found);
         });
-        return `共匹配${cm.total}条，返回${records.length}条。\n\n${records.map(e => record(e, m.owner_name, true, zone)).join('\n\n')}`;
+        return checkedText(cm, records, m.owner_name, zone);
       });
       messages.push(...renderStep(section.assistant_text!, section.tool_calls!, replies));
     }

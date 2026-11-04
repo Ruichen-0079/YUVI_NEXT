@@ -1,3 +1,4 @@
+import { legacyP8Requests } from './helpers/p8-scan-equivalence.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -10,9 +11,10 @@ import { Archive } from '../dist/archive.js';
 import { createSnapshot, verifySnapshot } from '../dist/snapshots.js';
 import { generate } from '../scripts/p6/generate.mjs';
 import { insertEvents } from './helpers/archive-fixture.mjs';
-import { legacyCheckout, listen, startService, normaliseRun, text, tool, done } from './helpers/p6-process.mjs';
+import { legacyCheckout, listen, startService as startRawService, normaliseRun, text, tool, done } from './helpers/p6-process.mjs';
 import { normaliseP7Events, withoutRecordedTime } from './helpers/p7-equivalence.mjs';
 import * as reference from './helpers/p4-context.mjs';
+const startService=(root,options)=>startRawService(root,{...options,scan:true});
 function rows(data){const db=new DatabaseSync(join(data,'archive.sqlite'),{readOnly:true});try{return db.prepare('SELECT * FROM events ORDER BY seq').all().map(e=>({...e,meta:JSON.parse(e.meta)}));}finally{db.close();}}
 
 test('F2/F3/F7: real P4/P6 services, UUID reference mapping, exact requests/events/SSE across archive states', async t=>{
@@ -59,7 +61,7 @@ test('F2/F3/F7: real P4/P6 services, UUID reference mapping, exact requests/even
       try{frames=[await service.post('同一句话 散步'),await service.post('静默检查')];}finally{await service.stop();}
       const events=rows(data);
       if(label==='old'){oldEvents=events;expected={events:withoutRecordedTime(events),frames:frames.map(g=>g.map(({event,data})=>({event,data}))),requests};}
-      else {const mapped=normaliseP7Events(oldEvents,events);assert.deepEqual({events:mapped.events,frames:mapped.frames(frames),requests},expected,scenario);}
+      else {requests=legacyP8Requests(requests);const mapped=normaliseP7Events(oldEvents,events);assert.deepEqual({events:mapped.events,frames:mapped.frames(frames),requests},expected,scenario);}
       assert.ok(requests.some(r=>r.messages.some(m=>m.role==='tool')));
       if(['lagging','backlog','failure'].includes(scenario))assert.ok(requests.some(r=>!r.tools));
       if(scenario==='foreign'){

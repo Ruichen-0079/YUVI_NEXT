@@ -1,8 +1,10 @@
+import { indexCommand } from './archive-index.js';
 import { presentedCommand } from './presented.js';
 import { createSnapshot, verifySnapshot, restoreSnapshot, snapshotIfDue, snapshotPaths } from './snapshots.js';
 try {
   const [command, ...args] = process.argv.slice(2);
-  if (command === 'presented') console.log(JSON.stringify(presentedCommand(args)));
+  if (command === 'index') console.log(JSON.stringify(indexCommand(args)));
+  else if (command === 'presented') console.log(JSON.stringify(presentedCommand(args)));
   else if (command === 'snapshot' && args.length === 0) console.log(createSnapshot(snapshotPaths()));
   else if (command === 'verify-snapshot' && args.length === 1) {
     const info = verifySnapshot(args[0]);

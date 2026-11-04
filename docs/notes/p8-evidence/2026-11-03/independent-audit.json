@@ -1,0 +1,125 @@
+{
+  "format": 1,
+  "audits": [
+    {
+      "run": "life-a-A0-excerpt",
+      "owner_messages": 2143,
+      "events": 8732,
+      "answers": 38,
+      "presented": 7,
+      "channels": {
+        "window": 0,
+        "writing": 7,
+        "check": 0,
+        "check_writing": 0
+      },
+      "normalised_archive_sha256": "c2509998cd688210ab98b99b401c31ca5fbcb211e967feafe308a946d690e817",
+      "passed": true
+    },
+    {
+      "run": "life-a-A0-none",
+      "owner_messages": 2143,
+      "events": 8732,
+      "answers": 38,
+      "presented": 0,
+      "channels": {
+        "window": 0,
+        "writing": 0,
+        "check": 0,
+        "check_writing": 0
+      },
+      "normalised_archive_sha256": "6da28b7a44db5dda9d93e528645072d8259d97b403266a4d849d5c605333d5a7",
+      "passed": true
+    },
+    {
+      "run": "life-a-A1-excerpt",
+      "owner_messages": 2143,
+      "events": 8802,
+      "answers": 38,
+      "presented": 36,
+      "channels": {
+        "window": 0,
+        "writing": 7,
+        "check": 36,
+        "check_writing": 35
+      },
+      "normalised_archive_sha256": "3946aec0eb82514f2a682c4e21cc3916776f30e9fddc7222ae1bd2b8c9fde5c3",
+      "passed": true
+    },
+    {
+      "run": "life-a-A2-excerpt",
+      "owner_messages": 2143,
+      "events": 8802,
+      "answers": 38,
+      "presented": 37,
+      "channels": {
+        "window": 0,
+        "writing": 7,
+        "check": 37,
+        "check_writing": 36
+      },
+      "normalised_archive_sha256": "1a1785f0ffe62e523c38bb1e69597ced97d1f44d57e2b3b73c8158732908061e",
+      "passed": true
+    },
+    {
+      "run": "life-a-A2-none",
+      "owner_messages": 2143,
+      "events": 8802,
+      "answers": 38,
+      "presented": 37,
+      "channels": {
+        "window": 0,
+        "writing": 0,
+        "check": 37,
+        "check_writing": 0
+      },
+      "normalised_archive_sha256": "aa257d679fc91a1b5319e0ee739f17b47af861bbe8b535767e03bd993798cc02",
+      "passed": true
+    },
+    {
+      "run": "life-b-A0-excerpt",
+      "owner_messages": 10523,
+      "events": 42477,
+      "answers": 38,
+      "presented": 0,
+      "channels": {
+        "window": 0,
+        "writing": 0,
+        "check": 0,
+        "check_writing": 0
+      },
+      "normalised_archive_sha256": "4f0ff55837b0a7d33cec6ef38fff7c19870da75bbea88bd1fd8a14ab5466dd7e",
+      "passed": true
+    },
+    {
+      "run": "life-b-A1-excerpt",
+      "owner_messages": 10523,
+      "events": 42547,
+      "answers": 38,
+      "presented": 23,
+      "channels": {
+        "window": 0,
+        "writing": 0,
+        "check": 23,
+        "check_writing": 22
+      },
+      "normalised_archive_sha256": "c2abea9e92e55b0fdfe69d9195b27ef0dc030f35fd1bb4b107a0bfbf98682a50",
+      "passed": true
+    },
+    {
+      "run": "life-b-A2-excerpt",
+      "owner_messages": 10523,
+      "events": 42547,
+      "answers": 38,
+      "presented": 28,
+      "channels": {
+        "window": 0,
+        "writing": 0,
+        "check": 28,
+        "check_writing": 20
+      },
+      "normalised_archive_sha256": "962e42e0a7399e2e1deb53fb97ae9b51ceaed4194e7ddbcb465f0a3ae5e4bde0",
+      "passed": true
+    }
+  ]
+}
