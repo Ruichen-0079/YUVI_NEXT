@@ -6,13 +6,14 @@ const cj='[\\p{Script=Han}\\p{Script=Hiragana}\\p{Script=Katakana}\\p{Script=Han
 function lex(text,query=false){const out=[];for(const g of text.normalize('NFKC').toLowerCase().match(groups)??[]){if(!isCjk.test(g)){out.push(g);continue;}const c=[...g];if(!query||c.length===1)out.push(...c);for(let i=1;i<c.length;i++)out.push(c[i-1]+c[i]);}return query?[...new Set(out)]:out;}
 const quoted=terms=>terms.map(t=>'"'+t.replaceAll('"','""')+'"').join(' OR '),scope=e=>e.scene==='web'&&e.branch==='dev:v2-dev';
 export function audit(directory,{replay=true}={}){
+ const oldZone=process.env.TZ;process.env.TZ=JSON.parse(readFileSync(join(directory,'life.json'),'utf8')).time_zone;
  const at=performance.now(),source=new DatabaseSync(join(directory,'data/archive.sqlite'),{readOnly:true}),index=new DatabaseSync(':memory:');
  try{
   const events=source.prepare('SELECT * FROM events ORDER BY seq').all().map(e=>({...e,meta:JSON.parse(e.meta)})),byId=new Map(events.map(e=>[e.id,e])),bySeq=new Map(events.map(e=>[e.seq,e]));
   index.exec("CREATE TABLE docs(seq INTEGER PRIMARY KEY,kind TEXT,t_recorded INTEGER);CREATE VIRTUAL TABLE terms USING fts5(words,content='',contentless_delete=1,tokenize='ascii');CREATE VIRTUAL TABLE vocab USING fts5vocab(terms,'row');");
   const insert=index.prepare('INSERT INTO docs VALUES(?,?,?)'),add=index.prepare('INSERT INTO terms(rowid,words)VALUES(?,?)');let recalled=0,surfaced=0,presented=0,reconstructed=0;
   for(const e of events){if(!scope(e))continue;
-   if(e.kind==='heard'||e.class==='act'&&['said','silent'].includes(e.kind)||e.class==='inner'&&e.kind==='wrote'&&e.content){insert.run(e.seq,e.kind,e.t_recorded);add.run(e.seq,lex(e.content).join(' '));}
+   if(e.class==='experience'&&e.kind==='heard'||e.class==='act'&&['said','silent'].includes(e.kind)||e.class==='inner'&&e.kind==='wrote'&&e.content){insert.run(e.seq,e.kind,e.t_recorded);add.run(e.seq,lex(e.content).join(' '));}
    if(e.kind==='recalled'&&!e.meta.invalid&&e.meta.engine==='index'){
     recalled++;const m=e.meta,args=m.arguments??{},bound=v=>v===undefined?undefined:Date.parse(v.length===10?v+'T00:00:00':v),from=bound(args.from)??-Infinity,to=bound(args.to)??Infinity;
     const table=args.query?'terms f JOIN docs d ON d.seq=f.rowid':'docs d',where=(args.query?'terms MATCH ? AND ':'')+"d.kind='wrote' AND d.t_recorded>=? AND d.t_recorded<=?",params=[...(args.query?[quoted(m.terms)]:[]),from,to];
@@ -37,6 +38,6 @@ export function audit(directory,{replay=true}={}){
   let requests=null;try{requests=JSON.parse(readFileSync(join(directory,'requests.json'),'utf8'));}catch{}
   if(requests){assert.equal(requests.length,presented);for(const r of requests)assert.equal(bySeq.get(r.seq).meta.messages_sha256,r.messages_sha256);}
   const result={presented,reconstructed,surfacing_checked:surfaced,recall_rank_checks:recalled,actual_request_digests:requests?.length??null,wall_ms:performance.now()-at};writeFileSync(join(directory,'audit.json'),JSON.stringify(result,null,2)+'\n');return result;
- }finally{source.close();index.close();}
+ }finally{source.close();index.close();if(oldZone===undefined)delete process.env.TZ;else process.env.TZ=oldZone;}
 }
 if(process.argv[1]&&resolve(process.argv[1])===new URL(import.meta.url).pathname)console.log(JSON.stringify(audit(resolve(process.argv[2]),{replay:!process.argv.includes('--selection-only')})));

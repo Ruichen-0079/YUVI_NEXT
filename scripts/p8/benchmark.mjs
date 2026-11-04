@@ -29,7 +29,7 @@ const fake=createServer(async(req,res)=>{
  const item={t2,t3:performance.now(),consolidation:!body.tools};calls.push(item);currentCalls.push(item);
 });const base=await listen(fake);
 try{
- for(const shape of ['varied','typical']){
+ for(const shape of options.p9?['varied']:['varied','typical']){
   console.error(JSON.stringify({shape,stage:'generate'}));const dir=join(root,shape);mkdirSync(dir);const data=join(dir,'seed');mkdirSync(data);
   const fixture=generate(join(data,'archive.sqlite'),{count,shape,seed:67});
   createSnapshot({dataDir:data,snapshotDir:join(dir,'snapshots')});
@@ -63,12 +63,12 @@ try{
    const qs=shape==='varied'?fixture.queries:queries;
    for(const q of qs){
     const samples={index:[],scan:[]},responses={};let last;
-    for(const engine of ['index','scan'])for(let i=-1;i<trials;i++){
+    for(const engine of options.p9&&q.id!=='R17'?['index']:['index','scan'])for(let i=-1;i<trials;i++){
      const args=JSON.stringify({query:q.query,...(Number.isFinite(q.from)?{from:new Date(q.from).toISOString()}:{}),...(Number.isFinite(q.to)?{to:new Date(q.to).toISOString()}:{})});
      const begin=performance.now();last=engine==='index'?(q.kinds?index.search(q.query,q.from??-Infinity,q.to??Infinity,q.kinds):check(archive,args,'负责人',{index})):check(archive,args,'负责人');const elapsed=performance.now()-begin;if(i>=0)samples[engine].push(elapsed);
      if(i===0)responses[engine]={engine:last.meta?.engine??'scan',fallback:last.meta?.fallback??null,total:last.total??last.meta.total,result_seqs:last.results?.map(e=>e.seq)??last.meta.result_seqs};
     }
-    const comparison={same_total:responses.index.total===responses.scan.total,same_results:JSON.stringify(responses.index.result_seqs)===JSON.stringify(responses.scan.result_seqs)};
+    const comparison=responses.scan?{same_total:responses.index.total===responses.scan.total,same_results:JSON.stringify(responses.index.result_seqs)===JSON.stringify(responses.scan.result_seqs)}:null;
     shapeResult.queries.push({id:q.id,query:q.query,index:stats(samples.index),scan:stats(samples.scan),responses,comparison,expected:q.expected});save();
    }
   }finally{await index.close();archive.close();}

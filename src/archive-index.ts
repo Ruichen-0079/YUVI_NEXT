@@ -260,7 +260,7 @@ export class ArchiveIndex {
       const results = this.readSources(picked.sort((a,b) => a-b));
       return { results, total, meta: { rules: 'p8', engine: 'index', mode: relevance ? 'relevance' : 'recent', terms: words, dropped,
         rank_seqs: ranked.map(r => Number(r.seq)), ...(limited ? { terms_limited: true } : {}) } };
-    } catch (e) { this.fail(e); return { fallback: (this.state as string) === 'unavailable' ? 'index_unavailable' : 'index_building' }; }
+    } catch (e) { if (e instanceof ArchiveSourceFailure) throw e; this.fail(e); return { fallback: (this.state as string) === 'unavailable' ? 'index_unavailable' : 'index_building' }; }
   }
   scan(raw: string, owner: string, fallback: NonNullable<SearchMeta['fallback']>, tool: 'check' | 'recall' = 'check'): Promise<CheckResult> {
     if (!this.scanWorker) {
@@ -268,9 +268,9 @@ export class ArchiveIndex {
       worker.on('message', ({ id, result, error }) => {
         if (this.closed) return;
         const pending = this.scans.get(id); this.scans.delete(id);
-        if (error) pending?.reject(new Error('Archive scan failed.')); else pending?.resolve(result);
+        if (error) pending?.reject(new ArchiveSourceFailure()); else pending?.resolve(result);
       });
-      const failed = () => { if (!this.closed) for (const p of this.scans.values()) p.reject(new Error('Archive scan failed.')); this.scans.clear(); };
+      const failed = () => { if (!this.closed) for (const p of this.scans.values()) p.reject(new ArchiveSourceFailure()); this.scans.clear(); };
       worker.on('error', failed);
       worker.once('exit', () => { if (this.scanWorker === worker) { this.scanWorker = undefined; failed(); } });
     }
