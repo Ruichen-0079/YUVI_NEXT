@@ -1,0 +1,77 @@
+{
+  "format": 1,
+  "scope": "exact messages reconstruction, not historical full HTTP bytes; independent chronological FTS selection/rank checks; synthetic data only",
+  "totals": {
+    "presented": 52900,
+    "reconstructed": 52900,
+    "surfacing_checked": 37998,
+    "recall_rank_checks": 68,
+    "actual_request_digests": 52900
+  },
+  "runs": {
+    "life-a-E-R-excerpt": {
+      "presented": 2300,
+      "reconstructed": 2300,
+      "surfacing_checked": 0,
+      "recall_rank_checks": 34,
+      "actual_request_digests": 2300,
+      "wall_ms": 37312.651036
+    },
+    "life-a-E-S-excerpt": {
+      "presented": 2265,
+      "reconstructed": 2265,
+      "surfacing_checked": 2143,
+      "recall_rank_checks": 0,
+      "actual_request_digests": 2265,
+      "wall_ms": 45427.892332
+    },
+    "life-a-E-SR-excerpt": {
+      "presented": 2265,
+      "reconstructed": 2265,
+      "surfacing_checked": 2143,
+      "recall_rank_checks": 0,
+      "actual_request_digests": 2265,
+      "wall_ms": 46830.762889
+    },
+    "life-a-E-SC-excerpt": {
+      "presented": 2300,
+      "reconstructed": 2300,
+      "surfacing_checked": 2143,
+      "recall_rank_checks": 0,
+      "actual_request_digests": 2300,
+      "wall_ms": 46779.708832
+    },
+    "life-b-E-R-excerpt": {
+      "presented": 10960,
+      "reconstructed": 10960,
+      "surfacing_checked": 0,
+      "recall_rank_checks": 34,
+      "actual_request_digests": 10960,
+      "wall_ms": 843142.141186
+    },
+    "life-b-E-S-excerpt": {
+      "presented": 10925,
+      "reconstructed": 10925,
+      "surfacing_checked": 10523,
+      "recall_rank_checks": 0,
+      "actual_request_digests": 10925,
+      "wall_ms": 1043857.3840209999
+    },
+    "life-b-E-SR-excerpt": {
+      "presented": 10925,
+      "reconstructed": 10925,
+      "surfacing_checked": 10523,
+      "recall_rank_checks": 0,
+      "actual_request_digests": 10925,
+      "wall_ms": 1080838.1586820001
+    },
+    "life-b-E-SC-excerpt": {
+      "presented": 10960,
+      "reconstructed": 10960,
+      "surfacing_checked": 10523,
+      "recall_rank_checks": 0,
+      "actual_request_digests": 10960,
+      "wall_ms": 1057804.109321
+    }
+  }
+}

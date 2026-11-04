@@ -1,0 +1,3 @@
+(node:229964) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"input_chars":5000,"turn_result":"done","term_chars":[5000],"manifest_bytes":5786,"formal_C7_limit":2500,"meets_unconditional_limit":false}

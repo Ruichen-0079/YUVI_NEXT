@@ -251,3 +251,5 @@ unshare -rn sh -c 'ip link set lo up; node scripts/p9/benchmark.mjs /tmp/yuvi-p9
 P9-R 的 `life-r` 与 `real` 驱动只为后续获得授权的实验准备。本次不运行真实模型。驱动要求负责人授权评论链接 `YUVI_REAL_MODEL_APPROVAL`、显式输入/输出 token 上限和 R0/R1/R2 臂，先打印上限，再加载模型配置；按提供方 usage 计数，达到上限或缺少有效 usage 即停止并保留 `budget.json` 中的不完整标记。上限依据返回用量，单个在途请求可能越过输入预算；输出另按剩余额度限制。不可用已有密钥代替授权。普通测试与 baseline 不读取持久凭据。
 
 如已完成同一实现的 P8 `regress`，可用 `baseline-p9 --p8-regress-dir <该次目录>` 或 `regress-p9 --p8-regress-dir <该次目录>` 复用证据；命令先逐字节核对该目录的 baseline.json 与冻结 P8 结果，并用实际 P8 档案计算成本对照。没有此参数时会重新执行 P8 regress。不要用其他实现或未完成的目录替代回归证据。
+
+P9 的[九周报告](docs/notes/P9-baseline.md)、[确定性结果](docs/notes/P9-baseline.json)、[性能测量](docs/notes/P9-performance.md)和[逐项自查](docs/notes/P9-self-check.md)区分实际检索、实际呈现与未能证明的模型使用。新增渠道由离线统计和 `presented show` 核对；不把旧文字进入请求本身称为理解或采用。
