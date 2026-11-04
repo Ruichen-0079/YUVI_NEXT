@@ -246,6 +246,15 @@ export class ArchiveIndex {
       const total = unrestricted && query ? (used.length === 1 ? used[0].n : Number(this.db.prepare('SELECT count(*) n FROM terms WHERE terms MATCH ?').get(match(words))!.n)) :
         Number(this.db.prepare(`SELECT count(*) n FROM ${table} WHERE ${clause}`).get(...args)!.n);
       const ranked = this.db.prepare(`SELECT d.seq,d.chars FROM ${table} WHERE ${clause} ORDER BY ${query ? (relevance ? 'f.rank,f.rowid DESC' : 'f.rowid DESC') : 'd.seq DESC'} LIMIT 100`).all(...args);
+      // Ranks are observable too: validate all bounded references, including
+      // rows omitted by the result budget, before returning any index metadata.
+      if (ranked.length) {
+        let visible;
+        try { visible = this.source.prepare(`SELECT count(*) n FROM events WHERE seq IN (${ranked.map(() => '?').join(',')}) AND scene=? AND branch=? AND ${eligible(truncates(this.source))} AND t_recorded>=? AND t_recorded<=?${kinds ? ` AND kind IN (${kinds.map(() => '?').join(',')})` : ''}`)
+          .get(...ranked.map(r => Number(r.seq)), this.scope.scene, this.scope.branch, from, to, ...(kinds ?? []))!.n; }
+        catch { throw new ArchiveSourceFailure(); }
+        if (visible !== ranked.length) throw Object.assign(Error('Index source mismatch.'), { errcode: 11 });
+      }
       const picked: number[] = [], lengths = new Map(ranked.map(r => [Number(r.seq), Number(r.chars)])); let chars = 0;
       const add = (seq: number, length: number) => { picked.push(seq); chars += length; };
       if (ranked.length) {

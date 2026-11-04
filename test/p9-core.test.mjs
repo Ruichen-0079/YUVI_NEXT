@@ -98,3 +98,11 @@ test('P9 configuration: recall defaults on, surfacing off; invalid values disclo
   process.env.YUVI_RECALL='off';process.env.YUVI_SURFACING='recency';c=loadConfig();assert.equal(c.recall,false);assert.equal(c.surfacing,'recency');
  }finally{for(const k of Object.keys(process.env))if(!(k in saved))delete process.env[k];Object.assign(process.env,saved);}
 });
+
+test('P9 V3: a foreign forged rank omitted by the result budget cannot leak through rank_seqs',async t=>{
+ const {root,a}=fixture(t);for(let i=0;i<20;i++)wrote(a,'灯塔 '+i);const foreign=a.append({class:'inner',kind:'wrote',actor:'yuvi',scene:'qq',content:'灯塔'});wrote(a,'灯塔 最新');buildIndex(join(root,'data'));const index=new ArchiveIndex(a.db,join(root,'data'));t.after(()=>index.close());
+ const {createHash}=await import('node:crypto');index.db.prepare('INSERT INTO docs VALUES(?,?,?,?,?)').run(foreign.seq,'wrote',foreign.t_recorded,foreign.content.length,createHash('sha256').update(foreign.content).digest('hex').slice(0,16));index.db.prepare('INSERT INTO terms(rowid,words)VALUES(?,?)').run(foreign.seq,'灯塔');
+ // Recent mode puts the forged row into ranks while the one-item test budget
+ // returns only the newest legitimate writing. Source validation still rejects it.
+ const r=index.search('',-Infinity,Infinity,['wrote'],{count:1,chars:1});assert.ok('fallback' in r);
+});
