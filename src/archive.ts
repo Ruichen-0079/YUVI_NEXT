@@ -224,7 +224,7 @@ export class Archive {
 }
 
 export interface ScanOptions { kinds?: string[]; limit?: number; chars?: number; }
-export class ArchiveSourceFailure extends Error { constructor() { super('Archive read failed.'); } }
+export class ArchiveSourceFailure extends Error { constructor(scan = false) { super(scan ? 'Archive scan failed.' : 'Archive read failed.'); } }
 export function scanArchive(db: DatabaseSync, scope: { scene: string; branch: string }, query: string, from: number, to: number, through = Infinity, rankOnly = false, options: ScanOptions = {}): { results: Event[]; total: number } | number[] {
   const nul = (db.prepare("SELECT CAST(x'610062' AS TEXT) AS value").get()!.value as string).length === 1;
     // instr is case-sensitive, treats %/_ literally, and preserves embedded NUL.

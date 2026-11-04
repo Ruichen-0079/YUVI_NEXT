@@ -21,6 +21,7 @@ const life=loadLife(id);if(policy)life.writing_policy=policy;
 const {events,start,end}=expand(life,days);mkdirSync(out,{recursive:false,mode:0o700});writeFileSync(join(out,'life.json'),JSON.stringify({...life,evaluation:{arm,days}},null,2)+'\n');
 const frame=value=>'data: '+JSON.stringify(value)+'\n\n';
 const requestEvidence=[];
+let sent=0;
 let current,ordinary=0,requests=0,idleConsolidations=0,pressureConsolidations=0,advancing=false;
 const fake=createServer(async(req,res)=>{
  const chunks=[];for await(const c of req)chunks.push(c);const body=JSON.parse(Buffer.concat(chunks).toString('utf8'));requests++;
@@ -66,7 +67,7 @@ try{
   if(budget?.stopped)break;
   advancing=true;mock.timers.tick(event.t-Date.now());await app.idle();await new Promise(r=>setImmediate(r));advancing=false;current=event;
   if(budget?.stopped)break;
-  const response=await fetch(url+'/api/messages',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:event.text})});
+  sent++;const response=await fetch(url+'/api/messages',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:event.text})});
   const stream=await response.text();if(budget?.stopped)break;
   if(!/event: (done|silent)\n/.test(stream))throw Error('Evaluation turn did not complete normally');
   await app.idle();await new Promise(r=>setImmediate(r));
@@ -74,7 +75,7 @@ try{
  if(!budget?.stopped){advancing=true;mock.timers.tick(end-Date.now());}await app.idle();await new Promise(r=>setImmediate(r));
  if(budget)writeFileSync(join(out,'budget.json'),JSON.stringify(budget.result(),null,2)+'\n');
  writeFileSync(join(out,'requests.json'),JSON.stringify(requestEvidence,null,2)+'\n');
- writeFileSync(join(out,'run.json'),JSON.stringify({format:1,life:id,arm,days,writing_policy:life.writing_policy,owner_messages:events.length,requests,idle_consolidations:idleConsolidations,pressure_consolidations:pressureConsolidations,simulated_start:start,simulated_end:end},null,2)+'\n');
+ writeFileSync(join(out,'run.json'),JSON.stringify({format:1,life:id,arm,days,writing_policy:life.writing_policy,owner_messages:real?sent:events.length,...(real?{planned_owner_messages:events.length,incomplete:budget.stopped||sent<events.length}:{}),requests,idle_consolidations:idleConsolidations,pressure_consolidations:pressureConsolidations,simulated_start:start,simulated_end:real?Date.now():end,...(real?{planned_simulated_end:end}: {})},null,2)+'\n');
  writeFileSync(join(out,'timing.json'),JSON.stringify({wall_ms:performance.now()-wall,index_bytes:statSync(join(config.dataDir,'index.sqlite')).size},null,2)+'\n');
 }finally{
  mock.timers.reset();app.server.closeAllConnections();await new Promise(r=>app.server.close(r));fake.closeAllConnections();await new Promise(r=>fake.close(r));await app.index.close();app.archive.close();

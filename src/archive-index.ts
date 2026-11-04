@@ -268,9 +268,9 @@ export class ArchiveIndex {
       worker.on('message', ({ id, result, error }) => {
         if (this.closed) return;
         const pending = this.scans.get(id); this.scans.delete(id);
-        if (error) pending?.reject(new ArchiveSourceFailure()); else pending?.resolve(result);
+        if (error) pending?.reject(new ArchiveSourceFailure(true)); else pending?.resolve(result);
       });
-      const failed = () => { if (!this.closed) for (const p of this.scans.values()) p.reject(new ArchiveSourceFailure()); this.scans.clear(); };
+      const failed = () => { if (!this.closed) for (const p of this.scans.values()) p.reject(new Error('Archive scan failed.')); this.scans.clear(); };
       worker.on('error', failed);
       worker.once('exit', () => { if (this.scanWorker === worker) { this.scanWorker = undefined; failed(); } });
     }
