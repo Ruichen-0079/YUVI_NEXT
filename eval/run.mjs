@@ -58,7 +58,7 @@ const fake=createServer(async(req,res)=>{
 mock.timers.enable({apis:['Date','setTimeout','setInterval'],now:start});
 const config={recall:arm.startsWith('E-')||['R1','R2'].includes(arm),surfacing:arm==='E-SR'?'recency':['E-S','E-SC','R2'].includes(arm)?'relevance':'off',dataDir:join(out,'data'),persona:'这是隔离的合成生活评测。',ownerName:life.owner_name,model:real?process.env.YUVI_MODEL:'offline-life',apiKey:'fake-offline-only',baseUrl:`http://127.0.0.1:${fake.address().port}/v1`,
  host:'127.0.0.1',port:0,contextEvents:life.config.YUVI_CONTEXT_EVENTS,writingChars:life.config.YUVI_CONTEXT_WRITING_CHARS,consolidationIdleMs:life.config.YUVI_CONSOLIDATION_IDLE_MS,
- consolidationMaxTokens:life.config.YUVI_CONSOLIDATION_MAX_TOKENS,idleTimeoutMs:60000,maxDurationMs:600000};
+ consolidationMaxTokens:life.config.YUVI_CONSOLIDATION_MAX_TOKENS,idleTimeoutMs:60000,maxDurationMs:real?600000:600000};
 const app=createApp(config,undefined,{checkEngine:arm==='A1'?'scan':undefined});app.server.listen(0,'127.0.0.1');await once(app.server,'listening');
 const wall=performance.now(),url=`http://127.0.0.1:${app.server.address().port}`;
 try{
