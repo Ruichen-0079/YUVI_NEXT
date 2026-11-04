@@ -42,7 +42,7 @@ test('P9 S: exclusions, whole-item budgets, sorting, recency, no terms and scope
 
 test('P9 actual process: frozen surfaced base, mixed tool calls, usage once and exact historical reconstruction',async t=>{
  const root=mkdtempSync(join(tmpdir(),'yuvi-p9-service-'));t.after(()=>rmSync(root,{recursive:true,force:true}));const data=join(root,'data'),a=new Archive(data);
- const old=wrote(a,'旧照片放在抽屉');for(let i=0;i<8;i++)wrote(a,'无关的后来文字'.repeat(100));a.close();
+ const old=wrote(a,'旧照片放在抽屉 🌙');for(let i=0;i<8;i++)wrote(a,'无关的后来文字'.repeat(100));a.close();
  const captured=[];let step=0;
  const fake=createServer(async(req,res)=>{const chunks=[];for await(const c of req)chunks.push(c);const body=JSON.parse(Buffer.concat(chunks).toString('utf8'));captured.push(capturePresentation(data,body));
   if(!body.tools)return res.end(text('')+done());
@@ -50,7 +50,7 @@ test('P9 actual process: frozen surfaced base, mixed tool calls, usage once and 
   else if(step===2)res.end(tool('recall',{query:'🌙'})+done({prompt_tokens:5}));else res.end(text('看过以前的文字了。')+done({prompt_tokens:3}));
  });const base=await listen(fake);t.after(()=>new Promise(r=>fake.close(r)));
  const s=await startService(root,{data,baseUrl:base,recall:true,surfacing:'relevance',writing:1000});t.after(()=>s.stop());
- const frames=await s.post('旧照片还放在那里吗');assert.equal(frames.at(-1).event,'done');
+ const frames=await s.post('旧照片还放在那里吗\0🌙😀�');assert.equal(frames.at(-1).event,'done');
  const events=assertPresentations(data,captured,'测试人设原文\n');const ps=events.filter(e=>e.kind==='presented');assert.equal(ps.length,3);
  assert.deepEqual(ps[0].meta.sections.find(s=>s.name==='surfaced').seqs,[old.seq]);
  for(const p of ps)assert.deepEqual(p.meta.surfacing,ps[0].meta.surfacing);
@@ -89,4 +89,12 @@ test('P9 C3/K3/K5: invalid recall never queries, source failure remains fatal; t
  for(let step=1;step<=3;step++){assembly=assembleContext({previous:assembly,previousId:'prior'+step,text:'',calls:[{id:'call',name:'recall',arguments:'{}'}],results:[{reference:{recalled:'result'+step},content:'文字'}]},config,Date.now(),recordedTimeZone(),22);assert.deepEqual(assembly.parameters.tools.map(t=>t.function.name),step===3?['stay_silent']:['stay_silent','check','recall']);}
  const source=index.source;index.source={prepare(){throw Error('private source failure');}};
  try{assert.throws(()=>index.surface('灯塔',Infinity,[],[],'relevance'),/^Error: Archive read failed\.$/);}finally{index.source=source;}
+});
+
+test('P9 configuration: recall defaults on, surfacing off; invalid values disclose only variable name',async t=>{
+ const {loadConfig}=await import('../dist/config.js'),{writeFileSync}=await import('node:fs');const root=mkdtempSync(join(tmpdir(),'yuvi-p9-config-'));t.after(()=>rmSync(root,{recursive:true,force:true}));writeFileSync(join(root,'persona.txt'),'test');const saved={...process.env};
+ try{Object.assign(process.env,{YUVI_DATA_DIR:join(root,'data'),YUVI_PERSONA_FILE:join(root,'persona.txt'),YUVI_MODEL:'offline-config',YUVI_MODEL_API_KEY:'fake-only',YUVI_MODEL_BASE_URL:'http://127.0.0.1:1/v1'});delete process.env.YUVI_RECALL;delete process.env.YUVI_SURFACING;let c=loadConfig();assert.equal(c.recall,true);assert.equal(c.surfacing,'off');
+  for(const name of ['YUVI_RECALL','YUVI_SURFACING']){process.env[name]='private-invalid-value';assert.throws(()=>loadConfig(),new Error('Invalid configuration: '+name));delete process.env[name];}
+  process.env.YUVI_RECALL='off';process.env.YUVI_SURFACING='recency';c=loadConfig();assert.equal(c.recall,false);assert.equal(c.surfacing,'recency');
+ }finally{for(const k of Object.keys(process.env))if(!(k in saved))delete process.env[k];Object.assign(process.env,saved);}
 });
