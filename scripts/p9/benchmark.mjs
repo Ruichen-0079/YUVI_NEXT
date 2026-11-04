@@ -10,7 +10,8 @@ try{for(const shape of ['writings','varied']){
  const r=result.shapes[shape]={generation_ms:performance.now()-begin,fixture};save();console.error(JSON.stringify({shape,stage:'build'}));const built=performance.now();buildIndex(data);r.build_ms=performance.now()-built;save();
  const a=new Archive(data),index=new ArchiveIndex(a.db,data);try{
   const db=new DatabaseSync(index.file,{readOnly:true});try{r.index={bytes:statSync(index.file).size,archive_bytes:statSync(join(data,'archive.sqlite')).size,documents:db.prepare('SELECT count(*) n FROM docs').get().n,writings:db.prepare("SELECT count(*) n FROM docs WHERE kind='wrote'").get().n,plan:db.prepare("EXPLAIN QUERY PLAN SELECT f.rowid FROM terms f JOIN docs d ON d.seq=f.rowid WHERE terms MATCH ? AND d.kind='wrote' AND f.rowid<? ORDER BY f.rank,f.rowid DESC LIMIT 20").all('"银杏"',count)};}finally{db.close();}
-  r.surface={};for(const strategy of ['relevance','recency']){const all=[];r.surface[strategy]={};for(const cue of ['年糕','灯塔','银杏','的 我 是','🌙','旧照片','无交集的雪豹']){
+  const cues=['年糕','灯塔','银杏','的 我 是','🌙','旧照片','无交集的雪豹',...a.db.prepare("SELECT content FROM events WHERE kind='heard' AND scene='web' AND branch='dev:v2-dev' AND seq % 33331=7 LIMIT 30").all().map(e=>e.content)];r.cues=cues;
+  r.surface={};for(const strategy of ['relevance','recency']){const all=[];r.surface[strategy]={};for(const cue of cues){
    const samples=[];let response;for(let i=-1;i<trials;i++){const start=performance.now();response=index.surface(cue,count+1,[],[],strategy);if(i>=0)samples.push(performance.now()-start);}all.push(...samples);r.surface[strategy][cue]={...stats(samples),candidates:response.surfacing.candidates.length,selected:response.surfaced.length,reason:response.surfacing.reason??null};
   }r.surface[strategy].all=stats(all);}save();
   r.recall=[];if(shape==='writings')for(const q of fixture.queries){const raw=JSON.stringify({query:q.query,...(q.from?{from:new Date(q.from).toISOString(),to:new Date(q.to).toISOString()}:{})}),samples=[],original=[],worker=[];let response;
@@ -19,10 +20,11 @@ try{for(const shape of ['writings','varied']){
    r.recall.push({id:q.id,...stats(samples),engine:response.meta.engine,total:response.meta.total,result_seqs:response.meta.result_seqs,...(q.id==='W6'?{original:stats(original),ratio:percentile(samples,.95)/percentile(original,.95)}:{})});save();
   }
  }finally{await index.close();a.close();}
+ const serviceCues=r.cues.filter(c=>c.length>20);
  const hook=join(dir,'surface-probe.mjs');writeFileSync(hook,`import{ArchiveIndex}from${JSON.stringify(resolve('dist/archive-index.js'))};const old=ArchiveIndex.prototype.surface;ArchiveIndex.prototype.surface=function(...args){const at=performance.now();try{return old.apply(this,args);}finally{console.log('P9_SURFACE '+(performance.now()-at));}};`);
  r.service={};for(const surfacing of ['off','relevance','recency']){
   console.error(JSON.stringify({shape,stage:'service',surfacing}));const s=await startService(dir,{data,baseUrl:base,recall:true,surfacing,hook,context:200}),program=[],provider=[],health=[];try{
-   for(let i=-2;i<trials;i++){calls=[];const frames=await s.post(['年糕','银杏','旧照片','的 我 是'][Math.max(i,0)%4]+'。继续聊今天的事情'),heard=frames.find(f=>f.event==='heard'),last=frames.at(-1);if(last.event!=='done')throw Error('Service turn failed');if(i>=0){program.push(calls[0].t2-heard.at+last.at-calls.at(-1).t3);provider.push(calls.reduce((n,c)=>n+c.t3-c.t2,0));}}
+   for(let i=-2;i<trials;i++){calls=[];const frames=await s.post((serviceCues.length?serviceCues[Math.max(i,0)%serviceCues.length]:['年糕','银杏','旧照片','的 我 是'][Math.max(i,0)%4])),heard=frames.find(f=>f.event==='heard'),last=frames.at(-1);if(last.event!=='done')throw Error('Service turn failed');if(i>=0){program.push(calls[0].t2-heard.at+last.at-calls.at(-1).t3);provider.push(calls.reduce((n,c)=>n+c.t3-c.t2,0));}}
    for(let i=0;i<trials;i++){const at=performance.now();const response=await fetch(s.url+'/health');if(!response.ok)throw Error('Health failed');health.push(performance.now()-at);}
    r.service[surfacing]={startup_ms:s.startupMs,rss_bytes:await s.rss(),program:stats(program),provider:stats(provider),health:stats(health),surface:stats(s.output.split('\n').filter(s=>s.startsWith('P9_SURFACE ')).map(s=>Number(s.slice(11))))};
   }finally{await s.stop();}save();

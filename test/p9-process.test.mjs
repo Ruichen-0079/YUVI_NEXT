@@ -21,3 +21,11 @@ test('P9 S12/C2: actual P8 process versus disabled P9 requests, events, SSE and 
   }
  }finally{await s.stop();}}
 });
+
+test('P9 K5: selection exception continues with error manifest; presented storage error terminates process',async t=>{
+ const root=mkdtempSync(join(tmpdir(),'yuvi-p9-failure-'));t.after(()=>rmSync(root,{recursive:true,force:true}));const fake=createServer(async(req,res)=>{for await(const c of req){}res.end(text('正常回应')+done());});const base=await listen(fake);t.after(()=>new Promise(r=>fake.close(r)));
+ const surfaceHook=join(root,'surface-error.mjs');writeFileSync(surfaceHook,`import{ArchiveIndex}from${JSON.stringify(resolve('dist/archive-index.js'))};ArchiveIndex.prototype.words=function(){throw Error('private text must not be logged');};`);
+ let s=await startService(root,{data:join(root,'surface'),baseUrl:base,recall:true,surfacing:'relevance',hook:surfaceHook});try{const frames=await s.post('自然来话');assert.equal(frames.at(-1).event,'done');assert.equal(readEvents(join(root,'surface')).find(e=>e.kind==='presented').meta.surfacing.reason,'error');assert.match(s.output,/Surfacing failed; continuing without surfaced text\./);assert.ok(!s.output.includes('private text'));}finally{await s.stop();}
+ const storageHook=join(root,'storage-error.mjs');writeFileSync(storageHook,`import{Archive}from${JSON.stringify(resolve('dist/archive.js'))};const old=Archive.prototype.append;Archive.prototype.append=function(e){if(e.kind==='presented')throw Error('private storage text');return old.call(this,e);};`);
+ s=await startService(root,{data:join(root,'storage'),baseUrl:base,recall:true,hook:storageHook});const exited=once(s.child,'exit');const post=s.post('保存失败').catch(()=>null);const[code]=await exited;await post;assert.notEqual(code,0);assert.ok(!s.output.includes('private storage text'));assert.equal(readEvents(join(root,'storage')).filter(e=>e.kind==='presented').length,0);
+});

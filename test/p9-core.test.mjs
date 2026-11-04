@@ -17,7 +17,7 @@ test('P9 recall: own nonempty writings only, index and literal fallback, indepen
  const {root,a}=fixture(t);a.append({class:'experience',kind:'heard',actor:'owner',content:'旧照片只是原话 🌙'});
  const old=wrote(a,'旧照片放在抽屉 🌙');wrote(a,'');
  for(let i=0;i<15;i++)wrote(a,'旧照片已经扫描 '+i);
- const last=wrote(a,'最新旧照片 🌙');buildIndex(a.directory??join(root,'data'));const index=new ArchiveIndex(a.db,join(root,'data'));t.after(()=>index.close());
+ const last=wrote(a,'最新旧照片 🌙');a.append({class:'inner',kind:'wrote',actor:'yuvi',scene:'qq',content:'秘密旧照片 🌙'});a.append({class:'inner',kind:'wrote',actor:'yuvi',branch:'fork:w',content:'秘密旧照片 🌙'});buildIndex(a.directory??join(root,'data'));const index=new ArchiveIndex(a.db,join(root,'data'));t.after(()=>index.close());
  const r=await check(a,'{"query":"旧照片"}','负责人',{index,tool:'recall'});
  assert.equal(r.meta.rules,'p9');assert.equal(r.meta.total,17);assert.equal(r.meta.result_seqs.length,10);assert.ok(r.meta.result_seqs.includes(last.seq));assert.match(r.content,/找到你写下的文字 17 段，返回 10 段。/);
  assert.ok(r.meta.rank_seqs.every(s=>s!==1&&s!==3));
@@ -80,4 +80,13 @@ test('P9 V3/V4: forged foreign indexed row is rejected, archive unchanged, show 
  const {createHash}=await import('node:crypto'),db=index.db;db.prepare('INSERT INTO docs VALUES(?,?,?,?,?)').run(foreign.seq,'wrote',foreign.t_recorded,foreign.content.length,createHash('sha256').update(foreign.content).digest('hex').slice(0,16));db.prepare('INSERT INTO terms(rowid,words)VALUES(?,?)').run(foreign.seq,'灯塔');
  const before=a.events();assert.equal(index.surface('灯塔',Infinity,[],[],'relevance').surfaced.length,0);assert.deepEqual(a.events(),before);
  const {presentedShow}=await import('../dist/presented.js');assert.throws(()=>presentedShow(a.db,foreignPresented.seq,'',true),/^Error: Presented record not found\.$/);
+});
+
+test('P9 C3/K3/K5: invalid recall never queries, source failure remains fatal; third continuation only silence',async t=>{
+ const {root,a}=fixture(t);wrote(a,'灯塔');buildIndex(join(root,'data'));const index=new ArchiveIndex(a.db,join(root,'data'));t.after(()=>index.close());
+ const original=index.search;index.search=()=>{throw Error('should not query');};assert.equal((await check(a,'{"from":"2026-02-30"}','负责人',{index,tool:'recall'})).meta.invalid,true);index.search=original;
+ const {assembleContext,recordedTimeZone}=await import('../dist/context.js');const h=a.append({class:'experience',kind:'heard',actor:'owner',content:'当前'}),config={persona:'test',recall:true,writingChars:2000};let assembly=assembleContext({purpose:'dialogue',selected:{writings:[],window:[h]},heard:h},config,Date.now(),recordedTimeZone(),22);
+ for(let step=1;step<=3;step++){assembly=assembleContext({previous:assembly,previousId:'prior'+step,text:'',calls:[{id:'call',name:'recall',arguments:'{}'}],results:[{reference:{recalled:'result'+step},content:'文字'}]},config,Date.now(),recordedTimeZone(),22);assert.deepEqual(assembly.parameters.tools.map(t=>t.function.name),step===3?['stay_silent']:['stay_silent','check','recall']);}
+ const source=index.source;index.source={prepare(){throw Error('private source failure');}};
+ try{assert.throws(()=>index.surface('灯塔',Infinity,[],[],'relevance'),/^Error: Archive read failed\.$/);}finally{index.source=source;}
 });
