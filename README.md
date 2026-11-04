@@ -249,3 +249,5 @@ unshare -rn sh -c 'ip link set lo up; node scripts/p9/benchmark.mjs /tmp/yuvi-p9
 新增 E-R/E-S/E-SR/E-SC 各跑两段 63 天生活；完整命令还实际执行 P8 regress。墙钟数据独立保存，不进入确定性比较。`explain` 输出 recall 和浮现原始记录及遗漏解释。
 
 P9-R 的 `life-r` 与 `real` 驱动只为后续获得授权的实验准备。本次不运行真实模型。驱动要求负责人授权评论链接 `YUVI_REAL_MODEL_APPROVAL`、显式输入/输出 token 上限和 R0/R1/R2 臂，先打印上限，再加载模型配置；按提供方 usage 计数，达到上限或缺少有效 usage 即停止并保留 `budget.json` 中的不完整标记。上限依据返回用量，单个在途请求可能越过输入预算；输出另按剩余额度限制。不可用已有密钥代替授权。普通测试与 baseline 不读取持久凭据。
+
+如已完成同一实现的 P8 `regress`，可用 `baseline-p9 --p8-regress-dir <该次目录>` 或 `regress-p9 --p8-regress-dir <该次目录>` 复用证据；命令先逐字节核对该目录的 baseline.json 与冻结 P8 结果，并用实际 P8 档案计算成本对照。没有此参数时会重新执行 P8 regress。不要用其他实现或未完成的目录替代回归证据。

@@ -9,10 +9,15 @@ export function audit(directory,{replay=true}={}){
  const at=performance.now(),source=new DatabaseSync(join(directory,'data/archive.sqlite'),{readOnly:true}),index=new DatabaseSync(':memory:');
  try{
   const events=source.prepare('SELECT * FROM events ORDER BY seq').all().map(e=>({...e,meta:JSON.parse(e.meta)})),byId=new Map(events.map(e=>[e.id,e])),bySeq=new Map(events.map(e=>[e.seq,e]));
-  index.exec("CREATE TABLE docs(seq INTEGER PRIMARY KEY,kind TEXT);CREATE VIRTUAL TABLE terms USING fts5(words,content='',contentless_delete=1,tokenize='ascii');CREATE VIRTUAL TABLE vocab USING fts5vocab(terms,'row');");
-  const insert=index.prepare('INSERT INTO docs VALUES(?,?)'),add=index.prepare('INSERT INTO terms(rowid,words)VALUES(?,?)');let surfaced=0,presented=0,reconstructed=0;
+  index.exec("CREATE TABLE docs(seq INTEGER PRIMARY KEY,kind TEXT,t_recorded INTEGER);CREATE VIRTUAL TABLE terms USING fts5(words,content='',contentless_delete=1,tokenize='ascii');CREATE VIRTUAL TABLE vocab USING fts5vocab(terms,'row');");
+  const insert=index.prepare('INSERT INTO docs VALUES(?,?,?)'),add=index.prepare('INSERT INTO terms(rowid,words)VALUES(?,?)');let recalled=0,surfaced=0,presented=0,reconstructed=0;
   for(const e of events){if(!scope(e))continue;
-   if(e.kind==='heard'||e.class==='act'&&['said','silent'].includes(e.kind)||e.class==='inner'&&e.kind==='wrote'&&e.content){insert.run(e.seq,e.kind);add.run(e.seq,lex(e.content).join(' '));}
+   if(e.kind==='heard'||e.class==='act'&&['said','silent'].includes(e.kind)||e.class==='inner'&&e.kind==='wrote'&&e.content){insert.run(e.seq,e.kind,e.t_recorded);add.run(e.seq,lex(e.content).join(' '));}
+   if(e.kind==='recalled'&&!e.meta.invalid&&e.meta.engine==='index'){
+    recalled++;const m=e.meta,args=m.arguments??{},bound=v=>v===undefined?undefined:Date.parse(v.length===10?v+'T00:00:00':v),from=bound(args.from)??-Infinity,to=bound(args.to)??Infinity;
+    const table=args.query?'terms f JOIN docs d ON d.seq=f.rowid':'docs d',where=(args.query?'terms MATCH ? AND ':'')+"d.kind='wrote' AND d.t_recorded>=? AND d.t_recorded<=?",params=[...(args.query?[quoted(m.terms)]:[]),from,to];
+    const ranks=index.prepare(`SELECT d.seq FROM ${table} WHERE ${where} ORDER BY ${args.query?(m.mode==='relevance'?'f.rank,f.rowid DESC':'f.rowid DESC'):'d.seq DESC'} LIMIT 100`).all(...params).map(r=>r.seq);assert.deepEqual(m.rank_seqs,ranks);
+   }
    if(e.kind!=='presented')continue;presented++;
    if(replay){const show=presentedShow(source,e.seq,'这是隔离的合成生活评测。',true);assert.equal(show.reconstruction.status,'exact',String(e.seq));reconstructed++;}
    if(e.meta.step!==0||!e.meta.surfacing)continue;surfaced++;
@@ -31,7 +36,7 @@ export function audit(directory,{replay=true}={}){
   }
   let requests=null;try{requests=JSON.parse(readFileSync(join(directory,'requests.json'),'utf8'));}catch{}
   if(requests){assert.equal(requests.length,presented);for(const r of requests)assert.equal(bySeq.get(r.seq).meta.messages_sha256,r.messages_sha256);}
-  const result={presented,reconstructed,surfacing_checked:surfaced,actual_request_digests:requests?.length??null,wall_ms:performance.now()-at};writeFileSync(join(directory,'audit.json'),JSON.stringify(result,null,2)+'\n');return result;
+  const result={presented,reconstructed,surfacing_checked:surfaced,recall_rank_checks:recalled,actual_request_digests:requests?.length??null,wall_ms:performance.now()-at};writeFileSync(join(directory,'audit.json'),JSON.stringify(result,null,2)+'\n');return result;
  }finally{source.close();index.close();}
 }
 if(process.argv[1]&&resolve(process.argv[1])===new URL(import.meta.url).pathname)console.log(JSON.stringify(audit(resolve(process.argv[2]),{replay:!process.argv.includes('--selection-only')})));

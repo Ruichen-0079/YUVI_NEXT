@@ -82,7 +82,7 @@ try{
   const result=runLife(id,opt['--arm'],opt['--out']);console.log(JSON.stringify({coverage:result.coverage.overall,reasons:result.reasons}));
  }else if(command==='measure'&&args.length===1)console.log(JSON.stringify(measure(args[0]),null,2));
  else if(command==='explain'&&args.length===2){const result=measure(args[0],{write:false}),probe=[...result.probes,...result.sanity].find(p=>p.id===args[1]);if(!probe)throw Error('Unknown probe');console.log(JSON.stringify(probe,null,2));}
- else if((command==='baseline-p9'||command==='regress-p9')&&!args.length)console.log(JSON.stringify(await (await import('./p9.mjs')).baselineP9(command==='regress-p9',{baseline,runLife})));
+ else if((command==='baseline-p9'||command==='regress-p9')&&(!args.length||args.length===2&&args[0]==='--p8-regress-dir'))console.log(JSON.stringify(await (await import('./p9.mjs')).baselineP9(command==='regress-p9',{baseline,runLife,p8Directory:args[1]})));
  else if((command==='baseline'||command==='regress')&&!args.length)console.log(JSON.stringify(await baseline(command==='regress')));
  else throw Error('Invalid evaluation command');
 }catch(error){console.error(error.message);process.exitCode=1;}

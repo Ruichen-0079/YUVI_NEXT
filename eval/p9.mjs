@@ -9,10 +9,14 @@ const distribution=a=>({mean:a.reduce((n,v)=>n+v,0)/a.length,p95:[...a].sort((a,
 function p8Cost(directory){const db=new DatabaseSync(join(directory,'data/archive.sqlite'),{readOnly:true});try{
  const rows=db.prepare("SELECT reply_to,json_extract(meta,'$.total.chars') chars FROM events WHERE kind='presented' AND reply_to IS NOT NULL").all(),turns=new Map();for(const r of rows)turns.set(r.reply_to,(turns.get(r.reply_to)??0)+r.chars);return distribution([...turns.values()]);
 }finally{db.close();}}
-export async function baselineP9(regress=false,{baseline,runLife}){
+function verifiedP8(root){
+ root=resolve(root);assert.equal(readFileSync(join(root,'baseline.json'),'utf8'),readFileSync('docs/notes/P8-baseline.json','utf8'),'P8 regression evidence does not match the frozen baseline');
+ return {root,wall_ms:JSON.parse(readFileSync(join(root,'timing.json'),'utf8')).wall_ms};
+}
+export async function baselineP9(regress=false,{baseline,runLife,p8Directory}){
  mkdirSync('.local-data',{recursive:true,mode:0o700});const root=mkdtempSync(resolve('.local-data/p9-baseline-')),wall=performance.now();
  // This is an actual fresh P8 regression, not an inferred compatibility claim.
- const p8Run=await baseline(true),p8=JSON.parse(readFileSync('docs/notes/P8-baseline.json','utf8')),runs={};
+ const p8Run=p8Directory?verifiedP8(p8Directory):await baseline(true),p8=JSON.parse(readFileSync('docs/notes/P8-baseline.json','utf8')),runs={};
  for(const life of ['life-a','life-b'])for(const arm of ['E-R','E-S','E-SR','E-SC']){
   const key=`${life}-${arm}-excerpt`,r=runLife(life,arm,join(root,key),63,'excerpt');
   assert.equal(r.reasons.unexplained,0);assert.equal(r.sanity.length,7);assert.ok(r.sanity.every(p=>p.answers.every(a=>a.window)),'Sanity must be presented through the window');

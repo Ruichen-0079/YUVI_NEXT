@@ -17,7 +17,7 @@ test('P9 recall: own nonempty writings only, index and literal fallback, indepen
  const {root,a}=fixture(t);a.append({class:'experience',kind:'heard',actor:'owner',content:'旧照片只是原话 🌙'});
  const old=wrote(a,'旧照片放在抽屉 🌙');wrote(a,'');
  for(let i=0;i<15;i++)wrote(a,'旧照片已经扫描 '+i);
- const last=wrote(a,'最新旧照片 🌙');a.append({class:'inner',kind:'wrote',actor:'yuvi',scene:'qq',content:'秘密旧照片 🌙'});a.append({class:'inner',kind:'wrote',actor:'yuvi',branch:'fork:w',content:'秘密旧照片 🌙'});buildIndex(a.directory??join(root,'data'));const index=new ArchiveIndex(a.db,join(root,'data'));t.after(()=>index.close());
+ const last=wrote(a,'最新旧照片 🌙');a.append({class:'inner',kind:'wrote',actor:'yuvi',scene:'qq',content:'秘密旧照片 🌙'});a.append({class:'inner',kind:'wrote',actor:'yuvi',branch:'fork:w',content:'秘密旧照片 🌙'});buildIndex(join(root,'data'));const index=new ArchiveIndex(a.db,join(root,'data'));t.after(()=>index.close());
  const r=await check(a,'{"query":"旧照片"}','负责人',{index,tool:'recall'});
  assert.equal(r.meta.rules,'p9');assert.equal(r.meta.total,17);assert.equal(r.meta.result_seqs.length,10);assert.ok(r.meta.result_seqs.includes(last.seq));assert.match(r.content,/找到你写下的文字 17 段，返回 10 段。/);
  assert.ok(r.meta.rank_seqs.every(s=>s!==1&&s!==3));
