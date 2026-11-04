@@ -32,7 +32,9 @@ const fake=createServer(async(req,res)=>{
    const upstream=await fetch(process.env.YUVI_MODEL_BASE_URL.replace(/\/$/,'')+'/chat/completions',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+process.env.YUVI_MODEL_API_KEY},body:JSON.stringify({...body,model:process.env.YUVI_MODEL,max_tokens:Math.min(body.max_tokens??4000,plan.output-budget.output)}),signal:AbortSignal.timeout(600000)});
    if(!upstream.ok){budget.stopped=true;budget.reason='provider_failure';res.writeHead(502);res.end();return;}
    res.writeHead(200,{'content-type':'text/event-stream'});let buffer='',usage;
-   for await(const chunk of upstream.body){res.write(chunk);buffer+=Buffer.from(chunk).toString('utf8');let at;while((at=buffer.indexOf('\n\n'))>=0){const block=buffer.slice(0,at);buffer=buffer.slice(at+2);for(const line of block.split('\n'))if(line.startsWith('data: ')&&line.slice(6)!=='[DONE]'){try{const value=JSON.parse(line.slice(6));if(value.usage)usage=value.usage;}catch{}}}}
+   for await(const chunk of upstream.body){res.write(chunk);buffer+=Buffer.from(chunk).toString('utf8');let at;while((at=buffer.indexOf('\n\n'))>=0){const block=buffer.slice(0,at);buffer=buffer.slice(at+2);for(const line of block.split('\n'))if(line.startsWith('data: ')&&line.slice(6)!=='[DONE]'){try{const value=JSON.parse(line.slice(6));if(value.usage){usage=value.usage;
+     if(!Number.isSafeInteger(usage.prompt_tokens)||usage.prompt_tokens<0||!Number.isSafeInteger(usage.completion_tokens)||usage.completion_tokens<0||budget.input+usage.prompt_tokens>=plan.input||budget.output+usage.completion_tokens>=plan.output){budget.add(usage);res.end();return;}
+    }}catch{}}}}
    budget.add(usage);res.end();
   }catch{budget.stopped=true;budget.reason='provider_failure';res.destroy();}return;
  }
