@@ -76,7 +76,7 @@ function report(result,root,p8){
  }
  md+='\n候选到浮现的排除是单独的选择损失，含已在前景的文字；它与“最终答案未被任何渠道呈现”的遗漏不同，不能把 foreground 排除当成答案消失。\n';
  md+='\n## recall 与请求成本\n\n| 生活 | 调用 | 返回段数均值/p95 | 返回字数均值/p95 | 扫描回退 |\n| --- | ---: | --- | --- | --- |\n';for(const life of ['life-a','life-b']){const r=run(life,'E-R').recall;md+=`| ${life} | ${r.calls} | ${fmt(r.results.mean)}/${r.results.p95} | ${fmt(r.chars.mean)}/${r.chars.p95} | ${cell(r.fallbacks)} |\n`;}
- md+='\n| 生活/臂 | 每回合请求字数均值/p95 | 相对 P8-A0 增量均值/p95 | 清单字节中位数/最大 |\n| --- | --- | --- | --- |\n';for(const[key,r]of Object.entries(result.runs)){const c=r.p9cost;md+=`| ${key} | ${fmt(c.turn_chars.mean)}/${c.turn_chars.p95} | ${fmt(c.vs_p8_a0.mean_delta)}/${c.vs_p8_a0.p95_delta} | ${c.manifest_bytes.median}/${c.manifest_bytes.max} |\n`;}
+ md+='\n| 生活/臂 | 每回合请求字数均值/p95 | 相对 P8-A0 增量均值/p95 | 清单完整字节中位数/最大 | 结构字节最大 |\n| --- | --- | --- | --- | --- |\n';for(const[key,r]of Object.entries(result.runs)){const c=r.p9cost;md+=`| ${key} | ${fmt(c.turn_chars.mean)}/${c.turn_chars.p95} | ${fmt(c.vs_p8_a0.mean_delta)}/${c.vs_p8_a0.p95_delta} | ${c.manifest_bytes.median}/${c.manifest_bytes.max} | ${c.structural_bytes_max} |\n`;}
  md+='\n这些是字符与请求的成本代理，不是实际模型 token、缓存或账单。墙钟分别保存在 timing.json，不参与确定性比较。\n';
  md+='\n## 更正版本的实际呈现\n\n| 生活/臂 | 探针 | 各版本被浮现 | 各版本经 recall | 最终是否全呈现 |\n| --- | --- | --- | --- | --- |\n';for(const[key,r]of Object.entries(result.runs))for(const c of r.corrections)md+=`| ${key} | ${c.probe} | ${c.versions.map(v=>v.target+':'+v.surfaced_writing).join(', ')} | ${c.versions.map(v=>v.target+':'+v.recall_writing).join(', ')} | ${c.all_presented} |\n`;
  md+='\n程序没有替模型采用更正，也没有删除旧版本；完整请求中各版本的顺序另见 JSON 的 presentation_order/chronological。\n';

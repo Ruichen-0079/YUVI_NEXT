@@ -1,10 +1,14 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';import {join} from 'node:path';import {tmpdir} from 'node:os';
-import {Archive} from '../dist/archive.js';import {ArchiveIndex,buildIndex} from '../dist/archive-index.js';import {check} from '../dist/context.js';import {generate} from '../scripts/p6/generate.mjs';
+import {Archive} from '../dist/archive.js';import {ArchiveIndex,buildIndex} from '../dist/archive-index.js';import {check,assembleBase} from '../dist/context.js';import {generate} from '../scripts/p6/generate.mjs';
 test('P9 W1–W11: frozen 50000-event writings corpus',async t=>{
  const dir=mkdtempSync(join(tmpdir(),'yuvi-p9-w-'));let a,index;
  try{const f=generate(join(dir,'archive.sqlite'),{count:50000,shape:'writings'});a=new Archive(dir);buildIndex(dir);index=new ArchiveIndex(a.db,dir);
   for(const q of f.queries)await t.test(q.id,async()=>{
+   const row=a.db.prepare("SELECT * FROM events WHERE kind='heard' LIMIT 1").get(),heard={...row,seq:f.count+1,content:q.query,meta:JSON.parse(row.meta)};
+   const selected=index.surface(q.query,heard.seq,[],[heard],'relevance');
+   const built=assembleBase({purpose:'dialogue',selected:{writings:[],window:[heard],...selected},heard},{persona:'测试人设',ownerName:'负责人',recall:true,surfacing:'relevance',writingChars:16000},Date.now(),'UTC',22);
+   assert.ok(Buffer.byteLength(JSON.stringify(built.manifest))<=2500,'W corpus full manifest bytes');
    const params={query:q.query,...(q.from?{from:new Date(q.from).toISOString(),to:new Date(q.to).toISOString()}: {})};
    const r=await check(a,JSON.stringify(params),'负责人',{index,tool:'recall'}),m=r.meta;
    if(m.engine==='index'){const match=m.terms.map(t=>'\"'+t.replaceAll('\"','\"\"')+'\"').join(' OR '),table=q.query?'terms f JOIN docs d ON d.seq=f.rowid':'docs d',where=(q.query?'terms MATCH ? AND ':'')+"d.kind='wrote' AND d.t_recorded>=? AND d.t_recorded<=?",ranked=index.db.prepare(`SELECT d.seq FROM ${table} WHERE ${where} ORDER BY ${q.query?(m.mode==='relevance'?'f.rank,f.rowid DESC':'f.rowid DESC'):'d.seq DESC'} LIMIT 100`).all(...(q.query?[match]:[]),q.from??-Infinity,q.to??Infinity);assert.deepEqual(m.rank_seqs,ranked.map(e=>e.seq));}

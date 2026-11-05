@@ -68,7 +68,7 @@ export function renderDialogue(selected: { writings: Event[]; window: Event[]; s
   })), ...(selected.surfaced?.length ? [{ role: 'user' as const, content: surfacedText(selected.surfaced, config.ownerName ?? '负责人', timeZone) }] : []), { role: 'user', content: `现在是${localTime(now, timeZone)}。当前回应的是${config.ownerName ?? '负责人'}在${localTime(heard.t_recorded, timeZone)}说的这一句：\n${heard.content}` }];
 }
 export function surfacedText(events: Event[], owner: string, zone?: string): string {
-  return '你想起以前写下的：\n\n' + events.map(e => record(e, owner, false, zone)).join('\n\n');
+  return '你以前写下的：\n\n' + events.map(e => record(e, owner, false, zone)).join('\n\n');
 }
 export function renderConsolidation(selected: { writings: Event[]; material: Event[] }, config: PresentationConfig, now: number, timeZone?: string): Message[] {
   return [...renderPrefix(selected.writings, config, timeZone), { role: 'user', content: selected.material.map(e => record(e, config.ownerName ?? '负责人', false, timeZone)).join('\n\n') },

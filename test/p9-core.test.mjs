@@ -52,7 +52,9 @@ test('P9 actual process: frozen surfaced base, mixed tool calls, usage once and 
  const s=await startService(root,{data,baseUrl:base,recall:true,surfacing:'relevance',writing:1000});t.after(()=>s.stop());
  const frames=await s.post('旧照片还放在那里吗\0🌙😀�');assert.equal(frames.at(-1).event,'done');
  const events=assertPresentations(data,captured,'测试人设原文\n');const ps=events.filter(e=>e.kind==='presented');assert.equal(ps.length,3);
+ for(const p of ps.filter(p=>p.meta.step===0))assert.ok(Buffer.byteLength(JSON.stringify(p.meta))<=2500,'S corpus full manifest bytes');
  assert.deepEqual(ps[0].meta.sections.find(s=>s.name==='surfaced').seqs,[old.seq]);
+ assert.ok(captured[0].body.messages.some(m=>m.content.startsWith('你以前写下的：\n\n')));
  for(const p of ps)assert.deepEqual(p.meta.surfacing,ps[0].meta.surfacing);
  const queries=events.filter(e=>['checked','recalled'].includes(e.kind));assert.deepEqual(queries.map(e=>e.kind),['recalled','checked','recalled']);assert.equal(queries.filter(e=>e.meta.usage).length,2);
  assert.deepEqual(queries[0].meta.result_seqs,[old.seq]);assert.ok(ps[1].meta.sections.at(-1).results[0].recalled);
