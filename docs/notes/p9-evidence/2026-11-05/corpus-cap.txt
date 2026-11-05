@@ -1,0 +1,141 @@
+TAP version 13
+# (node:64580) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 recall: own nonempty writings only, index and literal fallback, independent budgets and ranks
+ok 1 - P9 recall: own nonempty writings only, index and literal fallback, independent budgets and ranks
+  ---
+  duration_ms: 10.826761
+  type: 'test'
+  ...
+# Subtest: P9 S: exclusions, whole-item budgets, sorting, recency, no terms and scoped candidates
+ok 2 - P9 S: exclusions, whole-item budgets, sorting, recency, no terms and scoped candidates
+  ---
+  duration_ms: 4.965887
+  type: 'test'
+  ...
+# Surfacing failed; continuing without surfaced text.
+# Archive index unavailable; using literal archive search.
+# Subtest: P9 actual process: frozen surfaced base, mixed tool calls, usage once and exact historical reconstruction
+ok 3 - P9 actual process: frozen surfaced base, mixed tool calls, usage once and exact historical reconstruction
+  ---
+  duration_ms: 160.748031
+  type: 'test'
+  ...
+# (node:64580) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Archive index unavailable; using literal archive search.
+# Archive index unavailable; using literal archive search.
+# Subtest: P9 S4–S11: budgets, common/no candidates, recency order and failures do not silently scan
+ok 4 - P9 S4–S11: budgets, common/no candidates, recency order and failures do not silently scan
+  ---
+  duration_ms: 39.81945
+  type: 'test'
+  ...
+# Subtest: P9 V3/V4: forged foreign indexed row is rejected, archive unchanged, show cannot cross scope
+ok 5 - P9 V3/V4: forged foreign indexed row is rejected, archive unchanged, show cannot cross scope
+  ---
+  duration_ms: 5.081664
+  type: 'test'
+  ...
+# Subtest: P9 C3/K3/K5: invalid recall never queries, source failure remains fatal; third continuation only silence
+ok 6 - P9 C3/K3/K5: invalid recall never queries, source failure remains fatal; third continuation only silence
+  ---
+  duration_ms: 5.014845
+  type: 'test'
+  ...
+# Subtest: P9 configuration: recall defaults on, surfacing off; invalid values disclose only variable name
+ok 7 - P9 configuration: recall defaults on, surfacing off; invalid values disclose only variable name
+  ---
+  duration_ms: 1.785779
+  type: 'test'
+  ...
+# Subtest: P9 V3: a foreign forged rank omitted by the result budget cannot leak through rank_seqs
+ok 8 - P9 V3: a foreign forged rank omitted by the result budget cannot leak through rank_seqs
+  ---
+  duration_ms: 5.309005
+  type: 'test'
+  ...
+# (node:64581) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 W1–W11: frozen 50000-event writings corpus
+    # Subtest: W1
+    ok 1 - W1
+      ---
+      duration_ms: 4.561122
+      type: 'test'
+      ...
+    # Subtest: W2
+    ok 2 - W2
+      ---
+      duration_ms: 1.195435
+      type: 'test'
+      ...
+    # Subtest: W3
+    ok 3 - W3
+      ---
+      duration_ms: 1.061164
+      type: 'test'
+      ...
+    # Subtest: W4
+    ok 4 - W4
+      ---
+      duration_ms: 11.243509
+      type: 'test'
+      ...
+    # Subtest: W5
+    ok 5 - W5
+      ---
+      duration_ms: 1.541595
+      type: 'test'
+      ...
+    # Subtest: W6
+    ok 6 - W6
+      ---
+      duration_ms: 17.991077
+      type: 'test'
+      ...
+    # Subtest: W7
+    ok 7 - W7
+      ---
+      duration_ms: 1.96905
+      type: 'test'
+      ...
+    # Subtest: W8
+    ok 8 - W8
+      ---
+      duration_ms: 0.759067
+      type: 'test'
+      ...
+    # Subtest: W9
+    ok 9 - W9
+      ---
+      duration_ms: 0.949793
+      type: 'test'
+      ...
+    # Subtest: W10
+    ok 10 - W10
+      ---
+      duration_ms: 1.438921
+      type: 'test'
+      ...
+    # Subtest: W11
+    ok 11 - W11
+      ---
+      duration_ms: 1.768173
+      type: 'test'
+      ...
+    1..11
+ok 9 - P9 W1–W11: frozen 50000-event writings corpus
+  ---
+  duration_ms: 2602.58062
+  type: 'test'
+  ...
+1..9
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2655.999036

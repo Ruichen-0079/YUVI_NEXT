@@ -38,7 +38,7 @@ H1-o 的工具由脚本在探针时必定调用，不证明自主回想；H2 的
 | --- | --- | --- |
 | 探针浮现率 | 85.71% | 100.00% |
 | 非探针浮现率 | 93.98% | 98.79% |
-| 每回合字数均值 / p95 | 949.88 / 1588 | 1290.52 / 2027 |
+| 每回合字数均值 / p95 | 948.00 / 1586 | 1288.54 / 2025 |
 | 非携带者字数 | 24217 | 41863 |
 | 选入次数 / 不同文字 | 5960 / 111 | 31081 / 383 |
 | 最常见5段占比 | 20.34% | 11.42% |
@@ -59,7 +59,7 @@ H1-o 的工具由脚本在探针时必定调用，不证明自主回想；H2 的
 | --- | --- | --- |
 | 探针浮现率 | 85.71% | 100.00% |
 | 非探针浮现率 | 93.98% | 98.79% |
-| 每回合字数均值 / p95 | 1253.06 / 1657 | 1807.31 / 2094 |
+| 每回合字数均值 / p95 | 1251.18 / 1655 | 1805.34 / 2092 |
 | 非携带者字数 | 33370 | 53634 |
 | 选入次数 / 不同文字 | 5960 / 116 | 31081 / 398 |
 | 最常见5段占比 | 6.96% | 1.96% |
@@ -80,7 +80,7 @@ H1-o 的工具由脚本在探针时必定调用，不证明自主回想；H2 的
 | --- | --- | --- |
 | 探针浮现率 | 85.71% | 100.00% |
 | 非探针浮现率 | 93.98% | 98.79% |
-| 每回合字数均值 / p95 | 950.22 / 1588 | 1290.57 / 2027 |
+| 每回合字数均值 / p95 | 948.35 / 1586 | 1288.60 / 2025 |
 | 非携带者字数 | 24217 | 41863 |
 | 选入次数 / 不同文字 | 5960 / 111 | 31081 / 383 |
 | 最常见5段占比 | 20.34% | 11.42% |
@@ -104,18 +104,18 @@ H1-o 的工具由脚本在探针时必定调用，不证明自主回想；H2 的
 | life-a | 35 | 2.57/9 | 1090.40/3136 | {"no_terms":1} |
 | life-b | 35 | 5.17/10 | 2397.49/5526 | {"no_terms":1} |
 
-| 生活/臂 | 每回合请求字数均值/p95 | 相对 P8-A0 增量均值/p95 | 清单字节中位数/最大 |
-| --- | --- | --- | --- |
-| life-a-E-R-excerpt | 3098.90/3963 | 70.54/57 | 764/766 |
-| life-a-E-S-excerpt | 3978.24/5149 | 949.88/1243 | 1153/1378 |
-| life-a-E-SR-excerpt | 4281.42/5321 | 1253.06/1415 | 1283/1468 |
-| life-a-E-SC-excerpt | 4073.72/5275 | 1045.36/1369 | 1153/1378 |
-| life-b-E-R-excerpt | 3064.14/3913 | 18.94/10 | 767/770 |
-| life-b-E-S-excerpt | 4335.72/5513 | 1290.52/1610 | 1169/1348 |
-| life-b-E-SR-excerpt | 4852.52/5865 | 1807.31/1962 | 1278/1432 |
-| life-b-E-SC-excerpt | 4358.00/5531 | 1312.80/1628 | 1169/1348 |
+| 生活/臂 | 每回合请求字数均值/p95 | 相对 P8-A0 增量均值/p95 | 清单完整字节中位数/最大 | 结构字节最大 |
+| --- | --- | --- | --- | --- |
+| life-a-E-R-excerpt | 3098.90/3963 | 70.54/57 | 764/766 | 766 |
+| life-a-E-S-excerpt | 3976.36/5147 | 948.00/1241 | 1153/1378 | 1258 |
+| life-a-E-SR-excerpt | 4279.54/5319 | 1251.18/1413 | 1283/1468 | 1282 |
+| life-a-E-SC-excerpt | 4071.81/5273 | 1043.45/1367 | 1153/1378 | 1258 |
+| life-b-E-R-excerpt | 3064.14/3913 | 18.94/10 | 767/770 | 770 |
+| life-b-E-S-excerpt | 4333.75/5511 | 1288.54/1608 | 1169/1348 | 1205 |
+| life-b-E-SR-excerpt | 4850.54/5863 | 1805.34/1960 | 1278/1432 | 1274 |
+| life-b-E-SC-excerpt | 4356.02/5529 | 1310.82/1626 | 1169/1348 | 1205 |
 
-这些是字符与请求的成本代理，不是实际模型 token、缓存或账单。墙钟分别保存在 timing.json，不参与确定性比较。
+这些是字符与请求的成本代理，不是实际模型 token、缓存或账单。墙钟分别保存在 timing.json，不参与确定性比较。按 2026-11-05 正式裁定，固定文字为“你以前写下的：”；任何输入检查结构字节，冻结基线另检查完整字节。相对旧开发提示语，每次有浮现的请求少2字，覆盖、候选、排除、遗漏与回声不变；假提供方按字符数返回的 prompt_tokens 相应减少，不代表真实 token 测量。
 
 ## 更正版本的实际呈现
 
@@ -486,90 +486,90 @@ H1-o 的工具由脚本在探针时必定调用，不证明自主回想；H2 的
 ## 遗漏复现
 
 ```sh
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-R-excerpt P17
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-R-excerpt P20
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-S-excerpt P23
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-S-excerpt P04
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-S-excerpt P17
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-S-excerpt P10
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-S-excerpt P21
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-S-excerpt P27
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-S-excerpt P08
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-S-excerpt P05
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-S-excerpt P14
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-S-excerpt P24
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P02
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P09
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P23
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P03
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P15
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P04
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P25
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P26
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P16
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P17
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P10
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P20
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P21
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P27
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P08
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P05
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P14
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-a-E-SR-excerpt P24
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-R-excerpt P02
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-R-excerpt P09
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-R-excerpt P23
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-R-excerpt P03
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-R-excerpt P04
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-R-excerpt P17
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-R-excerpt P18
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-R-excerpt P10
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-R-excerpt P20
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-R-excerpt P05
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-R-excerpt P24
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P23
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P03
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P04
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P25
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P17
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P18
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P19
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P10
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P27
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P08
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P05
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P14
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-S-excerpt P24
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P02
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P22
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P09
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P23
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P03
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P15
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P04
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P07
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P25
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P13
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P26
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P16
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P17
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P18
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P19
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P28
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P10
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P20
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P21
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P27
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P11
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P08
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P05
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P14
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SR-excerpt P24
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SC-excerpt P03
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SC-excerpt P04
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SC-excerpt P17
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SC-excerpt P10
-npm run eval -- explain .local-data/p9-baseline-uYr1Is/life-b-E-SC-excerpt P05
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-R-excerpt P17
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-R-excerpt P20
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-S-excerpt P23
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-S-excerpt P04
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-S-excerpt P17
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-S-excerpt P10
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-S-excerpt P21
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-S-excerpt P27
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-S-excerpt P08
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-S-excerpt P05
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-S-excerpt P14
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-S-excerpt P24
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P02
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P09
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P23
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P03
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P15
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P04
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P25
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P26
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P16
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P17
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P10
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P20
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P21
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P27
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P08
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P05
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P14
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-a-E-SR-excerpt P24
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-R-excerpt P02
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-R-excerpt P09
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-R-excerpt P23
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-R-excerpt P03
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-R-excerpt P04
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-R-excerpt P17
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-R-excerpt P18
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-R-excerpt P10
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-R-excerpt P20
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-R-excerpt P05
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-R-excerpt P24
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P23
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P03
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P04
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P25
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P17
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P18
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P19
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P10
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P27
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P08
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P05
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P14
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-S-excerpt P24
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P02
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P22
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P09
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P23
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P03
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P15
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P04
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P07
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P25
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P13
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P26
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P16
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P17
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P18
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P19
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P28
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P10
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P20
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P21
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P27
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P11
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P08
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P05
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P14
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SR-excerpt P24
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SC-excerpt P03
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SC-excerpt P04
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SC-excerpt P17
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SC-excerpt P10
+npm run eval -- explain .local-data/p9-baseline-j2eKYC/life-b-E-SC-excerpt P05
 ```
 
 ## 限制与 P9-R

@@ -5966,6 +5966,7 @@
         ]
       },
       "p9cost": {
+        "structural_bytes_max": 766,
         "turn_chars": {
           "count": 2143,
           "mean": 3098.8959402706487,
@@ -5998,7 +5999,7 @@
       "simulated_end": 1798992000000,
       "archive": {
         "events": 8732,
-        "normalized_sha256": "a42bb158c3a9e3f263e08bc743b469a7e1a789375cefcb15995d52cdc64fb64f"
+        "normalized_sha256": "1656634442e90df2a6277c1480e71bcc17ba380ceb0b109b5871d5abb3d38fb6"
       },
       "consolidation": {
         "requests": 122,
@@ -6336,7 +6337,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1316,
+              "chars": 1314,
               "seqs": [
                 245,
                 349,
@@ -6443,7 +6444,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1182,
+              "chars": 1180,
               "seqs": [
                 349,
                 612,
@@ -6551,7 +6552,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1331,
+              "chars": 1329,
               "seqs": [
                 489,
                 1494,
@@ -6662,7 +6663,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1110,
+              "chars": 1108,
               "seqs": [
                 1494,
                 2031,
@@ -6807,7 +6808,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1103,
+              "chars": 1101,
               "seqs": [
                 245,
                 349,
@@ -6921,7 +6922,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1159,
+              "chars": 1157,
               "seqs": [
                 1494,
                 1588,
@@ -7040,7 +7041,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1105,
+              "chars": 1103,
               "seqs": [
                 349,
                 1494,
@@ -7187,7 +7188,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1132,
+              "chars": 1130,
               "seqs": [
                 734,
                 1009,
@@ -7289,7 +7290,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 675,
+              "chars": 673,
               "seqs": [
                 1494,
                 3225,
@@ -7411,7 +7412,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1395,
+              "chars": 1393,
               "seqs": [
                 1009,
                 1330,
@@ -7555,7 +7556,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1179,
+              "chars": 1177,
               "seqs": [
                 1494,
                 1832,
@@ -7671,7 +7672,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1016,
+              "chars": 1014,
               "seqs": [
                 1494,
                 2031,
@@ -7875,7 +7876,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1091,
+              "chars": 1089,
               "seqs": [
                 2687,
                 2894
@@ -7976,7 +7977,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1779,
+              "chars": 1777,
               "seqs": [
                 489,
                 2687,
@@ -8086,7 +8087,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1283,
+              "chars": 1281,
               "seqs": [
                 976,
                 5744
@@ -8189,7 +8190,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1014,
+              "chars": 1012,
               "seqs": [
                 1494,
                 2894,
@@ -8303,7 +8304,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1212,
+              "chars": 1210,
               "seqs": [
                 1494,
                 3054,
@@ -8421,7 +8422,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1173,
+              "chars": 1171,
               "seqs": [
                 1494,
                 3734,
@@ -8534,7 +8535,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1767,
+              "chars": 1765,
               "seqs": [
                 2544,
                 3054,
@@ -8739,7 +8740,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 281,
+              "chars": 279,
               "seqs": [
                 179
               ]
@@ -8853,7 +8854,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1205,
+              "chars": 1203,
               "seqs": [
                 1494,
                 4888,
@@ -8967,7 +8968,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 955,
+              "chars": 953,
               "seqs": [
                 1494,
                 3734,
@@ -9114,7 +9115,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1272,
+              "chars": 1270,
               "seqs": [
                 1465,
                 5134,
@@ -9252,7 +9253,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 751,
+              "chars": 749,
               "seqs": [
                 1494,
                 3422,
@@ -9532,7 +9533,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1255,
+              "chars": 1253,
               "seqs": [
                 349,
                 489
@@ -9647,7 +9648,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1331,
+              "chars": 1329,
               "seqs": [
                 489,
                 1494,
@@ -9756,7 +9757,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1682,
+              "chars": 1680,
               "seqs": [
                 489,
                 1588,
@@ -9867,7 +9868,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1515,
+              "chars": 1513,
               "seqs": [
                 1588,
                 2810,
@@ -9982,7 +9983,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1515,
+              "chars": 1513,
               "seqs": [
                 1588,
                 2810,
@@ -10101,7 +10102,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1399,
+              "chars": 1397,
               "seqs": [
                 1588,
                 2810,
@@ -11559,8 +11560,8 @@
         },
         "zero_chars": {
           "count": 2143,
-          "mean": 3978.237984134391,
-          "p95": 5149
+          "mean": 3976.361175921605,
+          "p95": 5147
         },
         "later_chars": {
           "count": 0,
@@ -11586,8 +11587,8 @@
         },
         "chars": {
           "count": 2143,
-          "mean": 949.8777414839011,
-          "p95": 1588
+          "mean": 948.0009332711153,
+          "p95": 1586
         },
         "noncarrier_chars": 24217,
         "occurrences": 5960,
@@ -12077,14 +12078,15 @@
         ]
       },
       "p9cost": {
+        "structural_bytes_max": 1258,
         "turn_chars": {
           "count": 2143,
-          "mean": 3978.237984134391,
-          "p95": 5149
+          "mean": 3976.361175921605,
+          "p95": 5147
         },
         "manifest_bytes": {
           "count": 2143,
-          "mean": 1146.5128324778348,
+          "mean": 1146.510032664489,
           "p95": 1232,
           "median": 1153,
           "max": 1378
@@ -12094,8 +12096,8 @@
             "mean": 3028.36024265049,
             "p95": 3906
           },
-          "mean_delta": 949.877741483901,
-          "p95_delta": 1243
+          "mean_delta": 948.0009332711152,
+          "p95_delta": 1241
         }
       }
     },
@@ -12109,7 +12111,7 @@
       "simulated_end": 1798992000000,
       "archive": {
         "events": 8732,
-        "normalized_sha256": "1a62900df9b5a9b722ac185bbcfa0b5a598c44db5b2036009d696b8ca7791474"
+        "normalized_sha256": "fcd53248ec789228a86ced9168193f000701ddf8cba9ebc34751a9bb07acab7e"
       },
       "consolidation": {
         "requests": 122,
@@ -12447,7 +12449,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1722,
+              "chars": 1720,
               "seqs": [
                 489,
                 680,
@@ -12549,7 +12551,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1093,
+              "chars": 1091,
               "seqs": [
                 612,
                 1494,
@@ -12657,7 +12659,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1112,
+              "chars": 1110,
               "seqs": [
                 1494,
                 1588,
@@ -12768,7 +12770,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1461,
+              "chars": 1459,
               "seqs": [
                 2031,
                 2810,
@@ -12917,7 +12919,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1461,
+              "chars": 1459,
               "seqs": [
                 2031,
                 2810,
@@ -13031,7 +13033,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1278,
+              "chars": 1276,
               "seqs": [
                 2810,
                 2894,
@@ -13149,7 +13151,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1370,
+              "chars": 1368,
               "seqs": [
                 2894,
                 3666,
@@ -13309,7 +13311,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1132,
+              "chars": 1130,
               "seqs": [
                 734,
                 1009,
@@ -13411,7 +13413,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1103,
+              "chars": 1101,
               "seqs": [
                 4069,
                 4155,
@@ -13528,7 +13530,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1519,
+              "chars": 1517,
               "seqs": [
                 1330,
                 1465,
@@ -13672,7 +13674,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1692,
+              "chars": 1690,
               "seqs": [
                 3910,
                 4235,
@@ -13783,7 +13785,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1692,
+              "chars": 1690,
               "seqs": [
                 3910,
                 4235,
@@ -13987,7 +13989,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1091,
+              "chars": 1089,
               "seqs": [
                 2687,
                 2894
@@ -14088,7 +14090,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1779,
+              "chars": 1777,
               "seqs": [
                 489,
                 2687,
@@ -14198,7 +14200,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1283,
+              "chars": 1281,
               "seqs": [
                 976,
                 5744
@@ -14301,7 +14303,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1575,
+              "chars": 1573,
               "seqs": [
                 4888,
                 5442,
@@ -14420,7 +14422,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1575,
+              "chars": 1573,
               "seqs": [
                 4888,
                 5442,
@@ -14542,7 +14544,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1575,
+              "chars": 1573,
               "seqs": [
                 4888,
                 5442,
@@ -14664,7 +14666,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1925,
+              "chars": 1923,
               "seqs": [
                 3054,
                 4399,
@@ -14865,7 +14867,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 281,
+              "chars": 279,
               "seqs": [
                 179
               ]
@@ -14979,7 +14981,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1489,
+              "chars": 1487,
               "seqs": [
                 6845,
                 6926,
@@ -15098,7 +15100,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1599,
+              "chars": 1597,
               "seqs": [
                 6926,
                 7080,
@@ -15254,7 +15256,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 964,
+              "chars": 962,
               "seqs": [
                 4574,
                 5134,
@@ -15392,7 +15394,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1395,
+              "chars": 1393,
               "seqs": [
                 7080,
                 8047,
@@ -15672,7 +15674,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1255,
+              "chars": 1253,
               "seqs": [
                 349,
                 489
@@ -15787,7 +15789,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1112,
+              "chars": 1110,
               "seqs": [
                 1494,
                 1588,
@@ -15896,7 +15898,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1461,
+              "chars": 1459,
               "seqs": [
                 2031,
                 2810,
@@ -16007,7 +16009,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1439,
+              "chars": 1437,
               "seqs": [
                 3734,
                 3910,
@@ -16122,7 +16124,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1206,
+              "chars": 1204,
               "seqs": [
                 5134,
                 5442,
@@ -16241,7 +16243,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1489,
+              "chars": 1487,
               "seqs": [
                 6845,
                 6926,
@@ -17697,8 +17699,8 @@
         },
         "zero_chars": {
           "count": 2143,
-          "mean": 4281.41530564629,
-          "p95": 5321
+          "mean": 4279.538497433505,
+          "p95": 5319
         },
         "later_chars": {
           "count": 0,
@@ -17724,8 +17726,8 @@
         },
         "chars": {
           "count": 2143,
-          "mean": 1253.0550629958002,
-          "p95": 1657
+          "mean": 1251.1782547830144,
+          "p95": 1655
         },
         "noncarrier_chars": 33370,
         "occurrences": 5960,
@@ -18215,14 +18217,15 @@
         ]
       },
       "p9cost": {
+        "structural_bytes_max": 1282,
         "turn_chars": {
           "count": 2143,
-          "mean": 4281.41530564629,
-          "p95": 5321
+          "mean": 4279.538497433505,
+          "p95": 5319
         },
         "manifest_bytes": {
           "count": 2143,
-          "mean": 1262.8427438170788,
+          "mean": 1262.8422771815212,
           "p95": 1384,
           "median": 1283,
           "max": 1468
@@ -18232,8 +18235,8 @@
             "mean": 3028.36024265049,
             "p95": 3906
           },
-          "mean_delta": 1253.0550629958002,
-          "p95_delta": 1415
+          "mean_delta": 1251.1782547830148,
+          "p95_delta": 1413
         }
       }
     },
@@ -18247,7 +18250,7 @@
       "simulated_end": 1798992000000,
       "archive": {
         "events": 8802,
-        "normalized_sha256": "a2237dc6538690cf17beb08c9b8038d97a5e0aca15c1402cf4560f2389f7e845"
+        "normalized_sha256": "bdd6d34eb7ba3a4cc0c499a70b48f6231d1f9facaa2bd483a5b577432d11d2f0"
       },
       "consolidation": {
         "requests": 122,
@@ -18678,7 +18681,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1316,
+              "chars": 1314,
               "seqs": [
                 245,
                 351,
@@ -18734,7 +18737,7 @@
                 858
               ],
               "usage": {
-                "prompt_tokens": 3446,
+                "prompt_tokens": 3444,
                 "completion_tokens": 0
               }
             }
@@ -18831,7 +18834,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1182,
+              "chars": 1180,
               "seqs": [
                 351,
                 616,
@@ -18872,7 +18875,7 @@
                 616
               ],
               "usage": {
-                "prompt_tokens": 3894,
+                "prompt_tokens": 3892,
                 "completion_tokens": 0
               }
             }
@@ -18970,7 +18973,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1331,
+              "chars": 1329,
               "seqs": [
                 493,
                 1504,
@@ -19010,7 +19013,7 @@
                 493
               ],
               "usage": {
-                "prompt_tokens": 4173,
+                "prompt_tokens": 4171,
                 "completion_tokens": 0
               }
             }
@@ -19111,7 +19114,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1110,
+              "chars": 1108,
               "seqs": [
                 1504,
                 2045,
@@ -19158,7 +19161,7 @@
                 616
               ],
               "usage": {
-                "prompt_tokens": 3632,
+                "prompt_tokens": 3630,
                 "completion_tokens": 0
               }
             }
@@ -19298,7 +19301,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1103,
+              "chars": 1101,
               "seqs": [
                 245,
                 351,
@@ -19364,7 +19367,7 @@
                 858
               ],
               "usage": {
-                "prompt_tokens": 3892,
+                "prompt_tokens": 3890,
                 "completion_tokens": 0
               }
             }
@@ -19468,7 +19471,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1159,
+              "chars": 1157,
               "seqs": [
                 1504,
                 1600,
@@ -19507,7 +19510,7 @@
                 1600
               ],
               "usage": {
-                "prompt_tokens": 4833,
+                "prompt_tokens": 4831,
                 "completion_tokens": 0
               }
             }
@@ -19616,7 +19619,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1105,
+              "chars": 1103,
               "seqs": [
                 351,
                 1504,
@@ -19694,7 +19697,7 @@
                 858
               ],
               "usage": {
-                "prompt_tokens": 4048,
+                "prompt_tokens": 4046,
                 "completion_tokens": 0
               }
             }
@@ -19836,7 +19839,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1132,
+              "chars": 1130,
               "seqs": [
                 738,
                 1015,
@@ -19880,7 +19883,7 @@
                 738
               ],
               "usage": {
-                "prompt_tokens": 3698,
+                "prompt_tokens": 3696,
                 "completion_tokens": 0
               }
             }
@@ -19972,7 +19975,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 675,
+              "chars": 673,
               "seqs": [
                 1504,
                 3243,
@@ -20008,7 +20011,7 @@
                 3207
               ],
               "usage": {
-                "prompt_tokens": 4511,
+                "prompt_tokens": 4509,
                 "completion_tokens": 0
               }
             }
@@ -20120,7 +20123,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1395,
+              "chars": 1393,
               "seqs": [
                 1015,
                 1336,
@@ -20169,7 +20172,7 @@
                 1473
               ],
               "usage": {
-                "prompt_tokens": 3819,
+                "prompt_tokens": 3817,
                 "completion_tokens": 0
               }
             }
@@ -20303,7 +20306,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1179,
+              "chars": 1177,
               "seqs": [
                 1504,
                 1844,
@@ -20343,7 +20346,7 @@
                 1844
               ],
               "usage": {
-                "prompt_tokens": 3823,
+                "prompt_tokens": 3821,
                 "completion_tokens": 0
               }
             }
@@ -20449,7 +20452,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1016,
+              "chars": 1014,
               "seqs": [
                 1504,
                 2045,
@@ -20490,7 +20493,7 @@
                 2045
               ],
               "usage": {
-                "prompt_tokens": 4266,
+                "prompt_tokens": 4264,
                 "completion_tokens": 0
               }
             }
@@ -20719,7 +20722,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1091,
+              "chars": 1089,
               "seqs": [
                 2701,
                 2912
@@ -20761,7 +20764,7 @@
                 2701
               ],
               "usage": {
-                "prompt_tokens": 3462,
+                "prompt_tokens": 3460,
                 "completion_tokens": 0
               }
             }
@@ -20853,7 +20856,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1779,
+              "chars": 1777,
               "seqs": [
                 493,
                 2701,
@@ -20896,7 +20899,7 @@
                 2701
               ],
               "usage": {
-                "prompt_tokens": 4299,
+                "prompt_tokens": 4297,
                 "completion_tokens": 0
               }
             }
@@ -20996,7 +20999,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1283,
+              "chars": 1281,
               "seqs": [
                 980,
                 5786
@@ -21036,7 +21039,7 @@
                 980
               ],
               "usage": {
-                "prompt_tokens": 4921,
+                "prompt_tokens": 4919,
                 "completion_tokens": 0
               }
             }
@@ -21130,7 +21133,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1014,
+              "chars": 1012,
               "seqs": [
                 1504,
                 2912,
@@ -21174,7 +21177,7 @@
                 493
               ],
               "usage": {
-                "prompt_tokens": 4063,
+                "prompt_tokens": 4061,
                 "completion_tokens": 0
               }
             }
@@ -21284,7 +21287,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1212,
+              "chars": 1210,
               "seqs": [
                 1504,
                 3072,
@@ -21317,7 +21320,7 @@
               "dropped": [],
               "rank_seqs": [],
               "usage": {
-                "prompt_tokens": 4651,
+                "prompt_tokens": 4649,
                 "completion_tokens": 0
               }
             }
@@ -21425,7 +21428,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1173,
+              "chars": 1171,
               "seqs": [
                 1504,
                 3758,
@@ -21462,7 +21465,7 @@
                 3072
               ],
               "usage": {
-                "prompt_tokens": 4726,
+                "prompt_tokens": 4724,
                 "completion_tokens": 0
               }
             }
@@ -21571,7 +21574,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1767,
+              "chars": 1765,
               "seqs": [
                 2558,
                 3072,
@@ -21622,7 +21625,7 @@
                 493
               ],
               "usage": {
-                "prompt_tokens": 5663,
+                "prompt_tokens": 5661,
                 "completion_tokens": 0
               }
             }
@@ -21822,7 +21825,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 281,
+              "chars": 279,
               "seqs": [
                 179
               ]
@@ -21860,7 +21863,7 @@
                 179
               ],
               "usage": {
-                "prompt_tokens": 3090,
+                "prompt_tokens": 3088,
                 "completion_tokens": 0
               }
             }
@@ -21966,7 +21969,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1205,
+              "chars": 1203,
               "seqs": [
                 1504,
                 4922,
@@ -22005,7 +22008,7 @@
                 738
               ],
               "usage": {
-                "prompt_tokens": 3464,
+                "prompt_tokens": 3462,
                 "completion_tokens": 0
               }
             }
@@ -22115,7 +22118,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 955,
+              "chars": 953,
               "seqs": [
                 1504,
                 3758,
@@ -22213,7 +22216,7 @@
                 7136
               ],
               "usage": {
-                "prompt_tokens": 3957,
+                "prompt_tokens": 3955,
                 "completion_tokens": 0
               }
             }
@@ -22361,7 +22364,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1272,
+              "chars": 1270,
               "seqs": [
                 1473,
                 5168,
@@ -22414,7 +22417,7 @@
                 1473
               ],
               "usage": {
-                "prompt_tokens": 5056,
+                "prompt_tokens": 5054,
                 "completion_tokens": 0
               }
             }
@@ -22547,7 +22550,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 751,
+              "chars": 749,
               "seqs": [
                 1504,
                 3440,
@@ -22602,7 +22605,7 @@
                 6639
               ],
               "usage": {
-                "prompt_tokens": 3188,
+                "prompt_tokens": 3186,
                 "completion_tokens": 0
               }
             }
@@ -22909,7 +22912,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1255,
+              "chars": 1253,
               "seqs": [
                 351,
                 493
@@ -22951,7 +22954,7 @@
                 493
               ],
               "usage": {
-                "prompt_tokens": 5234,
+                "prompt_tokens": 5232,
                 "completion_tokens": 0
               }
             }
@@ -23057,7 +23060,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1331,
+              "chars": 1329,
               "seqs": [
                 493,
                 1504,
@@ -23106,7 +23109,7 @@
                 493
               ],
               "usage": {
-                "prompt_tokens": 5131,
+                "prompt_tokens": 5129,
                 "completion_tokens": 0
               }
             }
@@ -23205,7 +23208,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1682,
+              "chars": 1680,
               "seqs": [
                 493,
                 1600,
@@ -23260,7 +23263,7 @@
                 493
               ],
               "usage": {
-                "prompt_tokens": 5404,
+                "prompt_tokens": 5402,
                 "completion_tokens": 0
               }
             }
@@ -23361,7 +23364,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1515,
+              "chars": 1513,
               "seqs": [
                 1600,
                 2826,
@@ -23422,7 +23425,7 @@
                 493
               ],
               "usage": {
-                "prompt_tokens": 4492,
+                "prompt_tokens": 4490,
                 "completion_tokens": 0
               }
             }
@@ -23527,7 +23530,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1515,
+              "chars": 1513,
               "seqs": [
                 1600,
                 2826,
@@ -23594,7 +23597,7 @@
                 493
               ],
               "usage": {
-                "prompt_tokens": 5395,
+                "prompt_tokens": 5393,
                 "completion_tokens": 0
               }
             }
@@ -23703,7 +23706,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1399,
+              "chars": 1397,
               "seqs": [
                 1600,
                 2826,
@@ -23776,7 +23779,7 @@
                 493
               ],
               "usage": {
-                "prompt_tokens": 3919,
+                "prompt_tokens": 3917,
                 "completion_tokens": 0
               }
             }
@@ -25230,13 +25233,13 @@
         },
         "zero_chars": {
           "count": 2143,
-          "mean": 3978.8371441903873,
-          "p95": 5149
+          "mean": 3976.9603359776015,
+          "p95": 5147
         },
         "later_chars": {
           "count": 35,
-          "mean": 5809.285714285715,
-          "p95": 9814
+          "mean": 5807.571428571428,
+          "p95": 9812
         },
         "check_calls": 35,
         "tool_result_chars": 59556
@@ -25257,8 +25260,8 @@
         },
         "chars": {
           "count": 2143,
-          "mean": 950.2230517965469,
-          "p95": 1588
+          "mean": 948.3462435837611,
+          "p95": 1586
         },
         "noncarrier_chars": 24217,
         "occurrences": 5960,
@@ -25748,14 +25751,15 @@
         ]
       },
       "p9cost": {
+        "structural_bytes_max": 1258,
         "turn_chars": {
           "count": 2143,
-          "mean": 4073.7158189454035,
-          "p95": 5275
+          "mean": 4071.81101259916,
+          "p95": 5273
         },
         "manifest_bytes": {
           "count": 2143,
-          "mean": 1146.5296313579095,
+          "mean": 1146.5268315445637,
           "p95": 1232,
           "median": 1153,
           "max": 1378
@@ -25765,8 +25769,8 @@
             "mean": 3028.36024265049,
             "p95": 3906
           },
-          "mean_delta": 1045.3555762949136,
-          "p95_delta": 1369
+          "mean_delta": 1043.4507699486703,
+          "p95_delta": 1367
         }
       }
     },
@@ -35269,6 +35273,7 @@
         ]
       },
       "p9cost": {
+        "structural_bytes_max": 770,
         "turn_chars": {
           "count": 10523,
           "mean": 3064.140264183218,
@@ -35301,7 +35306,7 @@
       "simulated_end": 1798992000000,
       "archive": {
         "events": 42477,
-        "normalized_sha256": "85242c75b44aa9fe147756d8db632080a348643f8b906692727eb08754d26d91"
+        "normalized_sha256": "49a556a978a4b4d5716a55cc0b91cb9347e5379e2c9b05def7e83ba7c559fff1"
       },
       "consolidation": {
         "requests": 402,
@@ -35341,7 +35346,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1820,
+              "chars": 1818,
               "seqs": [
                 847,
                 970,
@@ -35456,7 +35461,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 655,
+              "chars": 653,
               "seqs": [
                 3513
               ]
@@ -35554,7 +35559,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1380,
+              "chars": 1378,
               "seqs": [
                 4844,
                 6418
@@ -35656,7 +35661,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1298,
+              "chars": 1296,
               "seqs": [
                 970,
                 1695,
@@ -35778,7 +35783,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1953,
+              "chars": 1951,
               "seqs": [
                 1695,
                 2786,
@@ -35901,7 +35906,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 2003,
+              "chars": 2001,
               "seqs": [
                 1938,
                 7386,
@@ -36026,7 +36031,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1384,
+              "chars": 1382,
               "seqs": [
                 9688,
                 16236,
@@ -36175,7 +36180,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1974,
+              "chars": 1972,
               "seqs": [
                 1695,
                 7386,
@@ -36292,7 +36297,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1494,
+              "chars": 1492,
               "seqs": [
                 6662,
                 7751,
@@ -36414,7 +36419,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1938,
+              "chars": 1936,
               "seqs": [
                 1695,
                 7386,
@@ -36559,7 +36564,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 2019,
+              "chars": 2017,
               "seqs": [
                 3513,
                 4844,
@@ -36662,7 +36667,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1970,
+              "chars": 1968,
               "seqs": [
                 7386,
                 17560,
@@ -36782,7 +36787,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1940,
+              "chars": 1938,
               "seqs": [
                 6418,
                 7386,
@@ -36921,7 +36926,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1948,
+              "chars": 1946,
               "seqs": [
                 8599,
                 17802,
@@ -37039,7 +37044,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1685,
+              "chars": 1683,
               "seqs": [
                 7386,
                 9744,
@@ -37161,7 +37166,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1128,
+              "chars": 1126,
               "seqs": [
                 11506,
                 12162,
@@ -37276,7 +37281,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 417,
+              "chars": 415,
               "seqs": [
                 5814,
                 21710,
@@ -37391,7 +37396,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 417,
+              "chars": 415,
               "seqs": [
                 5814,
                 21710,
@@ -37513,7 +37518,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1447,
+              "chars": 1445,
               "seqs": [
                 4360,
                 24237,
@@ -37635,7 +37640,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1442,
+              "chars": 1440,
               "seqs": [
                 13684,
                 17802,
@@ -37754,7 +37759,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1928,
+              "chars": 1926,
               "seqs": [
                 7386,
                 14169,
@@ -37873,7 +37878,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1928,
+              "chars": 1926,
               "seqs": [
                 7386,
                 14169,
@@ -37992,7 +37997,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1905,
+              "chars": 1903,
               "seqs": [
                 14169,
                 20709,
@@ -38183,7 +38188,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1980,
+              "chars": 1978,
               "seqs": [
                 847,
                 18528,
@@ -38294,7 +38299,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1913,
+              "chars": 1911,
               "seqs": [
                 2180,
                 13443,
@@ -38409,7 +38414,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1909,
+              "chars": 1907,
               "seqs": [
                 7386,
                 17802,
@@ -38556,7 +38561,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1926,
+              "chars": 1924,
               "seqs": [
                 6418,
                 7386,
@@ -38695,7 +38700,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1952,
+              "chars": 1950,
               "seqs": [
                 9688,
                 16471,
@@ -38876,7 +38881,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 656,
+              "chars": 654,
               "seqs": [
                 1695
               ]
@@ -38978,7 +38983,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1895,
+              "chars": 1893,
               "seqs": [
                 1695,
                 2180,
@@ -39085,7 +39090,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1933,
+              "chars": 1931,
               "seqs": [
                 2180,
                 7386,
@@ -39194,7 +39199,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1944,
+              "chars": 1942,
               "seqs": [
                 2180,
                 7872,
@@ -39305,7 +39310,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1944,
+              "chars": 1942,
               "seqs": [
                 2180,
                 7872,
@@ -39420,7 +39425,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1913,
+              "chars": 1911,
               "seqs": [
                 2180,
                 13443,
@@ -39540,7 +39545,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1913,
+              "chars": 1911,
               "seqs": [
                 2180,
                 13443,
@@ -43517,8 +43522,8 @@
         },
         "zero_chars": {
           "count": 10523,
-          "mean": 4335.720992112516,
-          "p95": 5513
+          "mean": 4333.7451297158605,
+          "p95": 5511
         },
         "later_chars": {
           "count": 0,
@@ -43544,8 +43549,8 @@
         },
         "chars": {
           "count": 10523,
-          "mean": 1290.517723082771,
-          "p95": 2027
+          "mean": 1288.541860686116,
+          "p95": 2025
         },
         "noncarrier_chars": 41863,
         "occurrences": 31081,
@@ -44034,14 +44039,15 @@
         ]
       },
       "p9cost": {
+        "structural_bytes_max": 1205,
         "turn_chars": {
           "count": 10523,
-          "mean": 4335.720992112516,
-          "p95": 5513
+          "mean": 4333.7451297158605,
+          "p95": 5511
         },
         "manifest_bytes": {
           "count": 10523,
-          "mean": 1167.2956381260096,
+          "mean": 1167.2937375273211,
           "p95": 1238,
           "median": 1169,
           "max": 1348
@@ -44051,8 +44057,8 @@
             "mean": 3045.203269029744,
             "p95": 3903
           },
-          "mean_delta": 1290.5177230827717,
-          "p95_delta": 1610
+          "mean_delta": 1288.5418606861163,
+          "p95_delta": 1608
         }
       }
     },
@@ -44066,7 +44072,7 @@
       "simulated_end": 1798992000000,
       "archive": {
         "events": 42477,
-        "normalized_sha256": "04c58138a31eb4ea834f2fdf9ab9b95d8221a581391ef30d845ccbb3e5329f45"
+        "normalized_sha256": "248ae74cd3e5d1d8c40b46a97118accc70d361a4c9bc3a5da739ea12aa22f3cc"
       },
       "consolidation": {
         "requests": 402,
@@ -44106,7 +44112,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1789,
+              "chars": 1787,
               "seqs": [
                 970,
                 1091,
@@ -44234,7 +44240,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 655,
+              "chars": 653,
               "seqs": [
                 3513
               ]
@@ -44332,7 +44338,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1380,
+              "chars": 1378,
               "seqs": [
                 4844,
                 6418
@@ -44434,7 +44440,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1625,
+              "chars": 1623,
               "seqs": [
                 6662,
                 6782,
@@ -44564,7 +44570,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1407,
+              "chars": 1405,
               "seqs": [
                 8970,
                 9084,
@@ -44695,7 +44701,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1381,
+              "chars": 1379,
               "seqs": [
                 13014,
                 13080,
@@ -44828,7 +44834,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1406,
+              "chars": 1404,
               "seqs": [
                 17091,
                 17197,
@@ -44985,7 +44991,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 2030,
+              "chars": 2028,
               "seqs": [
                 16954,
                 17075,
@@ -45115,7 +45121,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1996,
+              "chars": 1994,
               "seqs": [
                 17075,
                 17560,
@@ -45237,7 +45243,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1374,
+              "chars": 1372,
               "seqs": [
                 19432,
                 19499,
@@ -45395,7 +45401,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 2077,
+              "chars": 2075,
               "seqs": [
                 4844,
                 7386,
@@ -45493,7 +45499,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1963,
+              "chars": 1961,
               "seqs": [
                 21677,
                 21921,
@@ -45618,7 +45624,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 2016,
+              "chars": 2014,
               "seqs": [
                 20830,
                 21677,
@@ -45753,7 +45759,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1972,
+              "chars": 1970,
               "seqs": [
                 20103,
                 23010,
@@ -45866,7 +45872,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1998,
+              "chars": 1996,
               "seqs": [
                 23010,
                 23252,
@@ -45983,7 +45989,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1550,
+              "chars": 1548,
               "seqs": [
                 21677,
                 21710,
@@ -46111,7 +46117,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1921,
+              "chars": 1919,
               "seqs": [
                 27369,
                 27490,
@@ -46226,7 +46232,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1921,
+              "chars": 1919,
               "seqs": [
                 27369,
                 27490,
@@ -46348,7 +46354,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 2039,
+              "chars": 2037,
               "seqs": [
                 28944,
                 29064,
@@ -46465,7 +46471,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1942,
+              "chars": 1940,
               "seqs": [
                 32446,
                 32578,
@@ -46597,7 +46603,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 2014,
+              "chars": 2012,
               "seqs": [
                 26642,
                 32940,
@@ -46711,7 +46717,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 2014,
+              "chars": 2012,
               "seqs": [
                 26642,
                 32940,
@@ -46825,7 +46831,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1940,
+              "chars": 1938,
               "seqs": [
                 20709,
                 34029,
@@ -47020,7 +47026,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1998,
+              "chars": 1996,
               "seqs": [
                 18528,
                 31245,
@@ -47126,7 +47132,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 2007,
+              "chars": 2005,
               "seqs": [
                 33182,
                 34029,
@@ -47241,7 +47247,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1724,
+              "chars": 1722,
               "seqs": [
                 39965,
                 40086,
@@ -47401,7 +47407,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1956,
+              "chars": 1954,
               "seqs": [
                 21677,
                 24585,
@@ -47540,7 +47546,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1724,
+              "chars": 1722,
               "seqs": [
                 41660,
                 41781,
@@ -47729,7 +47735,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 656,
+              "chars": 654,
               "seqs": [
                 1695
               ]
@@ -47831,7 +47837,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1888,
+              "chars": 1886,
               "seqs": [
                 2180,
                 6418,
@@ -47938,7 +47944,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1978,
+              "chars": 1976,
               "seqs": [
                 7386,
                 7872,
@@ -48047,7 +48053,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1972,
+              "chars": 1970,
               "seqs": [
                 9688,
                 13443,
@@ -48158,7 +48164,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1908,
+              "chars": 1906,
               "seqs": [
                 17802,
                 18528,
@@ -48273,7 +48279,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1980,
+              "chars": 1978,
               "seqs": [
                 24585,
                 25795,
@@ -48393,7 +48399,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1968,
+              "chars": 1966,
               "seqs": [
                 32940,
                 33182,
@@ -52365,8 +52371,8 @@
         },
         "zero_chars": {
           "count": 10523,
-          "mean": 4852.518008172575,
-          "p95": 5865
+          "mean": 4850.542145775919,
+          "p95": 5863
         },
         "later_chars": {
           "count": 0,
@@ -52392,8 +52398,8 @@
         },
         "chars": {
           "count": 10523,
-          "mean": 1807.31473914283,
-          "p95": 2094
+          "mean": 1805.338876746175,
+          "p95": 2092
         },
         "noncarrier_chars": 53634,
         "occurrences": 31081,
@@ -52882,10 +52888,11 @@
         ]
       },
       "p9cost": {
+        "structural_bytes_max": 1274,
         "turn_chars": {
           "count": 10523,
-          "mean": 4852.518008172575,
-          "p95": 5865
+          "mean": 4850.542145775919,
+          "p95": 5863
         },
         "manifest_bytes": {
           "count": 10523,
@@ -52899,8 +52906,8 @@
             "mean": 3045.203269029744,
             "p95": 3903
           },
-          "mean_delta": 1807.3147391428306,
-          "p95_delta": 1962
+          "mean_delta": 1805.3388767461752,
+          "p95_delta": 1960
         }
       }
     },
@@ -52914,7 +52921,7 @@
       "simulated_end": 1798992000000,
       "archive": {
         "events": 42547,
-        "normalized_sha256": "26a5447330fa82ac6880909da4f79f8ca4ef3eb92f3e48925f80ceb4dc578427"
+        "normalized_sha256": "314274c6d29fa6bc26803bebf1d3626092b447fcb4e1d04632615a4a5d5c2bb8"
       },
       "consolidation": {
         "requests": 402,
@@ -52954,7 +52961,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1820,
+              "chars": 1818,
               "seqs": [
                 847,
                 970,
@@ -53077,7 +53084,7 @@
                 1091
               ],
               "usage": {
-                "prompt_tokens": 5024,
+                "prompt_tokens": 5022,
                 "completion_tokens": 0
               }
             }
@@ -53182,7 +53189,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 655,
+              "chars": 653,
               "seqs": [
                 3517
               ]
@@ -53220,7 +53227,7 @@
                 3517
               ],
               "usage": {
-                "prompt_tokens": 4221,
+                "prompt_tokens": 4219,
                 "completion_tokens": 0
               }
             }
@@ -53310,7 +53317,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1380,
+              "chars": 1378,
               "seqs": [
                 4850,
                 6424
@@ -53350,7 +53357,7 @@
                 6424
               ],
               "usage": {
-                "prompt_tokens": 3875,
+                "prompt_tokens": 3873,
                 "completion_tokens": 0
               }
             }
@@ -53443,7 +53450,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1298,
+              "chars": 1296,
               "seqs": [
                 970,
                 1697,
@@ -53617,7 +53624,7 @@
                 7113
               ],
               "usage": {
-                "prompt_tokens": 4681,
+                "prompt_tokens": 4679,
                 "completion_tokens": 0
               }
             }
@@ -53729,7 +53736,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1953,
+              "chars": 1951,
               "seqs": [
                 1697,
                 2790,
@@ -53904,7 +53911,7 @@
                 6386
               ],
               "usage": {
-                "prompt_tokens": 4346,
+                "prompt_tokens": 4344,
                 "completion_tokens": 0
               }
             }
@@ -54017,7 +54024,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 2003,
+              "chars": 2001,
               "seqs": [
                 1940,
                 7396,
@@ -54191,7 +54198,7 @@
                 2148
               ],
               "usage": {
-                "prompt_tokens": 5756,
+                "prompt_tokens": 5754,
                 "completion_tokens": 0
               }
             }
@@ -54306,7 +54313,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1384,
+              "chars": 1382,
               "seqs": [
                 9702,
                 16254,
@@ -54479,7 +54486,7 @@
                 3138
               ],
               "usage": {
-                "prompt_tokens": 4061,
+                "prompt_tokens": 4059,
                 "completion_tokens": 0
               }
             }
@@ -54623,7 +54630,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1974,
+              "chars": 1972,
               "seqs": [
                 1697,
                 7396,
@@ -54797,7 +54804,7 @@
                 17372
               ],
               "usage": {
-                "prompt_tokens": 5419,
+                "prompt_tokens": 5417,
                 "completion_tokens": 0
               }
             }
@@ -54904,7 +54911,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1494,
+              "chars": 1492,
               "seqs": [
                 6668,
                 7761,
@@ -54943,7 +54950,7 @@
                 7761
               ],
               "usage": {
-                "prompt_tokens": 4633,
+                "prompt_tokens": 4631,
                 "completion_tokens": 0
               }
             }
@@ -55055,7 +55062,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1938,
+              "chars": 1936,
               "seqs": [
                 1697,
                 7396,
@@ -55229,7 +55236,7 @@
                 6331
               ],
               "usage": {
-                "prompt_tokens": 5348,
+                "prompt_tokens": 5346,
                 "completion_tokens": 0
               }
             }
@@ -55364,7 +55371,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 2019,
+              "chars": 2017,
               "seqs": [
                 3517,
                 4850,
@@ -55408,7 +55415,7 @@
                 4850
               ],
               "usage": {
-                "prompt_tokens": 4140,
+                "prompt_tokens": 4138,
                 "completion_tokens": 0
               }
             }
@@ -55501,7 +55508,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1970,
+              "chars": 1968,
               "seqs": [
                 7396,
                 17580,
@@ -55537,7 +55544,7 @@
                 15219
               ],
               "usage": {
-                "prompt_tokens": 5049,
+                "prompt_tokens": 5047,
                 "completion_tokens": 0
               }
             }
@@ -55653,7 +55660,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1940,
+              "chars": 1938,
               "seqs": [
                 6424,
                 7396,
@@ -55702,7 +55709,7 @@
                 24619
               ],
               "usage": {
-                "prompt_tokens": 4833,
+                "prompt_tokens": 4831,
                 "completion_tokens": 0
               }
             }
@@ -55831,7 +55838,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1948,
+              "chars": 1946,
               "seqs": [
                 8611,
                 17826,
@@ -55871,7 +55878,7 @@
                 8611
               ],
               "usage": {
-                "prompt_tokens": 5688,
+                "prompt_tokens": 5686,
                 "completion_tokens": 0
               }
             }
@@ -55979,7 +55986,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1685,
+              "chars": 1683,
               "seqs": [
                 7396,
                 9758,
@@ -56020,7 +56027,7 @@
                 9758
               ],
               "usage": {
-                "prompt_tokens": 4723,
+                "prompt_tokens": 4721,
                 "completion_tokens": 0
               }
             }
@@ -56132,7 +56139,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1128,
+              "chars": 1126,
               "seqs": [
                 11520,
                 12176,
@@ -56305,7 +56312,7 @@
                 16003
               ],
               "usage": {
-                "prompt_tokens": 4091,
+                "prompt_tokens": 4089,
                 "completion_tokens": 0
               }
             }
@@ -56410,7 +56417,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 417,
+              "chars": 415,
               "seqs": [
                 5820,
                 21740,
@@ -56583,7 +56590,7 @@
                 605
               ],
               "usage": {
-                "prompt_tokens": 3508,
+                "prompt_tokens": 3506,
                 "completion_tokens": 0
               }
             }
@@ -56694,7 +56701,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 417,
+              "chars": 415,
               "seqs": [
                 5820,
                 21740,
@@ -56767,7 +56774,7 @@
                 11882
               ],
               "usage": {
-                "prompt_tokens": 3973,
+                "prompt_tokens": 3971,
                 "completion_tokens": 0
               }
             }
@@ -56885,7 +56892,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1447,
+              "chars": 1445,
               "seqs": [
                 4364,
                 24271,
@@ -57060,7 +57067,7 @@
                 23468
               ],
               "usage": {
-                "prompt_tokens": 5249,
+                "prompt_tokens": 5247,
                 "completion_tokens": 0
               }
             }
@@ -57172,7 +57179,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1442,
+              "chars": 1440,
               "seqs": [
                 13702,
                 17826,
@@ -57346,7 +57353,7 @@
                 30267
               ],
               "usage": {
-                "prompt_tokens": 4736,
+                "prompt_tokens": 4734,
                 "completion_tokens": 0
               }
             }
@@ -57455,7 +57462,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1928,
+              "chars": 1926,
               "seqs": [
                 7396,
                 14187,
@@ -57488,7 +57495,7 @@
               "dropped": [],
               "rank_seqs": [],
               "usage": {
-                "prompt_tokens": 4538,
+                "prompt_tokens": 4536,
                 "completion_tokens": 0
               }
             }
@@ -57597,7 +57604,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1928,
+              "chars": 1926,
               "seqs": [
                 7396,
                 14187,
@@ -57634,7 +57641,7 @@
                 14187
               ],
               "usage": {
-                "prompt_tokens": 4926,
+                "prompt_tokens": 4924,
                 "completion_tokens": 0
               }
             }
@@ -57743,7 +57750,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1905,
+              "chars": 1903,
               "seqs": [
                 14187,
                 20737,
@@ -57794,7 +57801,7 @@
                 2061
               ],
               "usage": {
-                "prompt_tokens": 4777,
+                "prompt_tokens": 4775,
                 "completion_tokens": 0
               }
             }
@@ -57990,7 +57997,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1980,
+              "chars": 1978,
               "seqs": [
                 847,
                 18554,
@@ -58030,7 +58037,7 @@
                 847
               ],
               "usage": {
-                "prompt_tokens": 4189,
+                "prompt_tokens": 4187,
                 "completion_tokens": 0
               }
             }
@@ -58131,7 +58138,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1913,
+              "chars": 1911,
               "seqs": [
                 2184,
                 13459,
@@ -58170,7 +58177,7 @@
                 3517
               ],
               "usage": {
-                "prompt_tokens": 5239,
+                "prompt_tokens": 5237,
                 "completion_tokens": 0
               }
             }
@@ -58281,7 +58288,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1909,
+              "chars": 1907,
               "seqs": [
                 7396,
                 17826,
@@ -58455,7 +58462,7 @@
                 14191
               ],
               "usage": {
-                "prompt_tokens": 4594,
+                "prompt_tokens": 4592,
                 "completion_tokens": 0
               }
             }
@@ -58592,7 +58599,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1926,
+              "chars": 1924,
               "seqs": [
                 6424,
                 7396,
@@ -58645,7 +58652,7 @@
                 24619
               ],
               "usage": {
-                "prompt_tokens": 5879,
+                "prompt_tokens": 5877,
                 "completion_tokens": 0
               }
             }
@@ -58779,7 +58786,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1952,
+              "chars": 1950,
               "seqs": [
                 9702,
                 16489,
@@ -58952,7 +58959,7 @@
                 35525
               ],
               "usage": {
-                "prompt_tokens": 4663,
+                "prompt_tokens": 4661,
                 "completion_tokens": 0
               }
             }
@@ -59133,7 +59140,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 656,
+              "chars": 654,
               "seqs": [
                 1697
               ]
@@ -59168,7 +59175,7 @@
                 2172
               ],
               "usage": {
-                "prompt_tokens": 4674,
+                "prompt_tokens": 4672,
                 "completion_tokens": 0
               }
             }
@@ -59262,7 +59269,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1895,
+              "chars": 1893,
               "seqs": [
                 1697,
                 2184,
@@ -59305,7 +59312,7 @@
                 2184
               ],
               "usage": {
-                "prompt_tokens": 5178,
+                "prompt_tokens": 5176,
                 "completion_tokens": 0
               }
             }
@@ -59402,7 +59409,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1933,
+              "chars": 1931,
               "seqs": [
                 2184,
                 7396,
@@ -59451,7 +59458,7 @@
                 7884
               ],
               "usage": {
-                "prompt_tokens": 4803,
+                "prompt_tokens": 4801,
                 "completion_tokens": 0
               }
             }
@@ -59550,7 +59557,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1944,
+              "chars": 1942,
               "seqs": [
                 2184,
                 7884,
@@ -59605,7 +59612,7 @@
                 7884
               ],
               "usage": {
-                "prompt_tokens": 4357,
+                "prompt_tokens": 4355,
                 "completion_tokens": 0
               }
             }
@@ -59706,7 +59713,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1944,
+              "chars": 1942,
               "seqs": [
                 2184,
                 7884,
@@ -59767,7 +59774,7 @@
                 17580
               ],
               "usage": {
-                "prompt_tokens": 4401,
+                "prompt_tokens": 4399,
                 "completion_tokens": 0
               }
             }
@@ -59872,7 +59879,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1913,
+              "chars": 1911,
               "seqs": [
                 2184,
                 13459,
@@ -59939,7 +59946,7 @@
                 17580
               ],
               "usage": {
-                "prompt_tokens": 4128,
+                "prompt_tokens": 4126,
                 "completion_tokens": 0
               }
             }
@@ -60049,7 +60056,7 @@
             {
               "name": "surfaced",
               "messages": 1,
-              "chars": 1913,
+              "chars": 1911,
               "seqs": [
                 2184,
                 13459,
@@ -60122,7 +60129,7 @@
                 17580
               ],
               "usage": {
-                "prompt_tokens": 4328,
+                "prompt_tokens": 4326,
                 "completion_tokens": 0
               }
             }
@@ -64093,13 +64100,13 @@
         },
         "zero_chars": {
           "count": 10523,
-          "mean": 4335.838068991732,
-          "p95": 5513
+          "mean": 4333.862206595078,
+          "p95": 5511
         },
         "later_chars": {
           "count": 35,
-          "mean": 6664.2,
-          "p95": 9708
+          "mean": 6662.2,
+          "p95": 9706
         },
         "check_calls": 35,
         "tool_result_chars": 69219
@@ -64120,8 +64127,8 @@
         },
         "chars": {
           "count": 10523,
-          "mean": 1290.5720802052647,
-          "p95": 2027
+          "mean": 1288.5962178086097,
+          "p95": 2025
         },
         "noncarrier_chars": 41863,
         "occurrences": 31081,
@@ -64610,14 +64617,15 @@
         ]
       },
       "p9cost": {
+        "structural_bytes_max": 1205,
         "turn_chars": {
           "count": 10523,
-          "mean": 4358.003516107574,
-          "p95": 5531
+          "mean": 4356.021001615509,
+          "p95": 5529
         },
         "manifest_bytes": {
           "count": 10523,
-          "mean": 1167.2963033355506,
+          "mean": 1167.2944027368621,
           "p95": 1238,
           "median": 1169,
           "max": 1348
@@ -64627,8 +64635,8 @@
             "mean": 3045.203269029744,
             "p95": 3903
           },
-          "mean_delta": 1312.8002470778297,
-          "p95_delta": 1628
+          "mean_delta": 1310.8177325857646,
+          "p95_delta": 1626
         }
       }
     }
