@@ -14,7 +14,7 @@ const distribution=values=>({count:values.length,mean:values.length?values.reduc
 const coverage=rows=>({total:rows.length,presented:rows.filter(r=>r.presented).length,rate:rows.length?rows.filter(r=>r.presented).length/rows.length:null});
 const includes=(section,seq)=>Array.isArray(section.seqs)?section.seqs.includes(seq):section.first_seq<=seq&&seq<=section.last_seq;
 export function measure(directory,{write=true}={}){
- const life=JSON.parse(readFileSync(join(directory,'life.json'),'utf8')),arm=life.evaluation.arm,days=life.evaluation.days;
+ const life=JSON.parse(readFileSync(join(directory,'life.json'),'utf8')),arm=life.evaluation.arm,days=life.evaluation.days,p9=arm.startsWith('E-');
  const {events:timeline,answers}=expand(life,days);
  const db=new DatabaseSync(join(directory,'data/archive.sqlite'),{readOnly:true});let events;
  try{db.exec('BEGIN');events=db.prepare('SELECT * FROM events ORDER BY seq').all().map(e=>({...e,meta:JSON.parse(e.meta)}));}finally{db.close();}
@@ -27,20 +27,23 @@ export function measure(directory,{write=true}={}){
   assert.ok(base,'Probe missing base presentation');
   const checks=events.filter(e=>e.kind==='checked'&&e.reply_to===h.id),references=new Set(requests.flatMap(p=>p.meta.sections.flatMap(s=>s.results?.flatMap(r=>r.checked?[r.checked]:[])??[])));
   const presentedChecks=checks.filter(c=>references.has(c.id));
+  const recalls=events.filter(e=>e.kind==='recalled'&&e.reply_to===h.id),recallRefs=new Set(requests.flatMap(p=>p.meta.sections.flatMap(s=>s.results?.flatMap(r=>r.recalled?[r.recalled]:[])??[]))),presentedRecalls=recalls.filter(c=>recallRefs.has(c.id));
   const lastRequest=requests.at(-1);
-  const out={id:probe.probe,heard_seq:h.seq,day:probe.day,tags:probe.tags,base_sections:base.meta.sections.map(s=>{const{heard,...rest}=s;return heard?{...rest,heard_seq:byId.get(heard).seq}:rest;}),checks:checks.map(c=>({seq:c.seq,...c.meta})),requests:requests.length,answers:[]};
+  const out={id:probe.probe,heard_seq:h.seq,day:probe.day,tags:probe.tags,base_sections:base.meta.sections.map(s=>{const{heard,...rest}=s;return heard?{...rest,heard_seq:byId.get(heard).seq}:rest;}),checks:checks.map(c=>({seq:c.seq,...c.meta})),requests:requests.length,...(p9?{recalls:recalls.map(c=>({seq:c.seq,...c.meta})),surfacing:base.meta.surfacing??null}:{}),answers:[]};
   for(const id of probe.targets){
-   const answer=answers[id],g=primary(answer),carriers=writings.filter(w=>w.seq>g.seq&&w.content.includes(answer.anchor));
+   const answer=answers[id],g=primary(answer),carriers=writings.filter(w=>w.seq>g.seq&&(!p9||w.seq<base.seq)&&w.content.includes(answer.anchor));
    const channels={};
    for(const section of base.meta.sections){
     if(section.first_seq===undefined&&!section.seqs)continue;
-    channels[section.name]=section.name==='writings'?carriers.some(w=>includes(section,w.seq)):includes(section,g.seq);
+    channels[section.name]=['writings','surfaced'].includes(section.name)?carriers.some(w=>includes(section,w.seq)):includes(section,g.seq);
    }
    const checked=presentedChecks.some(c=>c.meta.result_seqs.includes(g.seq)),checkWriting=presentedChecks.some(c=>carriers.some(w=>c.meta.result_seqs.includes(w.seq)));
-   const presented=Object.values(channels).some(Boolean)||checked||checkWriting;
+   const recallWriting=presentedRecalls.some(c=>carriers.some(w=>c.meta.result_seqs.includes(w.seq))),surfacedWriting=!!channels.surfaced;
+   const presented=Object.values(channels).some(Boolean)||checked||checkWriting||recallWriting;
    const check=checks[0],allTerms=lex(probe.query.query??'',true).slice(0,32),document=new Set(lex(g.content));
    const overlaps=allTerms.some(t=>document.has(t)),usedOverlap=(check?.meta.terms??[]).some(t=>document.has(t));
    const ranks=checks.flatMap(c=>{const i=(c.meta.rank_seqs??[]).indexOf(g.seq);return i<0?[]:[i+1];}),rank=ranks.length?Math.min(...ranks):null;
+   const recallRanks=recalls.flatMap(c=>carriers.flatMap(w=>{const i=(c.meta.rank_seqs??[]).indexOf(w.seq);return i<0?[]:[i+1];})),recallRank=recallRanks.length?Math.min(...recallRanks):null;
    let reason=null;
    if(!presented){
     const q=probe.query,oldTZ=process.env.TZ;process.env.TZ=life.time_zone;
@@ -61,19 +64,32 @@ export function measure(directory,{write=true}={}){
      reason=rank!==null&&rank<=40&&stoppedForChars?'budget_cut':check.meta.mode==='relevance'&&usedOverlap?'ranked_out':'unexplained';
     }
    }
+   if(p9&&!presented){
+    const surface=base.meta.surfacing,query=arm==='E-R'?(probe.query.query??''):probe.text,used=arm==='E-R'?(recalls[0]?.meta.terms??[]):surface?.terms??[];
+    const matching=carriers.filter(w=>arm==='E-R'&&recalls[0]?.meta.engine==='scan'?w.content.includes(query):used.some(term=>lex(w.content).includes(term)));
+    const excluded=surface?.excluded??[];
+    if(!carriers.length)reason='no_carrier';
+    else if(arm==='E-R'&&!recalls.length)reason='no_recall';
+    else if((used.length||recalls[0]?.meta.engine==='scan')&&!matching.length)reason='not_candidate';
+    else if(['no_terms','common'].includes(surface?.reason))reason='cue_'+surface.reason;
+    else if(matching.some(w=>excluded.some(e=>e.seq===w.seq&&e.why==='window')))reason='excluded_window';
+    else if(matching.some(w=>excluded.some(e=>e.seq===w.seq&&e.why==='budget')))reason='budget_skip';
+    else if(arm==='E-R'&&recallRank!==null&&recallRank<=10&&recalls[0].meta.result_seqs.reduce((n,s)=>n+bySeq.get(s).content.length,0)+matching[0].content.length>8000)reason='budget_cut';
+    else reason='ranked_out';
+   }
    const positions=[];let message=0;
    for(const section of lastRequest.meta.sections){
-    if(section.name==='writings'||section.name==='window'){
-     const source=(section.name==='writings'?writings:events.filter(e=>e.kind==='heard'||(e.class==='act'&&['said','silent'].includes(e.kind)))).filter(e=>includes(section,e.seq));
+    if(section.name==='writings'||section.name==='window'||section.name==='surfaced'){
+     const source=(['writings','surfaced'].includes(section.name)?writings:events.filter(e=>e.kind==='heard'||(e.class==='act'&&['said','silent'].includes(e.kind)))).filter(e=>includes(section,e.seq));
      source.forEach((e,i)=>{if(e.seq===g.seq||carriers.some(w=>w.seq===e.seq))positions.push([message+i,0,Math.max(0,e.content.indexOf(answer.anchor))]);});
     }else if(section.name==='step'){
-     section.results.forEach((ref,i)=>{const c=byId.get(ref.checked);if(!c)return;c.meta.result_seqs.forEach((seq,j)=>{if(seq===g.seq||carriers.some(w=>w.seq===seq))positions.push([message+i+1,j,Math.max(0,bySeq.get(seq).content.indexOf(answer.anchor))]);});});
+     section.results.forEach((ref,i)=>{const c=byId.get(ref.checked??ref.recalled);if(!c)return;c.meta.result_seqs.forEach((seq,j)=>{if(seq===g.seq||carriers.some(w=>w.seq===seq))positions.push([message+i+1,j,Math.max(0,bySeq.get(seq).content.indexOf(answer.anchor))]);});});
     }
     message+=section.messages;
    }
    positions.sort((a,b)=>a[0]-b[0]||a[1]-b[1]||a[2]-b[2]);
    const age=(probe.t-g.t_recorded)/86400000,row={target:id,seq:g.seq,age_days:age,age_group:age<1?'<1d':age<=7?'1-7d':age<=28?'7-28d':'>28d',channels,
-    first_position:positions[0]??null,window:!!channels.window,writing:!!channels.writings,check:checked,check_writing:checkWriting,presented,overlap:overlaps,used_overlap:usedOverlap,rank,reason};
+    first_position:positions[0]??null,window:!!channels.window,writing:!!channels.writings,check:checked,check_writing:checkWriting,...(p9?{recall_writing:recallWriting,surfaced_writing:surfacedWriting,recall_rank:recallRank,carrier_seqs:carriers.map(w=>w.seq)}:{}),presented,overlap:overlaps,used_overlap:usedOverlap,rank,reason};
    out.answers.push(row);if(!probe.tags.includes('sanity'))allAnswers.push({...row,probe:probe.probe,tags:probe.tags});
   }
   out.all_presented=out.answers.every(a=>a.presented);
@@ -82,7 +98,7 @@ export function measure(directory,{write=true}={}){
   if(probe.tags.includes('sanity'))sanity.push(out);else probeRows.push(out);
  }
  const reasons={};for(const a of allAnswers)if(a.reason)reasons[a.reason]=(reasons[a.reason]??0)+1;
- const writingRows=writings.map(w=>{const seen=ps.filter(p=>p.seq>w.seq&&p.meta.sections.some(s=>s.name==='writings'&&includes(s,w.seq))),viaCheck=ps.filter(p=>p.seq>w.seq&&p.meta.sections.some(s=>s.results?.some(r=>{const c=byId.get(r.checked);return c?.meta.result_seqs?.includes(w.seq);})));return{seq:w.seq,presentations:seen.length,first:seen[0]?.t_recorded??null,last:seen.at(-1)?.t_recorded??null,check_presentations:viaCheck.length};});
+ const writingRows=writings.map(w=>{const seen=ps.filter(p=>p.seq>w.seq&&p.meta.sections.some(s=>s.name==='writings'&&includes(s,w.seq))),viaCheck=ps.filter(p=>p.seq>w.seq&&p.meta.sections.some(s=>s.results?.some(r=>{const c=byId.get(r.checked);return c?.meta.result_seqs?.includes(w.seq);})));return{seq:w.seq,presentations:seen.length,first:seen[0]?.t_recorded??null,last:seen.at(-1)?.t_recorded??null,check_presentations:viaCheck.length,...(p9?{recall_presentations:ps.filter(p=>p.seq>w.seq&&p.meta.sections.some(s=>s.results?.some(r=>byId.get(r.recalled)?.meta.result_seqs?.includes(w.seq)))).length,surfaced_presentations:ps.filter(p=>p.seq>w.seq&&p.meta.sections.some(s=>s.name==='surfaced'&&s.seqs.includes(w.seq))).length}: {})};});
  let idle=0,pressure=0,lastTime;
  for(const e of events){
   if(e.kind==='heard'||(e.class==='act'&&['said','silent'].includes(e.kind)))lastTime=e.t_recorded;
@@ -95,10 +111,53 @@ export function measure(directory,{write=true}={}){
   archive:{events:events.length,normalized_sha256:createHash('sha256').update(JSON.stringify(normalized)).digest('hex')},
   consolidation:{requests:idle+pressure,idle,pressure,wrote:events.filter(e=>e.kind==='wrote').length,nonempty:writings.length},
   probes:probeRows,sanity,coverage:{overall:coverage(allAnswers),age:Object.fromEntries(['<1d','1-7d','7-28d','>28d'].map(k=>[k,coverage(allAnswers.filter(a=>a.age_group===k))])),
-   channels:Object.fromEntries(['window','writing','check','check_writing'].map(k=>[k,{total:allAnswers.length,presented:allAnswers.filter(a=>a[k]).length}])),tags:Object.fromEntries(['high_frequency','correction','expected_miss'].map(k=>[k,coverage(allAnswers.filter(a=>a.tags.includes(k)))]))},
-  corrections:probeRows.filter(p=>p.tags.includes('correction')).map(p=>({probe:p.id,all_presented:p.all_presented,chronological:p.chronological,presentation_order:p.presentation_order,versions:p.answers.map(a=>({target:a.target,rank:a.rank,presented:a.presented}))})),
+   channels:Object.fromEntries(['window','writing','check','check_writing',...(p9?['recall_writing','surfaced_writing']:[])].map(k=>[k,{total:allAnswers.length,presented:allAnswers.filter(a=>a[k]).length}])),tags:Object.fromEntries(['high_frequency','correction','expected_miss'].map(k=>[k,coverage(allAnswers.filter(a=>a.tags.includes(k)))]))},
+  corrections:probeRows.filter(p=>p.tags.includes('correction')).map(p=>({probe:p.id,all_presented:p.all_presented,chronological:p.chronological,presentation_order:p.presentation_order,versions:p.answers.map(a=>({target:a.target,rank:a.rank,presented:a.presented,...(p9?{recall_rank:a.recall_rank,surfaced_writing:a.surfaced_writing,recall_writing:a.recall_writing}: {})}))})),
   retrieval_gap:{total:allAnswers.length,overlap:allAnswers.filter(a=>a.overlap).length,used_overlap:allAnswers.filter(a=>a.used_overlap).length,ranked_100:allAnswers.filter(a=>a.rank!==null).length,check_presented_outside_top100:allAnswers.filter(a=>a.check&&a.rank===null).length,presented_without_check:allAnswers.filter(a=>a.presented&&!a.check).length,presented:allAnswers.filter(a=>a.presented).length},
-  reasons:{...reasons,unexplained:reasons.unexplained??0},writings:{rows:writingRows,never_in_writings:writingRows.filter(w=>!w.presentations).length,never_presented:writingRows.filter(w=>!w.presentations&&!w.check_presentations).length,never_presented_rate:writingRows.length?writingRows.filter(w=>!w.presentations&&!w.check_presentations).length/writingRows.length:null,via_check_rate:writingRows.length?writingRows.filter(w=>w.check_presentations).length/writingRows.length:null,via_check:writingRows.filter(w=>w.check_presentations).length},
+  reasons:{...reasons,unexplained:reasons.unexplained??0},writings:{rows:writingRows,never_in_writings:writingRows.filter(w=>!w.presentations).length,never_presented:writingRows.filter(w=>!w.presentations&&!w.check_presentations&&(!p9||!w.recall_presentations&&!w.surfaced_presentations)).length,never_presented_rate:writingRows.length?writingRows.filter(w=>!w.presentations&&!w.check_presentations&&(!p9||!w.recall_presentations&&!w.surfaced_presentations)).length/writingRows.length:null,via_check_rate:writingRows.length?writingRows.filter(w=>w.check_presentations).length/writingRows.length:null,via_check:writingRows.filter(w=>w.check_presentations).length},
   cost:{requests:ps.length,turn_requests:distribution(heard.map(h=>ps.filter(p=>p.reply_to===h.id).length)),zero_chars:distribution(ps.filter(p=>p.meta.step===0).map(p=>p.meta.total.chars)),later_chars:distribution(ps.filter(p=>p.meta.step>0).map(p=>p.meta.total.chars)),check_calls:events.filter(e=>e.kind==='checked').length,tool_result_chars:ps.reduce((n,p)=>n+p.meta.sections.filter(s=>s.name==='step').reduce((sum,s)=>sum+s.chars-(s.assistant_text?.length??0),0),0)}};
+ if(p9)Object.assign(result,p9Statistics({events,heard,writings,ps,probeRows,sanity,timeline,bySeq,byId,life}));
  if(write)writeFileSync(join(directory,'metrics.json'),JSON.stringify(result,null,2)+'\n');return result;
+}
+
+// Read-only independent accounting from recorded source references, never reruns
+// the production selector. Repeated continuation manifests count once per turn.
+function p9Statistics({events,heard,writings,ps,probeRows,sanity,timeline,bySeq,byId,life}){
+ const bases=ps.filter(p=>p.meta.step===0),probes=[...probeRows,...sanity];
+ const probeExcerpts=timeline.filter(e=>e.type==='probe').map(e=>{const h=heard.find(h=>h.t_recorded===e.t&&h.content===e.text);return h?{seq:h.seq,text:[...h.content].slice(0,32).join('')}:null;}).filter(Boolean);
+ const seen=new Map(),ages={'<1d':0,'1-7d':0,'7-28d':0,'>28d':0};let selected=0,echo=0,repeated=0,foreground=0,window=0,noncarrier=0;
+ let previous=new Set();const chars=[],turns={probe:{all:0,surfaced:0},nonprobe:{all:0,surfaced:0}},carrierCandidates={total:0,with_carrier:0,candidate:0,selected:0,omitted:{}};
+ for(const p of bases){const s=p.meta.sections.find(s=>s.name==='surfaced'),seqs=s?.seqs??[],h=byId.get(p.reply_to),probe=probes.find(v=>v.heard_seq===h.seq),kind=probe?'probe':'nonprobe';
+  turns[kind].all++;if(seqs.length)turns[kind].surfaced++;chars.push(s?.chars??0);
+  if(seqs.some(n=>previous.has(n)))repeated++;
+  const carrierSeqs=new Set(probe?.answers.flatMap(a=>a.carrier_seqs)??[]);
+  if(probe)for(const a of probe.answers){
+   const eligibleCarriers=a.carrier_seqs.filter(n=>n<h.seq);
+   carrierCandidates.total++;if(eligibleCarriers.length)carrierCandidates.with_carrier++;
+   if(eligibleCarriers.some(n=>p.meta.surfacing?.candidates.includes(n)))carrierCandidates.candidate++;
+   if(a.surfaced_writing)carrierCandidates.selected++;
+   else if(p.meta.surfacing){
+    const m=p.meta.surfacing,matching=eligibleCarriers.filter(n=>m.terms.some(t=>lex(bySeq.get(n).content).includes(t))),excluded=m.excluded.filter(e=>eligibleCarriers.includes(e.seq));
+    const reason=!eligibleCarriers.length?'no_carrier':m.terms.length&&!matching.length?'not_candidate':m.reason==='no_terms'?'cue_no_terms':m.reason==='common'?'cue_common':excluded.some(e=>e.why==='foreground')?'foreground':excluded.some(e=>e.why==='window')?'excluded_window':excluded.some(e=>e.why==='budget')?'budget_skip':['index_building','index_unavailable','error'].includes(m.reason)?m.reason:'ranked_out';
+    a.surfacing_reason=reason;carrierCandidates.omitted[reason]=(carrierCandidates.omitted[reason]??0)+1;
+   }
+  }
+  for(const n of seqs){const w=bySeq.get(n);assert.ok(w&&w.kind==='wrote'&&w.content&&w.scene===p.scene&&w.branch===p.branch);seen.set(n,(seen.get(n)??0)+1);selected++;
+   const age=(p.t_recorded-w.t_recorded)/86400000;ages[age<1?'<1d':age<=7?'1-7d':age<=28?'7-28d':'>28d']++;
+   if(probeExcerpts.some(e=>e.seq<w.seq&&w.content.includes(e.text)))echo++;
+   if(probe&&!carrierSeqs.has(n))noncarrier+=w.content.length;
+   if(p.meta.sections.some(s=>s.name==='writings'&&includes(s,n)))foreground++;
+   const range=p.meta.sections.find(s=>s.name==='window'),m=w.meta.material;
+   if(range&&m&&m.from_seq<=m.through_seq&&range.first_seq<=m.from_seq&&m.through_seq<=range.last_seq)window++;
+  }previous=new Set(seqs);
+ }
+ for(const v of Object.values(turns))v.rate=v.all?v.surfaced/v.all:0;
+ const frequency=[...seen].sort((a,b)=>b[1]-a[1]||a[0]-b[0]),recalls=events.filter(e=>e.kind==='recalled'),fallbacks={};
+ for(const r of recalls)if(r.meta.fallback)fallbacks[r.meta.fallback]=(fallbacks[r.meta.fallback]??0)+1;
+ const structuralBytes=bases.map(p=>{const meta=structuredClone(p.meta);if(meta.surfacing)for(const key of ['terms','dropped'])meta.surfacing[key]=meta.surfacing[key].map(()=>'');return Buffer.byteLength(JSON.stringify(meta));});
+ const manifestBytes=bases.map(p=>Buffer.byteLength(JSON.stringify(p.meta))),perTurn=heard.map(h=>ps.filter(p=>p.reply_to===h.id).reduce((n,p)=>n+p.meta.total.chars,0));
+ carrierCandidates.candidate_rate_over_carriers=carrierCandidates.with_carrier?carrierCandidates.candidate/carrierCandidates.with_carrier:0;carrierCandidates.selected_rate_over_carriers=carrierCandidates.with_carrier?carrierCandidates.selected/carrierCandidates.with_carrier:0;carrierCandidates.selected_given_candidate=carrierCandidates.candidate?carrierCandidates.selected/carrierCandidates.candidate:0;
+ return {surfacing:{enabled:bases.some(p=>p.meta.surfacing),turns,chars:distribution(chars),noncarrier_chars:noncarrier,occurrences:selected,unique:seen.size,top5:frequency.slice(0,5),top5_share:selected?frequency.slice(0,5).reduce((n,e)=>n+e[1],0)/selected:0,max_repeats:frequency[0]?.[1]??0,adjacent_repeated_turns:repeated,adjacent_repetition_rate:bases.length>1?repeated/(bases.length-1):0,ages,echo:{occurrences:echo,ratio:selected?echo/selected:0},duplicates:{foreground,window},carrier_candidates:carrierCandidates},
+ recall:{calls:recalls.length,results:distribution(recalls.map(r=>r.meta.result_seqs.length)),chars:distribution(recalls.map(r=>r.meta.result_seqs.reduce((n,s)=>n+bySeq.get(s).content.length,0))),fallbacks,ranks:probeRows.flatMap(p=>p.answers.map(a=>({probe:p.id,target:a.target,rank:a.recall_rank,carriers:a.carrier_seqs.map(seq=>({seq,ranks:p.recalls.map(c=>{const n=c.rank_seqs.indexOf(seq);return n<0?null:n+1;})}))})))},
+ p9cost:{structural_bytes_max:Math.max(0,...structuralBytes),turn_chars:distribution(perTurn),manifest_bytes:{...distribution(manifestBytes),median:quantile(manifestBytes,.5),max:manifestBytes.length?Math.max(...manifestBytes):0}}};
 }

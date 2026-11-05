@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { snapshotPaths } from './snapshots.js';
 import type { ModelConfig } from './model.js';
 export interface Config extends ModelConfig {
+  recall?: boolean; surfacing?: 'off' | 'relevance' | 'recency';
   dataDir: string; persona: string; host: string; port: number; contextEvents: number;
   idleTimeoutMs: number; maxDurationMs: number;
   snapshotDir?: string; snapshotIntervalMs?: number;
@@ -18,6 +19,9 @@ export function loadConfig(): Config {
     if (!Number.isSafeInteger(value) || value < 1 || value > max) throw new Error('Invalid configuration: ' + name);
     return value;
   };
+  const recall = process.env.YUVI_RECALL ?? 'on', surfacing = process.env.YUVI_SURFACING ?? 'off';
+  if (!['on','off'].includes(recall)) throw Error('Invalid configuration: YUVI_RECALL');
+  if (!['off','relevance','recency'].includes(surfacing)) throw Error('Invalid configuration: YUVI_SURFACING');
   const baseUrl = required('YUVI_MODEL_BASE_URL');
   try {
     const url = new URL(baseUrl);
@@ -34,7 +38,7 @@ export function loadConfig(): Config {
   if (!host.trim()) throw new Error('Invalid configuration: YUVI_HOST');
   const ownerName = process.env.YUVI_OWNER_NAME ?? '负责人';
   if (!ownerName.trim()) throw new Error('Invalid configuration: YUVI_OWNER_NAME');
-  return { baseUrl, apiKey, model, dataDir, persona, ownerName,
+  return { recall: recall === 'on', surfacing: surfacing as Config['surfacing'], baseUrl, apiKey, model, dataDir, persona, ownerName,
     writingChars: integer('YUVI_CONTEXT_WRITING_CHARS', 16000, 2_147_483_647),
     consolidationMaxTokens: integer('YUVI_CONSOLIDATION_MAX_TOKENS', 4000, 2_147_483_647),
     consolidationIdleMs: integer('YUVI_CONSOLIDATION_IDLE_MS', 3_600_000, 2_147_483_647),

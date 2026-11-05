@@ -4,7 +4,7 @@ import { existsSync, rmSync, statSync, renameSync, openSync, closeSync, chmodSyn
 import { join } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import type { CheckResult } from './context.js';
-import { CURRENT_SCOPE, type Event } from './archive.js';
+import { CURRENT_SCOPE, ArchiveSourceFailure, type Event } from './archive.js';
 
 type Scope = { scene: string; branch: string };
 export const TOKENIZER = 'p8-grams-1';
@@ -36,6 +36,7 @@ export interface SearchMeta {
   terms: string[]; dropped: string[]; fallback?: 'no_terms' | 'index_building' | 'index_unavailable';
   rank_seqs: number[]; terms_limited?: boolean;
 }
+export interface Surfacing { strategy: 'relevance' | 'recency'; terms: string[]; dropped: string[]; candidates: number[]; excluded: { seq: number; why: 'foreground' | 'window' | 'budget' }[]; reason?: 'no_terms' | 'common' | 'no_candidates' | 'all_excluded' | 'index_building' | 'index_unavailable' | 'error'; }
 export interface IndexSearch { results: Event[]; total: number; meta: SearchMeta; }
 function boundary(source: DatabaseSync, scope: Scope, nul: boolean, through = Infinity) {
   const params = [scope.scene, scope.branch];
@@ -168,25 +169,74 @@ export class ArchiveIndex {
     try {
       if ((statSync(this.file).mode & 0o222) === 0) throw Error();
       const m = metadata(this.db);
-      const lag = this.source.prepare(`SELECT seq FROM events NOT INDEXED WHERE seq>? AND scene=? AND branch=? AND ${eligible(truncates(this.source))} ORDER BY seq LIMIT 2001`).all(m.through_seq, this.scope.scene, this.scope.branch);
+      let lag;
+      try { lag = this.source.prepare(`SELECT seq FROM events NOT INDEXED WHERE seq>? AND scene=? AND branch=? AND ${eligible(truncates(this.source))} ORDER BY seq LIMIT 2001`).all(m.through_seq, this.scope.scene, this.scope.branch); }
+      catch { throw new ArchiveSourceFailure(); }
       if (lag.length > 2000) { this.rebuild(); return; }
       if (lag.length) appendBatch(this.db, this.source, this.scope, 2000);
-    } catch (e) { this.fail(e); }
+    } catch (e) { if (e instanceof ArchiveSourceFailure) throw e; this.fail(e); }
   }
-  search(query: string, from: number, to: number, kinds?: string[]): IndexSearch | { fallback: 'index_building' | 'index_unavailable' } {
-    this.catchUp();
-    if (!this.db || this.state !== 'ready') return { fallback: this.state === 'building' ? 'index_building' : 'index_unavailable' };
-    try {
+  private words(query: string, cap = 50000) {
       const all = terms(query, true), limited = all.length > 32, first = all.slice(0, 32);
       const frequencies = first.map((term, i) => ({ term, i, n: Number(this.db!.prepare('SELECT doc FROM vocab WHERE term=?').get(term)?.doc ?? 0) })).sort((a, b) => a.n - b.n || a.i - b.i);
       let used = frequencies, dropped: string[] = [], sum = 0;
       if (query) {
         used = [];
-        for (const f of frequencies) { if (!used.length || sum + f.n <= 50000) { used.push(f); sum += f.n; } else dropped.push(f.term); }
+        for (const f of frequencies) { if (!used.length || sum + f.n <= cap) { used.push(f); sum += f.n; } else dropped.push(f.term); }
       }
-      const common = !!used.length && used[0].n > 50000;
+      const common = !!used.length && used[0].n > cap;
       if (common) { dropped = [...used.slice(1).map(f => f.term), ...dropped]; used = used.slice(0, 1); }
-      const words = used.map(f => f.term), relevance = !!query && !common;
+
+    return { words: used.map(f => f.term), dropped, common, limited, used };
+  }
+  private readSources(seqs: number[]): Event[] {
+    let find;
+    try { find = this.source.prepare('SELECT * FROM events WHERE seq=? AND scene=? AND branch=?'); } catch { throw new ArchiveSourceFailure(); }
+    return seqs.map(seq => {
+      let row: Record<string, unknown> | undefined;
+      try { row = find.get(seq, this.scope.scene, this.scope.branch); } catch { throw new ArchiveSourceFailure(); }
+      const doc = this.db!.prepare('SELECT kind,t_recorded,chars,digest FROM docs WHERE seq=?').get(seq);
+      if (!row || !doc || !((row.class === 'experience' && row.kind === 'heard') || (row.class === 'act' && ['said','silent'].includes(row.kind as string)) || (row.class === 'inner' && row.kind === 'wrote' && (row.content as string).length > 0)) || row.kind !== doc.kind || row.t_recorded !== doc.t_recorded || (row.content as string).length !== doc.chars || digest(row.content as string) !== doc.digest)
+        throw Object.assign(Error('Index source mismatch.'), { errcode: 11 });
+      return decode(row);
+    });
+  }
+  surface(query: string, through: number, foreground: Event[], window: Event[], strategy: Surfacing['strategy'], cap = 50000): { surfaced: Event[]; surfacing: Surfacing } {
+    const m: Surfacing = { strategy, terms: [], dropped: [], candidates: [], excluded: [] };
+    const none = (reason: NonNullable<Surfacing['reason']>) => ({ surfaced: [], surfacing: { ...m, reason } });
+    try {
+      if (!terms(query, true).length) return none('no_terms');
+      this.catchUp();
+      if (!this.db || this.state !== 'ready') return none(this.state === 'building' ? 'index_building' : 'index_unavailable');
+      const { words, dropped, common } = this.words(query, cap); m.terms = words; m.dropped = dropped;
+      if (common) return none('common');
+      const rows = this.db.prepare(`SELECT f.rowid FROM terms f JOIN docs d ON d.seq=f.rowid WHERE terms MATCH ? AND d.kind='wrote' AND f.rowid<? ORDER BY ${strategy === 'relevance' ? 'f.rank,' : ''}f.rowid DESC LIMIT 20`).all(match(words), through);
+      const candidates = this.readSources(rows.map(r => Number(r.rowid)));
+      if (candidates.some(e => e.class !== 'inner' || e.kind !== 'wrote' || !e.content)) throw Object.assign(Error(), { errcode: 11 });
+      m.candidates = candidates.map(e => e.seq);
+      if (!candidates.length) return none('no_candidates');
+      const selected: Event[] = []; let chars = 0;
+      for (const e of candidates) {
+        const material = e.meta.material as { from_seq?: number; through_seq?: number } | undefined;
+        const why = foreground.some(w => w.seq === e.seq) ? 'foreground' :
+          window.length && material && typeof material.from_seq === 'number' && typeof material.through_seq === 'number' && material.from_seq <= material.through_seq && window[0].seq <= material.from_seq && material.through_seq <= window.at(-1)!.seq ? 'window' :
+          chars + e.content.length > 2000 ? 'budget' : undefined;
+        if (why) m.excluded.push({ seq: e.seq, why });
+        else { selected.push(e); chars += e.content.length; if (selected.length === 3) break; }
+      }
+      return selected.length ? { surfaced: selected.sort((a,b) => a.seq-b.seq), surfacing: m } : none('all_excluded');
+    } catch (e) {
+      if (e instanceof ArchiveSourceFailure) throw e;
+      if ([11,26].includes(((e as { errcode?: number }).errcode ?? 0) & 255)) { this.fail(e); return none(this.state === 'building' ? 'index_building' : 'index_unavailable'); }
+      console.error('Surfacing failed; continuing without surfaced text.'); return none('error');
+    }
+  }
+  search(query: string, from: number, to: number, kinds?: string[], limits: { count: number; chars: number } = { count: 40, chars: 16000 }): IndexSearch | { fallback: 'index_building' | 'index_unavailable' } {
+    this.catchUp();
+    if (!this.db || this.state !== 'ready') return { fallback: this.state === 'building' ? 'index_building' : 'index_unavailable' };
+    try {
+      const { words, dropped, common, limited, used } = this.words(query);
+      const relevance = !!query && !common;
       const where = `d.t_recorded>=? AND d.t_recorded<=?${kinds ? ` AND d.kind IN (${kinds.map(() => '?').join(',')})` : ''}`;
       const params = [from, to, ...(kinds ?? [])];
       const table = query ? 'terms f JOIN docs d ON d.seq=f.rowid' : 'docs d';
@@ -196,6 +246,15 @@ export class ArchiveIndex {
       const total = unrestricted && query ? (used.length === 1 ? used[0].n : Number(this.db.prepare('SELECT count(*) n FROM terms WHERE terms MATCH ?').get(match(words))!.n)) :
         Number(this.db.prepare(`SELECT count(*) n FROM ${table} WHERE ${clause}`).get(...args)!.n);
       const ranked = this.db.prepare(`SELECT d.seq,d.chars FROM ${table} WHERE ${clause} ORDER BY ${query ? (relevance ? 'f.rank,f.rowid DESC' : 'f.rowid DESC') : 'd.seq DESC'} LIMIT 100`).all(...args);
+      // Ranks are observable too: validate all bounded references, including
+      // rows omitted by the result budget, before returning any index metadata.
+      if (ranked.length) {
+        let visible;
+        try { visible = this.source.prepare(`SELECT count(*) n FROM events WHERE seq IN (${ranked.map(() => '?').join(',')}) AND scene=? AND branch=? AND ${eligible(truncates(this.source))} AND t_recorded>=? AND t_recorded<=?${kinds ? ` AND kind IN (${kinds.map(() => '?').join(',')})` : ''}`)
+          .get(...ranked.map(r => Number(r.seq)), this.scope.scene, this.scope.branch, from, to, ...(kinds ?? []))!.n; }
+        catch { throw new ArchiveSourceFailure(); }
+        if (visible !== ranked.length) throw Object.assign(Error('Index source mismatch.'), { errcode: 11 });
+      }
       const picked: number[] = [], lengths = new Map(ranked.map(r => [Number(r.seq), Number(r.chars)])); let chars = 0;
       const add = (seq: number, length: number) => { picked.push(seq); chars += length; };
       if (ranked.length) {
@@ -205,34 +264,27 @@ export class ArchiveIndex {
           if (!picked.includes(Number(newest.seq))) add(Number(newest.seq), Number(newest.chars));
         }
         for (const r of ranked) { const seq = Number(r.seq); if (picked.includes(seq)) continue;
-          if (picked.length === 40 || chars + Number(r.chars) > 16000) break; add(seq, lengths.get(seq)!); }
+          if (picked.length === limits.count || chars + Number(r.chars) > limits.chars) break; add(seq, lengths.get(seq)!); }
       }
-      const get = this.source.prepare('SELECT * FROM events WHERE seq=? AND scene=? AND branch=?');
-      const sourceMeta = this.db.prepare('SELECT kind,t_recorded,chars,digest FROM docs WHERE seq=?');
-      const results = picked.sort((a, b) => a - b).map(seq => {
-        const row = get.get(seq, this.scope.scene, this.scope.branch), doc = sourceMeta.get(seq);
-        if (!row || !doc || !((row.class === 'experience' && row.kind === 'heard') || (row.class === 'act' && ['said', 'silent'].includes(row.kind as string)) || (row.class === 'inner' && row.kind === 'wrote' && (row.content as string).length > 0)) || row.kind !== doc.kind || row.t_recorded !== doc.t_recorded || (row.content as string).length !== doc.chars || digest(row.content as string) !== doc.digest)
-          throw Object.assign(new Error('Index source mismatch.'), { errcode: 11 });
-        return decode(row);
-      });
+      const results = this.readSources(picked.sort((a,b) => a-b));
       return { results, total, meta: { rules: 'p8', engine: 'index', mode: relevance ? 'relevance' : 'recent', terms: words, dropped,
         rank_seqs: ranked.map(r => Number(r.seq)), ...(limited ? { terms_limited: true } : {}) } };
-    } catch (e) { this.fail(e); return { fallback: (this.state as string) === 'unavailable' ? 'index_unavailable' : 'index_building' }; }
+    } catch (e) { if (e instanceof ArchiveSourceFailure) throw e; this.fail(e); return { fallback: (this.state as string) === 'unavailable' ? 'index_unavailable' : 'index_building' }; }
   }
-  scan(raw: string, owner: string, fallback: NonNullable<SearchMeta['fallback']>): Promise<CheckResult> {
+  scan(raw: string, owner: string, fallback: NonNullable<SearchMeta['fallback']>, tool: 'check' | 'recall' = 'check'): Promise<CheckResult> {
     if (!this.scanWorker) {
       const worker = this.scanWorker = new Worker(new URL('./archive-index-worker.js', import.meta.url), { workerData: { mode: 'scan', directory: this.directory, scope: this.scope } });
       worker.on('message', ({ id, result, error }) => {
         if (this.closed) return;
         const pending = this.scans.get(id); this.scans.delete(id);
-        if (error) pending?.reject(new Error('Archive scan failed.')); else pending?.resolve(result);
+        if (error) pending?.reject(new ArchiveSourceFailure(true)); else pending?.resolve(result);
       });
       const failed = () => { if (!this.closed) for (const p of this.scans.values()) p.reject(new Error('Archive scan failed.')); this.scans.clear(); };
       worker.on('error', failed);
       worker.once('exit', () => { if (this.scanWorker === worker) { this.scanWorker = undefined; failed(); } });
     }
     const id = ++this.scanId, through = Number(this.source.prepare('SELECT max(seq) n FROM events').get()!.n ?? 0);
-    return new Promise((resolve, reject) => { this.scans.set(id, { resolve, reject }); this.scanWorker!.postMessage({ id, raw, owner, fallback, through }); });
+    return new Promise((resolve, reject) => { this.scans.set(id, { resolve, reject }); this.scanWorker!.postMessage({ id, raw, owner, fallback, through, tool }); });
   }
   async ready() { if (this.worker) await new Promise<void>(resolve => this.worker!.once('exit', () => resolve())); }
   async close() { this.closed = true; this.scans.clear(); this.db?.close(); this.db = undefined; await Promise.all([this.worker?.terminate(), this.scanWorker?.terminate()]); }

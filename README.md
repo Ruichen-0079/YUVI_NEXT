@@ -4,7 +4,7 @@ YUVI 的第二代（V2）。一个持续运行的人工个体：发生的事按�
 
 - 给参与开发的代理：先读 [`AGENTS.md`](AGENTS.md)。
 - 开发周期：[`docs/ROADMAP.md`](docs/ROADMAP.md)
-- 工作包：[`docs/P1.md`](docs/P1.md)、[`docs/P2.md`](docs/P2.md)、[`docs/P3.md`](docs/P3.md)、[`docs/P4.md`](docs/P4.md)、[`docs/P6.md`](docs/P6.md)（WP-A）、[`docs/P7.md`](docs/P7.md)（WP-B）、[`docs/P8.md`](docs/P8.md)（WP-C + WP-D，待独立验收）
+- 工作包：[`docs/P1.md`](docs/P1.md)、[`docs/P2.md`](docs/P2.md)、[`docs/P3.md`](docs/P3.md)、[`docs/P4.md`](docs/P4.md)、[`docs/P6.md`](docs/P6.md)（WP-A）、[`docs/P7.md`](docs/P7.md)（WP-B）、[`docs/P8.md`](docs/P8.md)（WP-C + WP-D）、[`docs/P9.md`](docs/P9.md)（WP-E）
 - 事件与用语：[`docs/TERMS.md`](docs/TERMS.md)
 - 记忆架构研究与依赖选型：[`docs/research/memory/`](docs/research/memory/README.md)
 - V1 知识归档（历史、子系统的真实能力、工程教训、继承分类、来源）：[`docs/history/v1/`](docs/history/v1/README.md)
@@ -225,3 +225,31 @@ npm run eval -- regress
 baseline 运行完整九周的八种生活/臂/写作组合，生成基线 JSON 与报告；regress 重跑并逐字节比较冻结 JSON。墙钟与文件大小另存 timing.json，不参与确定性比较。数据保留在忽略的独立评测目录中。结果只能说明检索与呈现，不能证明假模型理解或使用了记忆。
 
 P8 的[九周基线报告](docs/notes/P8-baseline.md)、[确定性结果](docs/notes/P8-baseline.json)、[完整自查](docs/notes/P8-self-check.md)与[原始证据](docs/notes/p8-evidence/2026-11-03/README.md)已提交。普通/高干扰生活的 A2 呈现分别为37/38、28/38；遗漏按原样保留，不代表模型理解或使用记忆。
+
+## 回想与线索浮现（P9）
+
+`YUVI_RECALL=on`（默认）提供 `recall`：只查当前场景、当前分支中 YUVI 自己写下的非空文字，最多 10 段、8,000 字；排序第一与最近的一条保留 P8 的预算例外。调用记为 `act/recalled`，不表示相信或采用这些文字。索引不可用或查询只有符号时，退回只扫描文字的逐字查找。`check` 的范围与行为保持原样。
+
+`YUVI_SURFACING=off`（默认）关闭线索浮现；`relevance` 按词元相关度、`recency` 按新近选取。线索仅取当前来话，从前 20 个相交候选中排除已在前景、材料已完整在窗口中的文字，整条加入最多 3 段、2,000 字。超长文字不浮现，仍可 recall。索引不可用时跳过浮现，不扫描。浮现位于窗口之后，工具续步保留同一次选取，不影响整理和前景规则。
+
+`control/presented` 的 `p9` 清单记录浮现候选、排除及实际呈现的 seq；只读 `presented show` 兼容 p7/p8/p9。它记录请求组装事实，不能证明模型注意、理解或使用。两项功能均关闭时，保留 P8 请求与清单。
+
+离线九周评测（新目录，只用合成资料和回环假模型）：
+
+```sh
+npm run eval -- run life-a --arm E-R --out /tmp/yuvi-p9-recall
+npm run eval -- run life-b --arm E-S --out /tmp/yuvi-p9-surfacing
+npm run eval -- baseline-p9
+npm run eval -- regress-p9
+node scripts/p6/generate.mjs /tmp/yuvi-p9-writings.sqlite 1000000 writings 67
+# 独立的新目录，测量期间避免其他重负载：
+unshare -rn sh -c 'ip link set lo up; node scripts/p9/benchmark.mjs /tmp/yuvi-p9-performance'
+```
+
+新增 E-R/E-S/E-SR/E-SC 各跑两段 63 天生活；完整命令还实际执行 P8 regress。墙钟数据独立保存，不进入确定性比较。`explain` 输出 recall 和浮现原始记录及遗漏解释。
+
+P9-R 的 `life-r` 与 `real` 驱动只为后续获得授权的实验准备。本次不运行真实模型。驱动要求负责人授权评论链接 `YUVI_REAL_MODEL_APPROVAL`、显式输入/输出 token 上限和 R0/R1/R2 臂，先打印上限，再加载模型配置；按提供方 usage 计数，达到上限或缺少有效 usage 即停止并保留 `budget.json` 中的不完整标记。上限依据返回用量，单个在途请求可能越过输入预算；输出另按剩余额度限制。不可用已有密钥代替授权。普通测试与 baseline 不读取持久凭据。
+
+如已完成同一实现的 P8 `regress`，可用 `baseline-p9 --p8-regress-dir <该次目录>` 或 `regress-p9 --p8-regress-dir <该次目录>` 复用证据；命令先逐字节核对该目录的 baseline.json 与冻结 P8 结果，并用实际 P8 档案计算成本对照。没有此参数时会重新执行 P8 regress。不要用其他实现或未完成的目录替代回归证据。
+
+P9 的[九周报告](docs/notes/P9-baseline.md)、[确定性结果](docs/notes/P9-baseline.json)、[性能测量](docs/notes/P9-performance.md)和[逐项自查](docs/notes/P9-self-check.md)区分实际检索、实际呈现与未能证明的模型使用。新增渠道由离线统计和 `presented show` 核对；不把旧文字进入请求本身称为理解或采用。

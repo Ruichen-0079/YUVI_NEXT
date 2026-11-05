@@ -64,7 +64,7 @@ async function fixture(t, settings = {}) {
   const personaFile = join(root, 'persona.txt'); await writeFile(personaFile, persona);
   const dataDir = join(root, 'data');
   const env = { ...process.env, TZ: 'Asia/Shanghai', YUVI_DATA_DIR: dataDir, YUVI_SNAPSHOT_DIR: join(root, 'snapshots'),
-    YUVI_MODEL_API_KEY: key, YUVI_MODEL_BASE_URL: base + '/v1', YUVI_MODEL: 'fake-p4',
+    YUVI_RECALL:'off', YUVI_SURFACING:'off', YUVI_MODEL_API_KEY: key, YUVI_MODEL_BASE_URL: base + '/v1', YUVI_MODEL: 'fake-p4',
     YUVI_PERSONA_FILE: personaFile, YUVI_PORT: new URL(url).port, YUVI_HOST: '127.0.0.1',
     YUVI_CONTEXT_EVENTS: '200', YUVI_CONSOLIDATION_IDLE_MS: '2147483647',
     YUVI_MODEL_IDLE_TIMEOUT_MS: '5000', ...settings };
@@ -322,9 +322,16 @@ test('D20/D6: persistent consolidation failure is bounded, recorded, searchable 
   const failure = f.requests.find(r => r.failed);
   assert.equal(f.requests.filter(r => !r.body.tools).length, 1);
   assert.equal(events.filter(e => e.kind === 'wrote').length, 0);
-  await delay(Math.max(0, failure.time + 30_100 - Date.now()));
+  // Backoff begins after the service observes the failed response, not when
+  // the fake provider first received it. Wait from the observed failure.
+  await waitFor(() => f.output.includes('Consolidation failed'));
+  const retryAt = Date.now() + 30_100;
+  // Product backoff uses wall time; a timer firing alone does not establish
+  // that the wall-clock deadline has passed.
+  while (Date.now() < retryAt) await delay(retryAt - Date.now());
   f.dialogue.push((res, r) => res.end(tools(['check', { query: '积压消息-0' }]) + end(r.usage)));
   await f.post('恢复并查阅');
+  await waitFor(async () => (await f.events()).some(e => e.kind === 'wrote'));
   events = await f.events(); const wrote = events.find(e => e.kind === 'wrote');
   assert.equal(wrote.meta.material.from_seq, dialogue[10].seq);
   assert.ok(f.requests.at(-1).body.messages.find(m => m.role === 'tool').content.includes('积压消息-0'));

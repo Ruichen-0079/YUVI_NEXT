@@ -4,6 +4,11 @@ import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { presentedShow, presentedSummary, presentedWritings } from '../../dist/presented.js';
+export function structuralBytes(meta) {
+  const copy=structuredClone(meta);
+  if(copy.surfacing)for(const key of ['terms','dropped'])copy.surfacing[key]=copy.surfacing[key].map(()=> '');
+  return Buffer.byteLength(JSON.stringify(copy));
+}
 export const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 export function readEvents(data) {
   const db=new DatabaseSync(join(data,'archive.sqlite'),{readOnly:true});
@@ -54,7 +59,7 @@ export function assertPresentations(data,captured,persona,{allowUnsent=false,cli
       assert.equal(p.meta.sections.reduce((n,s)=>n+s.messages,0),p.meta.total.messages);
       assert.equal(p.meta.sections.reduce((n,s)=>n+s.chars,0),p.meta.total.chars);
       assert.ok(!Object.hasOwn(p.meta,'usage'));assert.equal(p.actor,'system');assert.equal(p.content,'');
-      if(p.meta.purpose==='dialogue'&&p.meta.step===0)assert.ok(Buffer.byteLength(JSON.stringify(p.meta))<=1500);
+      if(p.meta.purpose==='dialogue'&&p.meta.step===0)assert.ok((p.meta.rules==='p9'?structuralBytes(p.meta):Buffer.byteLength(JSON.stringify(p.meta)))<=(p.meta.rules==='p9'?2500:1500));
     }
     const summary=presentedSummary(db);assert.equal(summary.count,presented.length);
     assert.equal(summary.meta_bytes.total,presented.reduce((n,p)=>n+Buffer.byteLength(JSON.stringify(p.meta)),0));

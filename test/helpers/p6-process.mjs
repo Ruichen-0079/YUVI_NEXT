@@ -1,4 +1,4 @@
-import { createServer } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdir, writeFile, symlink, readFile } from 'node:fs/promises';
@@ -20,21 +20,25 @@ export async function legacyCheckout(root, ref='190a272') {
   execFileSync(process.execPath,[resolve('node_modules/typescript/bin/tsc'),'-p',join(dir,'tsconfig.json')]);
   return dir;
 }
-export async function startService(root,{ checkout=resolve('.'), data, baseUrl, context=20, writing=16000, hook, idle=2147483647, snapshots, scan=false, tz='Asia/Shanghai' }={}) {
-  const reserve=createServer(),url=await listen(reserve);await new Promise(r=>reserve.close(r));
+export async function startService(root,{ checkout=resolve('.'), data, baseUrl, context=20, writing=16000, hook, idle=2147483647, snapshots, scan=false, recall=false, surfacing='off', tz='Asia/Shanghai' }={}) {
+  let url;
+  // Bind port 0 in the child, then report the actual port. Reserving and
+  // releasing a port before spawn races with parallel service tests.
+  const portHook=join(root,'ephemeral-port-'+randomUUID()+'.mjs');
+  await writeFile(portHook,`import{Server}from'node:net';const listen=Server.prototype.listen;Server.prototype.listen=function(...args){if(args[0]===Number(process.env.YUVI_PORT)){args[0]=0;this.once('listening',()=>console.log('P6_TEST_PORT '+this.address().port));}return listen.apply(this,args);};`);
   const persona=join(root,'persona.txt');await writeFile(persona,'测试人设原文\n');
-  const env={...process.env,YUVI_DATA_DIR:data,YUVI_PERSONA_FILE:persona,YUVI_MODEL_BASE_URL:baseUrl+'/v1',YUVI_MODEL:'fake-p6',YUVI_MODEL_API_KEY:'fake-p6-key-only',
-    YUVI_PORT:new URL(url).port,YUVI_HOST:'127.0.0.1',YUVI_OWNER_NAME:'小林',YUVI_CONTEXT_EVENTS:String(context),YUVI_CONTEXT_WRITING_CHARS:String(writing),
+  const env={...process.env,YUVI_RECALL:recall?'on':'off',YUVI_SURFACING:surfacing,YUVI_DATA_DIR:data,YUVI_PERSONA_FILE:persona,YUVI_MODEL_BASE_URL:baseUrl+'/v1',YUVI_MODEL:'fake-p6',YUVI_MODEL_API_KEY:'fake-p6-key-only',
+    YUVI_PORT:'8787',YUVI_HOST:'127.0.0.1',YUVI_OWNER_NAME:'小林',YUVI_CONTEXT_EVENTS:String(context),YUVI_CONTEXT_WRITING_CHARS:String(writing),
     YUVI_CONSOLIDATION_IDLE_MS:String(idle),YUVI_MODEL_IDLE_TIMEOUT_MS:'600000',YUVI_MODEL_MAX_DURATION_MS:'600000',YUVI_SNAPSHOT_INTERVAL_MS:'2147483647',TZ:tz};
   if(tz===null)delete env.TZ;
   delete env.YUVI_LOCAL_ENV_FILE; delete env.NODE_OPTIONS;
   if(snapshots)env.YUVI_SNAPSHOT_DIR=snapshots;else delete env.YUVI_SNAPSHOT_DIR;
   const scanHook=join(root,'force-scan.mjs');
   if(scan)await writeFile(scanHook,`import{registerHooks}from'node:module';registerHooks({load(url,context,next){const r=next(url,context);if(url.endsWith('/main.js'))return {...r,source:String(r.source).replace('createApp(config, archive)',"createApp(config, archive, {checkEngine:'scan'})")};return r;}});`);
-  const start=performance.now();const child=spawn(process.execPath,[...(scan?['--import',scanHook]:[]),...(hook?['--import',hook]:[]),join(checkout,'dist/main.js')],{env,stdio:['ignore','pipe','pipe']});
+  const start=performance.now();const child=spawn(process.execPath,['--import',portHook,...(scan?['--import',scanHook]:[]),...(hook?['--import',hook]:[]),join(checkout,'dist/main.js')],{env,stdio:['ignore','pipe','pipe']});
   let output='',readyAt;
   const ready=new Promise((resolve,reject)=>{
-    child.stdout.on('data',d=>{output+=d;if(output.includes('YUVI is ready.')&&readyAt===undefined){readyAt=performance.now();resolve();}});
+    child.stdout.on('data',d=>{output+=d;if(output.includes('YUVI is ready.')&&readyAt===undefined){readyAt=performance.now();const port=/P6_TEST_PORT (\d+)/.exec(output);if(!port){reject(Error('Service did not report bound test port'));return;}url='http://127.0.0.1:'+port[1];resolve();}});
     child.stderr.on('data',d=>{output+=d;});child.once('exit',code=>{if(readyAt===undefined)reject(Error('Service startup failed: '+code+' '+output));});
   });
   await ready;

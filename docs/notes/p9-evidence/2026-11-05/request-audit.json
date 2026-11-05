@@ -1,0 +1,166 @@
+{
+  "rounds": [
+    {
+      "root": ".local-data/p9-baseline-j2eKYC",
+      "timing": {
+        "wall_ms": 851692.670252,
+        "p8_regression_wall_ms": 529972.168911,
+        "p8_root": "/mnt/LinuxData/YUVI_NEXT/.local-data/p8-baseline-FELPYa"
+      },
+      "runs": {
+        "life-a-E-R-excerpt": {
+          "presented": 2300,
+          "reconstructed": 2300,
+          "surfacing_checked": 0,
+          "recall_rank_checks": 34,
+          "actual_request_digests": 2300,
+          "wall_ms": 40029.0815
+        },
+        "life-a-E-S-excerpt": {
+          "presented": 2265,
+          "reconstructed": 2265,
+          "surfacing_checked": 2143,
+          "recall_rank_checks": 0,
+          "actual_request_digests": 2265,
+          "wall_ms": 48440.915628
+        },
+        "life-a-E-SR-excerpt": {
+          "presented": 2265,
+          "reconstructed": 2265,
+          "surfacing_checked": 2143,
+          "recall_rank_checks": 0,
+          "actual_request_digests": 2265,
+          "wall_ms": 50186.34227
+        },
+        "life-a-E-SC-excerpt": {
+          "presented": 2300,
+          "reconstructed": 2300,
+          "surfacing_checked": 2143,
+          "recall_rank_checks": 0,
+          "actual_request_digests": 2300,
+          "wall_ms": 52075.207847000005
+        },
+        "life-b-E-R-excerpt": {
+          "presented": 10960,
+          "reconstructed": 10960,
+          "surfacing_checked": 0,
+          "recall_rank_checks": 34,
+          "actual_request_digests": 10960,
+          "wall_ms": 1097361.76774
+        },
+        "life-b-E-S-excerpt": {
+          "presented": 10925,
+          "reconstructed": 10925,
+          "surfacing_checked": 10523,
+          "recall_rank_checks": 0,
+          "actual_request_digests": 10925,
+          "wall_ms": 1389078.0020919999
+        },
+        "life-b-E-SR-excerpt": {
+          "presented": 10925,
+          "reconstructed": 10925,
+          "surfacing_checked": 10523,
+          "recall_rank_checks": 0,
+          "actual_request_digests": 10925,
+          "wall_ms": 1441312.468234
+        },
+        "life-b-E-SC-excerpt": {
+          "presented": 10960,
+          "reconstructed": 10960,
+          "surfacing_checked": 10523,
+          "recall_rank_checks": 0,
+          "actual_request_digests": 10960,
+          "wall_ms": 1408888.607744
+        }
+      },
+      "totals": {
+        "presented": 52900,
+        "reconstructed": 52900,
+        "surfacing_checked": 37998,
+        "recall_rank_checks": 68,
+        "actual_request_digests": 52900
+      }
+    },
+    {
+      "root": ".local-data/p9-baseline-oRXn5Y",
+      "timing": {
+        "wall_ms": 908189.942423,
+        "p8_regression_wall_ms": 529972.168911,
+        "p8_root": "/mnt/LinuxData/YUVI_NEXT/.local-data/p8-baseline-FELPYa"
+      },
+      "runs": {
+        "life-a-E-R-excerpt": {
+          "presented": 2300,
+          "reconstructed": 2300,
+          "surfacing_checked": 0,
+          "recall_rank_checks": 34,
+          "actual_request_digests": 2300,
+          "wall_ms": 57336.795838
+        },
+        "life-a-E-S-excerpt": {
+          "presented": 2265,
+          "reconstructed": 2265,
+          "surfacing_checked": 2143,
+          "recall_rank_checks": 0,
+          "actual_request_digests": 2265,
+          "wall_ms": 70148.558691
+        },
+        "life-a-E-SR-excerpt": {
+          "presented": 2265,
+          "reconstructed": 2265,
+          "surfacing_checked": 2143,
+          "recall_rank_checks": 0,
+          "actual_request_digests": 2265,
+          "wall_ms": 71210.278639
+        },
+        "life-a-E-SC-excerpt": {
+          "presented": 2300,
+          "reconstructed": 2300,
+          "surfacing_checked": 2143,
+          "recall_rank_checks": 0,
+          "actual_request_digests": 2300,
+          "wall_ms": 69197.943048
+        },
+        "life-b-E-R-excerpt": {
+          "presented": 10960,
+          "reconstructed": 10960,
+          "surfacing_checked": 0,
+          "recall_rank_checks": 34,
+          "actual_request_digests": 10960,
+          "wall_ms": 1127768.384903
+        },
+        "life-b-E-S-excerpt": {
+          "presented": 10925,
+          "reconstructed": 10925,
+          "surfacing_checked": 10523,
+          "recall_rank_checks": 0,
+          "actual_request_digests": 10925,
+          "wall_ms": 1346907.105074
+        },
+        "life-b-E-SR-excerpt": {
+          "presented": 10925,
+          "reconstructed": 10925,
+          "surfacing_checked": 10523,
+          "recall_rank_checks": 0,
+          "actual_request_digests": 10925,
+          "wall_ms": 1371924.608227
+        },
+        "life-b-E-SC-excerpt": {
+          "presented": 10960,
+          "reconstructed": 10960,
+          "surfacing_checked": 10523,
+          "recall_rank_checks": 0,
+          "actual_request_digests": 10960,
+          "wall_ms": 1305506.877301
+        }
+      },
+      "totals": {
+        "presented": 52900,
+        "reconstructed": 52900,
+        "surfacing_checked": 37998,
+        "recall_rank_checks": 68,
+        "actual_request_digests": 52900
+      }
+    }
+  ]
+}
