@@ -16,7 +16,7 @@ const [pathArg,...argv]=process.argv.slice(2),root=resolve(pathArg),options=Obje
 mkdirSync(root,{recursive:false,mode:0o700});const count=options.count??1000000,trials=options.trials??20;
 const percentile=(xs,p)=>[...xs].sort((a,b)=>a-b)[Math.max(0,Math.ceil(xs.length*p)-1)];
 const stats=xs=>({samples:xs,median_ms:percentile(xs,.5),p95_ms:percentile(xs,.95),p99_ms:percentile(xs,.99),max_ms:Math.max(...xs)});
-const result={node:process.version,baseline:'3343efa',count,trials,shapes:{},method:'monotonic performance.now; one warmup then20 samples; immediate loopback fake; service T1/T2/T3/T4 separate model time'};
+const result={node:process.version,baseline:'3343efa',count,trials,shapes:{},method:'monotonic performance.now; two service warmups and one direct warmup then 20 samples; immediate loopback fake; turn program=(done.at-frames.sentAt)-sum(model t3-t2) with pre_model=calls[0].t2-frames.sentAt>=0 and post_model=done.at-calls[-1].t3>=0'};
 const save=()=>writeFileSync(join(root,'results.json'),JSON.stringify(result,null,2)+'\n');
 const legacy=await legacyCheckout(root,'3343efa');
 const hook=join(root,'increment-probe.mjs');writeFileSync(hook,`import{ArchiveIndex}from${JSON.stringify(resolve('dist/archive-index.js'))};const original=ArchiveIndex.prototype.catchUp;ArchiveIndex.prototype.catchUp=function(...args){const start=performance.now();try{return original.apply(this,args);}finally{console.log('P8_INCREMENT '+(performance.now()-start));if(this.state==='ready')console.log('P8_READY');}};`);let mode='ordinary',currentCalls=[],calls=[];
@@ -75,10 +75,10 @@ try{
   console.error(JSON.stringify({shape,stage:'ordinary-and-startup'}));mode='ordinary';
   shapeResult.service={};
   for(const [label,checkout]of[['p7',legacy],['p8',resolve('.')]]){
-   const s=await startService(dir,{checkout,data,baseUrl:base,snapshots:join(dir,'snapshots'),context:200,...(label==='p8'?{hook,recall:options.recall===1}:{})}),program=[],model=[];
+   const s=await startService(dir,{checkout,data,baseUrl:base,snapshots:join(dir,'snapshots'),context:200,...(label==='p8'?{hook,recall:options.recall===1}:{})}),program=[],preModel=[],postModel=[],wall=[],model=[];
    try{
-    for(let i=-2;i<trials;i++){currentCalls=[];const frames=await s.post('普通性能测试'+i),heard=frames.find(f=>f.event==='heard'),last=frames.at(-1);if(last.event!=='done')throw Error('Turn failed');if(i>=0){program.push(currentCalls[0].t2-heard.at+last.at-currentCalls.at(-1).t3);model.push(currentCalls.reduce((n,c)=>n+c.t3-c.t2,0));}}
-    shapeResult.service[label]={startup_ms:s.startupMs,rss_bytes:await s.rss(),program:stats(program),model:stats(model),...(label==='p8'?{incremental:stats(s.output.split('\n').filter(line=>line.startsWith('P8_INCREMENT ')).map(line=>Number(line.slice(13))))}:{})};
+    for(let i=-2;i<trials;i++){currentCalls=[];const frames=await s.post('普通性能测试'+i),last=frames.at(-1);if(last.event!=='done')throw Error('Turn failed');if(i>=0){if(!currentCalls.length)throw Error('Turn recorded no model call');const pre=currentCalls[0].t2-frames.sentAt,post=last.at-currentCalls.at(-1).t3,totalWall=last.at-frames.sentAt,prov=currentCalls.reduce((n,c)=>n+c.t3-c.t2,0),prog=totalWall-prov;if(!(pre>=0&&post>=0&&prov>=0&&prog>=0))throw Error(`Invalid negative turn timing: pre=${pre} post=${post} provider=${prov} program=${prog}`);for(let k=1;k<currentCalls.length;k++)if(currentCalls[k].t2<currentCalls[k-1].t3)throw Error('Invalid negative inter-call timing');preModel.push(pre);postModel.push(post);wall.push(totalWall);model.push(prov);program.push(prog);}}
+    shapeResult.service[label]={startup_ms:s.startupMs,rss_bytes:await s.rss(),program:stats(program),pre_model:stats(preModel),post_model:stats(postModel),wall:stats(wall),model:stats(model),...(label==='p8'?{incremental:stats(s.output.split('\n').filter(line=>line.startsWith('P8_INCREMENT ')).map(line=>Number(line.slice(13))))}:{})};
    }finally{await s.stop();}
    save();
   }

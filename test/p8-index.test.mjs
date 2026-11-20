@@ -119,3 +119,74 @@ test('P8 failed readonly scan worker rejects outstanding work and can be recreat
   const result=await index.scan('{"query":"扫描"}','负责人','index_unavailable');assert.deepEqual(result.meta.result_seqs,[h.seq]);
  }finally{await index?.close();a.close();rmSync(dir,{recursive:true,force:true});}
 });
+
+test('P8/P9 index format=2 term_df: upgrade from format=1, doc-level deduplication, parity, long-term hash cap and tamper repair',async()=>{
+ const {createHash}=await import('node:crypto');
+ const hash=t=>createHash('sha256').update(t,'utf8').digest();
+ const dir=mkdtempSync(join(tmpdir(),'yuvi-p8-term-df-')),a=new Archive(dir);let index;
+ try{
+  const longWord='x'.repeat(5000);
+  a.append({class:'experience',kind:'heard',actor:'owner',content:'银杏 银杏 银杏 银杏 '+longWord+' '+longWord});
+  a.append({class:'inner',kind:'wrote',actor:'yuvi',content:'银杏 晚风 晚风'});
+  buildIndex(dir);
+  const file=join(dir,'index.sqlite');
+  // 1. Legacy format=1 without term_df/docs_wrote triggers 'version' and automatic rebuild to format=2.
+  let db=new DatabaseSync(file);
+  try{
+   db.exec('DROP TABLE term_df; DROP INDEX docs_wrote;');
+   db.prepare('UPDATE metadata SET value=? WHERE key=?').run('1','format');
+  }finally{db.close();}
+  assert.equal(verifyIndex(a.db,file,false).status,'version');
+  assert.equal(verifyIndex(a.db,file,true).status,'version');
+  index=new ArchiveIndex(a.db,dir);await index.ready();
+  assert.equal(verifyIndex(a.db,file,true).status,'ok');
+  await index.close();index=undefined;
+  // 1b. Interrupted build state (format=0 before final term_df commit) also reports 'version' and auto-rebuilds.
+  db=new DatabaseSync(file);try{db.exec('DELETE FROM term_df;');db.prepare('UPDATE metadata SET value=? WHERE key=?').run('0','format');}finally{db.close();}
+  assert.equal(verifyIndex(a.db,file,false).status,'version');assert.equal(verifyIndex(a.db,file,true).status,'version');
+  index=new ArchiveIndex(a.db,dir);await index.ready();
+  assert.equal(verifyIndex(a.db,file,true).status,'ok');
+  // 2. Incremental catch-up deduplicates repeated terms within one event and keeps exact vocab parity.
+  a.append({class:'experience',kind:'heard',actor:'owner',content:'银杏 银杏 新增词 新增词 新增词'});
+  index.catchUp();
+  assert.equal(verifyIndex(a.db,file,true).status,'ok');
+  db=new DatabaseSync(file,{readOnly:true});
+  try{
+   assert.equal(JSON.parse(db.prepare("SELECT value FROM metadata WHERE key='format'").get().value),2);
+   const getDf=t=>Number(db.prepare('SELECT doc FROM term_df WHERE term_hash=?').get(hash(t))?.doc??0);
+   assert.equal(getDf('银杏'),3);
+   assert.equal(getDf('晚风'),1);
+   assert.equal(getDf('新增'),1);
+   assert.equal(getDf(longWord),1);
+   assert.equal(getDf('不存在的词'),0);
+   // Verify every term_df key is a 32-byte hash (<=256 bytes even for 5000-char term) and matches vocab 1-to-1.
+   const vocabRows=db.prepare('SELECT term,doc FROM vocab').all();
+   assert.equal(Number(db.prepare('SELECT count(*) n FROM term_df').get().n),vocabRows.length);
+   for(const row of vocabRows){
+    const entry=db.prepare('SELECT term_hash,doc FROM term_df WHERE term_hash=?').get(hash(row.term));
+    assert.ok(entry,row.term);assert.equal(Buffer.byteLength(entry.term_hash),32);assert.equal(Number(entry.doc),Number(row.doc),row.term);
+   }
+  }finally{db.close();}
+  await index.close();index=undefined;
+  // 3. Tampering with term_df (wrong count, deleted first/non-first row, extra row) is detected and repaired.
+  for(const kind of ['wrong_doc','missing_first_term','missing_bigram','extra_row']){
+   db=new DatabaseSync(file);
+   try{
+    if(kind==='wrong_doc')db.prepare('UPDATE term_df SET doc=doc+1 WHERE term_hash=?').run(hash('银杏'));
+    if(kind==='missing_first_term')db.prepare('DELETE FROM term_df WHERE term_hash=?').run(hash('银'));
+    if(kind==='missing_bigram')db.prepare('DELETE FROM term_df WHERE term_hash=?').run(hash('银杏'));
+    if(kind==='extra_row')db.prepare('INSERT INTO term_df(term_hash,doc) VALUES(?,?)').run(hash('ghost-orphan-term'),1);
+   }finally{db.close();}
+   assert.equal(verifyIndex(a.db,file,true).status,'mismatch',kind);
+   if(kind==='missing_first_term'){
+    assert.equal(verifyIndex(a.db,file,false).status,'mismatch','fast verify catches deleted sampled term_df');
+    index=new ArchiveIndex(a.db,dir);await index.ready();
+    assert.equal(verifyIndex(a.db,file,true).status,'ok','startup auto-rebuilds on fast-verify mismatch');
+    await index.close();index=undefined;
+   }else{
+    rmSync(file,{force:true});buildIndex(dir);
+    assert.equal(verifyIndex(a.db,file,true).status,'ok',kind);
+   }
+  }
+ }finally{await index?.close();a.close();rmSync(dir,{recursive:true,force:true});}
+});

@@ -46,7 +46,7 @@ test('P8 C6/K1-K7/K12: derived schema, private permissions, corrupt/version/iden
    index.search('Bluewhale',-Infinity,Infinity);
    const db=new DatabaseSync(index.file,{readOnly:true});try{
     const objects=db.prepare('SELECT name,sql FROM sqlite_master').all();assert.ok(!objects.some(o=>o.name.endsWith('_content')));assert.match(objects.find(o=>o.name==='terms').sql,/content=''/);
-    for(const table of ['docs','metadata'])for(const row of db.prepare('SELECT * FROM '+table).iterate())for(const value of Object.values(row))if(typeof value==='string'||value instanceof Uint8Array)assert.ok(Buffer.byteLength(value)<=256);
+    for(const table of ['docs','metadata','term_df'])for(const row of db.prepare('SELECT * FROM '+table).iterate())for(const value of Object.values(row))if(typeof value==='string'||value instanceof Uint8Array)assert.ok(Buffer.byteLength(value)<=256);
    }finally{db.close();}
    for(const name of ['index.sqlite','index.sqlite-wal','index.sqlite-shm'])if(existsSync(join(dir,name))){assert.equal(statSync(join(dir,name)).mode&0o777,0o600);const bytes=readFileSync(join(dir,name));for(const s of sentences)for(const encoding of ['utf8','utf16le'])assert.equal(bytes.includes(Buffer.from(s,encoding)),false);}
    const snap=createSnapshot({dataDir:dir,snapshotDir:join(root,'snapshots')});verifySnapshot(snap);const target=join(root,'restored');restoreSnapshot(snap,target);assert.equal(existsSync(join(target,'index.sqlite')),false);

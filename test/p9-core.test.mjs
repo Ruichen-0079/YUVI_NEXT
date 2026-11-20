@@ -46,7 +46,7 @@ test('P9 actual process: frozen surfaced base, mixed tool calls, usage once and 
  const captured=[];let step=0;
  const fake=createServer(async(req,res)=>{const chunks=[];for await(const c of req)chunks.push(c);const body=JSON.parse(Buffer.concat(chunks).toString('utf8'));captured.push(capturePresentation(data,body));
   if(!body.tools)return res.end(text('')+done());
-  if(step++===0){assert.deepEqual(body.tools.map(x=>x.function.name),['stay_silent','check','recall']);res.end(frame({choices:[{delta:{tool_calls:[{index:0,id:'r',function:{name:'recall',arguments:'{"query":"旧照片"}'}},{index:1,id:'c',function:{name:'check',arguments:'{"query":"旧照片"}'}}]}}]})+done({prompt_tokens:7,completion_tokens:1}));}
+  if(step++===0){assert.deepEqual(body.tools.map(x=>x.function.name),['stay_silent','check','recall']);assert.equal(body.tools[2].function.description,'回想你自己以前写下的文字：返回你写下的、与查询有关的文字和写下的时间。它们是你当时的想法，不一定准确，也不一定是现在的情况；要核对实际发生了什么，用 check。回想会被记录。');assert.deepEqual(body.tools[2].function.parameters,{type:'object',properties:{query:{type:'string'},from:{type:'string'},to:{type:'string'}},additionalProperties:false});res.end(frame({choices:[{delta:{tool_calls:[{index:0,id:'r',function:{name:'recall',arguments:'{"query":"旧照片"}'}},{index:1,id:'c',function:{name:'check',arguments:'{"query":"旧照片"}'}}]}}]})+done({prompt_tokens:7,completion_tokens:1}));}
   else if(step===2)res.end(tool('recall',{query:'🌙'})+done({prompt_tokens:5}));else res.end(text('看过以前的文字了。')+done({prompt_tokens:3}));
  });const base=await listen(fake);t.after(()=>new Promise(r=>fake.close(r)));
  const s=await startService(root,{data,baseUrl:base,recall:true,surfacing:'relevance',writing:1000});t.after(()=>s.stop());
@@ -88,6 +88,8 @@ test('P9 C3/K3/K5: invalid recall never queries, source failure remains fatal; t
  const {root,a}=fixture(t);wrote(a,'灯塔');buildIndex(join(root,'data'));const index=new ArchiveIndex(a.db,join(root,'data'));t.after(()=>index.close());
  const original=index.search;index.search=()=>{throw Error('should not query');};assert.equal((await check(a,'{"from":"2026-02-30"}','负责人',{index,tool:'recall'})).meta.invalid,true);index.search=original;
  const {assembleContext,recordedTimeZone}=await import('../dist/context.js');const h=a.append({class:'experience',kind:'heard',actor:'owner',content:'当前'}),config={persona:'test',recall:true,writingChars:2000};let assembly=assembleContext({purpose:'dialogue',selected:{writings:[],window:[h]},heard:h},config,Date.now(),recordedTimeZone(),22);
+ assert.deepEqual(assembly.parameters.tools.map(t=>t.function.name),['stay_silent','check','recall']);
+ assert.equal(assembly.parameters.tools[2].function.description,'回想你自己以前写下的文字：返回你写下的、与查询有关的文字和写下的时间。它们是你当时的想法，不一定准确，也不一定是现在的情况；要核对实际发生了什么，用 check。回想会被记录。');
  for(let step=1;step<=3;step++){assembly=assembleContext({previous:assembly,previousId:'prior'+step,text:'',calls:[{id:'call',name:'recall',arguments:'{}'}],results:[{reference:{recalled:'result'+step},content:'文字'}]},config,Date.now(),recordedTimeZone(),22);assert.deepEqual(assembly.parameters.tools.map(t=>t.function.name),step===3?['stay_silent']:['stay_silent','check','recall']);}
  const source=index.source;index.source={prepare(){throw Error('private source failure');}};
  try{assert.throws(()=>index.surface('灯塔',Infinity,[],[],'relevance'),/^Error: Archive read failed\.$/);}finally{index.source=source;}
