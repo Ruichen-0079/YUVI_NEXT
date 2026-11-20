@@ -1,0 +1,15 @@
+
+> yuvi-next@0.1.0 preeval
+> npm run build
+
+
+> yuvi-next@0.1.0 build
+> tsc
+
+
+> yuvi-next@0.1.0 eval
+> node eval/cli.mjs regress-p9
+
+{"root":"<repo>/.local-data/p9-baseline-dnRM0p","wall_ms":1327515.969309,"p8_regression_wall_ms":553205.588706,"p8_root":"<repo>/.local-data/p8-baseline-fbNnaA"}
+(node:333562) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)

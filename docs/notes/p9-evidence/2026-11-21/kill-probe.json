@@ -1,0 +1,361 @@
+{
+  "node": "v22.22.0",
+  "rebuild": {
+    "before": {
+      "rows": 50000,
+      "sha256": "149f3640eeaee905da7592b8547be60e56de917300a73d303738ea9343776d0c",
+      "schema": [
+        {
+          "type": "table",
+          "name": "events",
+          "tbl_name": "events",
+          "rootpage": 2,
+          "sql": "CREATE TABLE events (\n        seq INTEGER PRIMARY KEY AUTOINCREMENT,\n        id TEXT NOT NULL UNIQUE, branch TEXT NOT NULL, class TEXT NOT NULL,\n        kind TEXT NOT NULL, scene TEXT NOT NULL, actor TEXT NOT NULL,\n        t_recorded INTEGER NOT NULL, reply_to TEXT REFERENCES events(id),\n        content TEXT NOT NULL, model TEXT, meta TEXT NOT NULL\n      )"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_delete",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_delete BEFORE DELETE ON events\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_replace",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_replace BEFORE INSERT ON events\n        WHEN EXISTS (SELECT 1 FROM events WHERE id=NEW.id OR seq=NEW.seq)\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_update",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_update BEFORE UPDATE ON events\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "index",
+          "name": "events_reply",
+          "tbl_name": "events",
+          "rootpage": 5,
+          "sql": "CREATE INDEX events_reply ON events(reply_to)"
+        },
+        {
+          "type": "index",
+          "name": "sqlite_autoindex_events_1",
+          "tbl_name": "events",
+          "rootpage": 3,
+          "sql": null
+        },
+        {
+          "type": "table",
+          "name": "sqlite_sequence",
+          "tbl_name": "sqlite_sequence",
+          "rootpage": 4,
+          "sql": "CREATE TABLE sqlite_sequence(name,seq)"
+        }
+      ],
+      "integrity": "ok"
+    },
+    "at_kill": {
+      "rows": 50000,
+      "sha256": "149f3640eeaee905da7592b8547be60e56de917300a73d303738ea9343776d0c",
+      "schema": [
+        {
+          "type": "table",
+          "name": "events",
+          "tbl_name": "events",
+          "rootpage": 2,
+          "sql": "CREATE TABLE events (\n        seq INTEGER PRIMARY KEY AUTOINCREMENT,\n        id TEXT NOT NULL UNIQUE, branch TEXT NOT NULL, class TEXT NOT NULL,\n        kind TEXT NOT NULL, scene TEXT NOT NULL, actor TEXT NOT NULL,\n        t_recorded INTEGER NOT NULL, reply_to TEXT REFERENCES events(id),\n        content TEXT NOT NULL, model TEXT, meta TEXT NOT NULL\n      )"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_delete",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_delete BEFORE DELETE ON events\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_replace",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_replace BEFORE INSERT ON events\n        WHEN EXISTS (SELECT 1 FROM events WHERE id=NEW.id OR seq=NEW.seq)\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_update",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_update BEFORE UPDATE ON events\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "index",
+          "name": "events_reply",
+          "tbl_name": "events",
+          "rootpage": 5,
+          "sql": "CREATE INDEX events_reply ON events(reply_to)"
+        },
+        {
+          "type": "index",
+          "name": "sqlite_autoindex_events_1",
+          "tbl_name": "events",
+          "rootpage": 3,
+          "sql": null
+        },
+        {
+          "type": "table",
+          "name": "sqlite_sequence",
+          "tbl_name": "sqlite_sequence",
+          "rootpage": 4,
+          "sql": "CREATE TABLE sqlite_sequence(name,seq)"
+        }
+      ],
+      "integrity": "ok"
+    },
+    "after": {
+      "rows": 50000,
+      "sha256": "149f3640eeaee905da7592b8547be60e56de917300a73d303738ea9343776d0c",
+      "schema": [
+        {
+          "type": "table",
+          "name": "events",
+          "tbl_name": "events",
+          "rootpage": 2,
+          "sql": "CREATE TABLE events (\n        seq INTEGER PRIMARY KEY AUTOINCREMENT,\n        id TEXT NOT NULL UNIQUE, branch TEXT NOT NULL, class TEXT NOT NULL,\n        kind TEXT NOT NULL, scene TEXT NOT NULL, actor TEXT NOT NULL,\n        t_recorded INTEGER NOT NULL, reply_to TEXT REFERENCES events(id),\n        content TEXT NOT NULL, model TEXT, meta TEXT NOT NULL\n      )"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_delete",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_delete BEFORE DELETE ON events\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_replace",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_replace BEFORE INSERT ON events\n        WHEN EXISTS (SELECT 1 FROM events WHERE id=NEW.id OR seq=NEW.seq)\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_update",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_update BEFORE UPDATE ON events\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "index",
+          "name": "events_reply",
+          "tbl_name": "events",
+          "rootpage": 5,
+          "sql": "CREATE INDEX events_reply ON events(reply_to)"
+        },
+        {
+          "type": "index",
+          "name": "sqlite_autoindex_events_1",
+          "tbl_name": "events",
+          "rootpage": 3,
+          "sql": null
+        },
+        {
+          "type": "table",
+          "name": "sqlite_sequence",
+          "tbl_name": "sqlite_sequence",
+          "rootpage": 4,
+          "sql": "CREATE TABLE sqlite_sequence(name,seq)"
+        }
+      ],
+      "integrity": "ok"
+    },
+    "verification": {
+      "status": "ok",
+      "through_seq": 50000,
+      "last_seq": 50000,
+      "rows": 50000,
+      "expected_rows": 50000,
+      "sampled": 50000
+    },
+    "passed": true
+  },
+  "increment": {
+    "before": {
+      "rows": 41,
+      "sha256": "4d535872460f8de15f2c453d680e923388c64c8dd4b3243dc6204f0ad285e8e2",
+      "schema": [
+        {
+          "type": "table",
+          "name": "events",
+          "tbl_name": "events",
+          "rootpage": 2,
+          "sql": "CREATE TABLE events (\n        seq INTEGER PRIMARY KEY AUTOINCREMENT,\n        id TEXT NOT NULL UNIQUE, branch TEXT NOT NULL, class TEXT NOT NULL,\n        kind TEXT NOT NULL, scene TEXT NOT NULL, actor TEXT NOT NULL,\n        t_recorded INTEGER NOT NULL, reply_to TEXT REFERENCES events(id),\n        content TEXT NOT NULL, model TEXT, meta TEXT NOT NULL\n      )"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_delete",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_delete BEFORE DELETE ON events\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_replace",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_replace BEFORE INSERT ON events\n        WHEN EXISTS (SELECT 1 FROM events WHERE id=NEW.id OR seq=NEW.seq)\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_update",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_update BEFORE UPDATE ON events\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "index",
+          "name": "events_reply",
+          "tbl_name": "events",
+          "rootpage": 5,
+          "sql": "CREATE INDEX events_reply ON events(reply_to)"
+        },
+        {
+          "type": "index",
+          "name": "sqlite_autoindex_events_1",
+          "tbl_name": "events",
+          "rootpage": 3,
+          "sql": null
+        },
+        {
+          "type": "table",
+          "name": "sqlite_sequence",
+          "tbl_name": "sqlite_sequence",
+          "rootpage": 4,
+          "sql": "CREATE TABLE sqlite_sequence(name,seq)"
+        }
+      ],
+      "integrity": "ok"
+    },
+    "at_kill": {
+      "rows": 45,
+      "sha256": "83eb9c92d7a193101c1405fcbe8c820b56621e1c32a6687c6793d027b144df7e",
+      "schema": [
+        {
+          "type": "table",
+          "name": "events",
+          "tbl_name": "events",
+          "rootpage": 2,
+          "sql": "CREATE TABLE events (\n        seq INTEGER PRIMARY KEY AUTOINCREMENT,\n        id TEXT NOT NULL UNIQUE, branch TEXT NOT NULL, class TEXT NOT NULL,\n        kind TEXT NOT NULL, scene TEXT NOT NULL, actor TEXT NOT NULL,\n        t_recorded INTEGER NOT NULL, reply_to TEXT REFERENCES events(id),\n        content TEXT NOT NULL, model TEXT, meta TEXT NOT NULL\n      )"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_delete",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_delete BEFORE DELETE ON events\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_replace",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_replace BEFORE INSERT ON events\n        WHEN EXISTS (SELECT 1 FROM events WHERE id=NEW.id OR seq=NEW.seq)\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_update",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_update BEFORE UPDATE ON events\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "index",
+          "name": "events_reply",
+          "tbl_name": "events",
+          "rootpage": 5,
+          "sql": "CREATE INDEX events_reply ON events(reply_to)"
+        },
+        {
+          "type": "index",
+          "name": "sqlite_autoindex_events_1",
+          "tbl_name": "events",
+          "rootpage": 3,
+          "sql": null
+        },
+        {
+          "type": "table",
+          "name": "sqlite_sequence",
+          "tbl_name": "sqlite_sequence",
+          "rootpage": 4,
+          "sql": "CREATE TABLE sqlite_sequence(name,seq)"
+        }
+      ],
+      "integrity": "ok"
+    },
+    "after": {
+      "rows": 45,
+      "sha256": "83eb9c92d7a193101c1405fcbe8c820b56621e1c32a6687c6793d027b144df7e",
+      "schema": [
+        {
+          "type": "table",
+          "name": "events",
+          "tbl_name": "events",
+          "rootpage": 2,
+          "sql": "CREATE TABLE events (\n        seq INTEGER PRIMARY KEY AUTOINCREMENT,\n        id TEXT NOT NULL UNIQUE, branch TEXT NOT NULL, class TEXT NOT NULL,\n        kind TEXT NOT NULL, scene TEXT NOT NULL, actor TEXT NOT NULL,\n        t_recorded INTEGER NOT NULL, reply_to TEXT REFERENCES events(id),\n        content TEXT NOT NULL, model TEXT, meta TEXT NOT NULL\n      )"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_delete",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_delete BEFORE DELETE ON events\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_replace",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_replace BEFORE INSERT ON events\n        WHEN EXISTS (SELECT 1 FROM events WHERE id=NEW.id OR seq=NEW.seq)\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "trigger",
+          "name": "events_no_update",
+          "tbl_name": "events",
+          "rootpage": 0,
+          "sql": "CREATE TRIGGER events_no_update BEFORE UPDATE ON events\n        BEGIN SELECT RAISE(ABORT, 'events are append-only'); END"
+        },
+        {
+          "type": "index",
+          "name": "events_reply",
+          "tbl_name": "events",
+          "rootpage": 5,
+          "sql": "CREATE INDEX events_reply ON events(reply_to)"
+        },
+        {
+          "type": "index",
+          "name": "sqlite_autoindex_events_1",
+          "tbl_name": "events",
+          "rootpage": 3,
+          "sql": null
+        },
+        {
+          "type": "table",
+          "name": "sqlite_sequence",
+          "tbl_name": "sqlite_sequence",
+          "rootpage": 4,
+          "sql": "CREATE TABLE sqlite_sequence(name,seq)"
+        }
+      ],
+      "integrity": "ok"
+    },
+    "verification": {
+      "status": "ok",
+      "through_seq": 45,
+      "last_seq": 45,
+      "rows": 42,
+      "expected_rows": 42,
+      "sampled": 42
+    },
+    "passed": true
+  }
+}

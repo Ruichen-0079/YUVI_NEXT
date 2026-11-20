@@ -4,7 +4,17 @@ import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {performance} from 'node:perf_hooks';
 import {measure} from './measure.mjs';
+import {expand} from './life.mjs';
 import {DatabaseSync} from 'node:sqlite';
+function pOnlyEcho(directory){
+ const life=JSON.parse(readFileSync(join(directory,'life.json'),'utf8')),{events:timeline}=expand(life,life.evaluation.days);
+ const db=new DatabaseSync(join(directory,'data/archive.sqlite'),{readOnly:true});let events;
+ try{events=db.prepare('SELECT seq,class,kind,t_recorded,content,meta FROM events ORDER BY seq').all().map(e=>({...e,meta:JSON.parse(e.meta)}));}finally{db.close();}
+ const bySeq=new Map(events.map(e=>[e.seq,e])),heard=events.filter(e=>e.class==='experience'&&e.kind==='heard'),bases=events.filter(e=>e.class==='control'&&e.kind==='presented'&&e.meta.step===0);
+ const excerpts=timeline.filter(e=>e.type==='probe'&&!e.tags.includes('sanity')).map(e=>{const h=heard.find(h=>h.t_recorded===e.t&&h.content===e.text);return h?{seq:h.seq,text:[...h.content].slice(0,32).join('')}:null;}).filter(Boolean);
+ let selected=0,occurrences=0;for(const p of bases)for(const n of (p.meta.sections.find(s=>s.name==='surfaced')?.seqs??[])){const w=bySeq.get(n);selected++;if(excerpts.some(e=>e.seq<w.seq&&w.content.includes(e.text)))occurrences++;}
+ return {occurrences,selected,ratio:selected?occurrences/selected:0};
+}
 const distribution=a=>({mean:a.reduce((n,v)=>n+v,0)/a.length,p95:[...a].sort((a,b)=>a-b)[Math.ceil(a.length*.95)-1]});
 function p8Cost(directory){const db=new DatabaseSync(join(directory,'data/archive.sqlite'),{readOnly:true});try{
  const rows=db.prepare("SELECT reply_to,json_extract(meta,'$.total.chars') chars FROM events WHERE kind='presented' AND reply_to IS NOT NULL").all(),turns=new Map();for(const r of rows)turns.set(r.reply_to,(turns.get(r.reply_to)??0)+r.chars);return distribution([...turns.values()]);
@@ -45,7 +55,7 @@ function writeResult(root,p8Run,runs,p8,regress,elapsedMs){
  const serialized=JSON.stringify(result,null,2)+'\n';writeFileSync(join(root,'baseline.json'),serialized);const timing={wall_ms:elapsedMs,p8_regression_wall_ms:p8Run.wall_ms,p8_root:p8Run.root};writeFileSync(join(root,'timing.json'),JSON.stringify(timing,null,2)+'\n');
  assert.ok(timing.wall_ms<=1800000,'P9 baseline exceeds 30 minutes');
  if(regress)assert.equal(serialized,readFileSync('docs/notes/P9-baseline.json','utf8'),'P9 deterministic baseline changed');
- else{writeFileSync('docs/notes/P9-baseline.json',serialized);writeFileSync('docs/notes/P9-baseline.md',report(result,'.local-data/'+basename(root),p8));}
+ else{writeFileSync('docs/notes/P9-baseline.json',serialized);writeFileSync('docs/notes/P9-baseline.md',report(result,'.local-data/'+basename(root),p8,root));}
  return{root,...timing};
 }
 
@@ -60,7 +70,7 @@ export function refreshP9(root,p8Directory){
  return writeResult(root,p8Run,runs,p8,false,JSON.parse(readFileSync(join(root,'timing.json'),'utf8')).wall_ms);
 }
 
-function report(result,root,p8){
+function report(result,root,p8,archiveRoot){
  const run=(life,arm)=>result.runs[`${life}-${arm}-excerpt`],pct=n=>(n*100).toFixed(2)+'%',fmt=n=>Number(n).toFixed(2),cell=v=>JSON.stringify(v);
  let md='# P9 九周合成生活基线\n\n只报告检索与呈现。假模型由脚本决定工具调用，excerpt 是固定摘抄；不能证明模型注意、理解、采用旧文字，也不能说明真实模型会调用 recall 或其文字会携带答案。两段生活与 P8 字节相同，P8 regress 已实际逐字节通过。\n\n';
  md+='## 答案呈现与代价\n\n| 臂 | life-a | life-b | 机制 |\n| --- | ---: | ---: | --- |\n';
@@ -69,10 +79,18 @@ function report(result,root,p8){
  md+=`\n相关度浮现在非探针回合的发生率是 life-a ${pct(run('life-a','E-S').surfacing.turns.nonprobe.rate)}、life-b ${pct(run('life-b','E-S').surfacing.turns.nonprobe.rate)}。这是大量额外内容进入上下文，不能称为有用回忆。规划模拟额外要求最低 DF 大于零，正式规格没有该门槛；本实验保持正式规则，没有为接近规划的浮现率而筛掉线索。\n`;
  md+='\n## 假设（呈现层）\n\n';for(const[id,h]of Object.entries(result.hypotheses)){const evidence=id==='H2-b'?{older_than_1d:h.evidence.older_than_1d,total_gain:h.evidence.total}:h.evidence;md+=`- ${id}：**${h.status}**；${cell(evidence)}。${h.status==='supported'?'本次冻结判据的推翻条件未成立。':h.status==='refuted'?'本次冻结判据的推翻条件成立。':'现有数字不足以作出判断。'}\n`;}
  md+='\nH1-o 的工具由脚本在探针时必定调用，不证明自主回想；H2 的增益并不否定噪声、回声和预算消费。逐次增益及旧答案年龄保存在 JSON，不作选择性删改。\n';
- md+='\n## 两段生活的浮现统计\n\n每回合字数含浮现消息的固定文字和时间，未浮现计零。回声按实际档案顺序判定；同一时间戳的较早探针仍可能被后来的文字摘抄。相邻重复率的分母是全部相邻回合对。非携带者字数是探针中不携带任何目标答案的整段文字字数。\n';
+ md+='\n## 两段生活的浮现统计\n\n每回合字数含浮现消息的固定文字和时间，未浮现计零。冻结 JSON 口径中，“探针回合”（35 = 28 个主 P 探针 + 7 个检查点 S1–S7）、“有携带者答案 / 全答案”（45 = 38 个主探针答案 + 7 个 S1–S7 答案）与“回声”均包含 S1–S7。回声按实际档案顺序判定，分母为全部浮现选入次数；同一时间戳的较早探针仍可能被后来的文字摘抄。相邻重复率的分母是全部相邻回合对。非携带者字数是探针中不携带任何目标答案的整段文字字数。\n';
  for(const arm of ['E-S','E-SR','E-SC']){const a=run('life-a',arm).surfacing,b=run('life-b',arm).surfacing;
-  const metrics=[['探针浮现率',s=>pct(s.turns.probe.rate)],['非探针浮现率',s=>pct(s.turns.nonprobe.rate)],['每回合字数均值 / p95',s=>fmt(s.chars.mean)+' / '+s.chars.p95],['非携带者字数',s=>s.noncarrier_chars],['选入次数 / 不同文字',s=>s.occurrences+' / '+s.unique],['最常见5段占比',s=>pct(s.top5_share)],['单段最多次数',s=>s.max_repeats],['相邻回合重复率',s=>pct(s.adjacent_repetition_rate)],['年龄 <1 / 1–7 / 7–28 / >28 天',s=>Object.values(s.ages).join(' / ')],['回声次数 / 占比',s=>s.echo.occurrences+' / '+pct(s.echo.ratio)],['与前景 / 窗口重复',s=>s.duplicates.foreground+' / '+s.duplicates.window],['有携带者答案 / 全答案',s=>s.carrier_candidates.with_carrier+' / '+s.carrier_candidates.total],['候选 / 有携带者',s=>pct(s.carrier_candidates.candidate_rate_over_carriers)],['选中 / 有携带者',s=>pct(s.carrier_candidates.selected_rate_over_carriers)],['选中 / 已成候选',s=>pct(s.carrier_candidates.selected_given_candidate)],['未选原因',s=>cell(s.carrier_candidates.omitted)]];
+  const metrics=[['探针浮现率',s=>pct(s.turns.probe.rate)],['非探针浮现率',s=>pct(s.turns.nonprobe.rate)],['每回合字数均值 / p95',s=>fmt(s.chars.mean)+' / '+s.chars.p95],['非携带者字数',s=>s.noncarrier_chars],['选入次数 / 不同文字',s=>s.occurrences+' / '+s.unique],['最常见5段占比',s=>pct(s.top5_share)],['单段最多次数',s=>s.max_repeats],['相邻回合重复率',s=>pct(s.adjacent_repetition_rate)],['年龄 <1 / 1–7 / 7–28 / >28 天',s=>Object.values(s.ages).join(' / ')],['回声次数 / 占比（含 S1–S7）',s=>s.echo.occurrences+' / '+pct(s.echo.ratio)],['与前景 / 窗口重复',s=>s.duplicates.foreground+' / '+s.duplicates.window],['有携带者答案 / 全答案（含 S1–S7）',s=>s.carrier_candidates.with_carrier+' / '+s.carrier_candidates.total],['候选 / 有携带者',s=>pct(s.carrier_candidates.candidate_rate_over_carriers)],['选中 / 有携带者',s=>pct(s.carrier_candidates.selected_rate_over_carriers)],['选中 / 已成候选',s=>pct(s.carrier_candidates.selected_given_candidate)],['未选原因',s=>cell(s.carrier_candidates.omitted)]];
   md+=`\n### ${arm}\n\n| 指标 | life-a | life-b |\n| --- | --- | --- |\n`;for(const[label,get]of metrics)md+=`| ${label} | ${get(a)} | ${get(b)} |\n`;
+ }
+ if(archiveRoot){
+  md+='\n### 回声口径对照（含 S1–S7 与仅主 P 探针）\n\n不改动冻结 JSON；下表并列报告冻结口径（含 S1–S7，共 35 探针回合）与仅 28 个主 P 探针（不含 S1–S7）的回声实测值，分母均为对应臂的全部浮现选入次数：\n\n| 臂 | 含 S1–S7（冻结 JSON）life-a | 含 S1–S7（冻结 JSON）life-b | 仅 P 探针（不含 S1–S7）life-a | 仅 P 探针（不含 S1–S7）life-b |\n| --- | ---: | ---: | ---: | ---: |\n';
+  for(const arm of ['E-S','E-SR','E-SC']){
+   const sa=run('life-a',arm).surfacing,sb=run('life-b',arm).surfacing;
+   const pa=pOnlyEcho(join(archiveRoot,`life-a-${arm}-excerpt`)),pb=pOnlyEcho(join(archiveRoot,`life-b-${arm}-excerpt`));
+   md+=`| ${arm} | ${sa.echo.occurrences}/${sa.occurrences} (${pct(sa.echo.ratio)}) | ${sb.echo.occurrences}/${sb.occurrences} (${pct(sb.echo.ratio)}) | ${pa.occurrences}/${pa.selected} (${pct(pa.ratio)}) | ${pb.occurrences}/${pb.selected} (${pct(pb.ratio)}) |\n`;
+  }
  }
  md+='\n候选到浮现的排除是单独的选择损失，含已在前景的文字；它与“最终答案未被任何渠道呈现”的遗漏不同，不能把 foreground 排除当成答案消失。\n';
  md+='\n## recall 与请求成本\n\n| 生活 | 调用 | 返回段数均值/p95 | 返回字数均值/p95 | 扫描回退 |\n| --- | ---: | --- | --- | --- |\n';for(const life of ['life-a','life-b']){const r=run(life,'E-R').recall;md+=`| ${life} | ${r.calls} | ${fmt(r.results.mean)}/${r.results.p95} | ${fmt(r.chars.mean)}/${r.chars.p95} | ${cell(r.fallbacks)} |\n`;}
@@ -83,5 +101,5 @@ function report(result,root,p8){
  md+='\n## 逐探针、渠道、排名、遗漏\n\n表中 E-R 的 rank 是携带者的 recall 排名，其余为原始答案的 check 排名；两者不是同一种量。JSON 保留 P8 的 rank/overlap 口径，新增 recall_rank 单列；浮现候选另从真实线索与历史清单统计。\n\n| 生活/臂 | 探针/答案 | P8 A0/A2 | P9 呈现渠道 | rank | 原因 |\n| --- | --- | --- | --- | ---: | --- |\n';
  for(const[key,r]of Object.entries(result.runs))for(const p of r.probes)for(const a of p.answers){const baseline=arm=>p8.runs[`${r.life}-${arm}-excerpt`].probes.find(v=>v.id===p.id).answers.find(v=>v.target===a.target).presented;md+=`| ${key} | ${p.id}/${a.target} | ${baseline('A0')}/${baseline('A2')} | ${['window','writing','check','check_writing','recall_writing','surfaced_writing'].filter(k=>a[k]).join(',')||'无'} | ${(r.arm==='E-R'?a.recall_rank:a.rank)??'无'} | ${a.reason??'已呈现'} |\n`;}
  md+='\n## 遗漏复现\n\n```sh\n';for(const[key,r]of Object.entries(result.runs))for(const p of r.probes)if(p.answers.some(a=>!a.presented))md+=`npm run eval -- explain ${root}/${key} ${p.id}\n`;
- md+='```\n\n## 限制与 P9-R\n\n没有真实模型调用或费用授权，P9-R 未执行。life-r 与预算护栏仅由离线假模型验证。后续获授权后检验 H7 的自发工具调用率、H1-r 的答案携带率、H2-r 的回答提及与闯入代理；不得将本报告的检索/呈现结果代替这些真实模型结论。浮现保持默认关闭。全部未解释遗漏为零；原因是机械记录，不是对模型心理的解释。\n';return md;
+ md+='```\n\n## 限制与 P9-R\n\n没有真实模型调用或费用授权，P9-R 未执行。life-r 与预算护栏仅由离线假模型验证；预算护栏按提供方事后返回的 usage 累计，因此最后一个在途请求最多可能超出限额一次（输入无法预先截断，输出虽按剩余额度传 max_tokens 仍以事后 usage 为准），获授权的真实实验需为单个在途请求预留预算余量。后续获授权后检验 H7 的自发工具调用率、H1-r 的答案携带率、H2-r 的回答提及与闯入代理；不得将本报告的检索/呈现结果代替这些真实模型结论。浮现保持默认关闭。全部未解释遗漏为零；原因是机械记录，不是对模型心理的解释。\n';return md;
 }
