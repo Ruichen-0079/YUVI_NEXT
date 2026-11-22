@@ -1,0 +1,6 @@
+(node:640660) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+P8_REGRESS: {"root":"<repo>/.local-data/p8-baseline-MYqgZ1","wall_ms":571206.8704659999}
+(node:654492) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+P9_REGRESS: {"root":"<repo>/.local-data/p9-baseline-oh7udU","wall_ms":752956.994633,"p8_regression_wall_ms":571205.1267809999,"p8_root":"<repo>/.local-data/p8-baseline-MYqgZ1"}
