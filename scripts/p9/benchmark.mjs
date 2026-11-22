@@ -24,11 +24,27 @@ try{for(const shape of ['writings','varied']){
  const hook=join(dir,'surface-probe.mjs');writeFileSync(hook,`import{ArchiveIndex}from${JSON.stringify(resolve('dist/archive-index.js'))};const old=ArchiveIndex.prototype.surface;ArchiveIndex.prototype.surface=function(...args){const at=performance.now();try{return old.apply(this,args);}finally{console.log('P9_SURFACE '+(performance.now()-at));}};`);
  r.service={};for(const surfacing of ['off','relevance','recency']){
   console.error(JSON.stringify({shape,stage:'service',surfacing}));const s=await startService(dir,{data,baseUrl:base,recall:true,surfacing,hook,context:200}),program=[],preModel=[],postModel=[],wall=[],provider=[],health=[];try{
-   for(let i=-2;i<trials;i++){calls=[];const frames=await s.post((serviceCues.length?serviceCues[Math.max(i,0)%serviceCues.length]:['年糕','银杏','旧照片','的 我 是'][Math.max(i,0)%4])),last=frames.at(-1);if(last.event!=='done')throw Error('Service turn failed');if(i>=0){if(!calls.length)throw Error('Service turn recorded no model call');const pre=calls[0].t2-frames.sentAt,post=last.at-calls.at(-1).t3,totalWall=last.at-frames.sentAt,prov=calls.reduce((n,c)=>n+c.t3-c.t2,0),prog=totalWall-prov;if(!(pre>=0&&post>=0&&prov>=0&&prog>=0))throw Error(`Invalid negative turn timing: pre=${pre} post=${post} provider=${prov} program=${prog}`);for(let k=1;k<calls.length;k++)if(calls[k].t2<calls[k-1].t3)throw Error('Invalid negative inter-call timing');preModel.push(pre);postModel.push(post);wall.push(totalWall);provider.push(prov);program.push(prog);}}
+   for(let i=-2;i<trials;i++){
+    calls=[];
+    const cues=serviceCues.length?serviceCues:['年糕','银杏','旧照片','的 我 是'];
+    const frames=await s.post(cues[Math.max(i,0)%cues.length]),last=frames.at(-1);
+    if(last.event!=='done')throw Error('Service turn failed');
+    if(!calls.length)throw Error('Service turn recorded no model call');
+    if(calls.some(c=>!(c.t3>=c.t2)))throw Error('Invalid model call timing');
+    if(i<0)continue;
+    const pre=calls[0].t2-frames.sentAt,post=last.at-calls.at(-1).t3,totalWall=last.at-frames.sentAt,prov=calls.reduce((n,c)=>n+c.t3-c.t2,0),prog=totalWall-prov;
+    if(!(pre>=0&&post>=0&&prov>=0&&prog>=0))throw Error(`Invalid negative turn timing: pre=${pre} post=${post} provider=${prov} program=${prog}`);
+    for(let k=1;k<calls.length;k++)if(calls[k].t2<calls[k-1].t3)throw Error('Invalid negative inter-call timing');
+    preModel.push(pre);postModel.push(post);wall.push(totalWall);provider.push(prov);program.push(prog);
+   }
    for(let i=0;i<trials;i++){const at=performance.now();const response=await fetch(s.url+'/health');if(!response.ok)throw Error('Health failed');health.push(performance.now()-at);}
    const surfaceSamples=s.output.split('\n').filter(line=>line.startsWith('P9_SURFACE ')).map(line=>Number(line.slice(11)));
+   if(surfacing!=='off'&&surfaceSamples.length!==trials+2)throw Error(`Expected ${trials+2} surfacing samples, got ${surfaceSamples.length}`);
    r.service[surfacing]={startup_ms:s.startupMs,rss_bytes:await s.rss(),program:stats(program),pre_model:stats(preModel),post_model:stats(postModel),wall:stats(wall),provider:stats(provider),health:stats(health),surface:stats(surfacing==='off'?[]:surfaceSamples.slice(2))};
   }finally{await s.stop();}save();
  }
- r.passed={P1:['relevance','recency'].every(k=>r.service[k].program.p95_ms<100),P2:['relevance','recency'].every(k=>r.surface[k].all.p95_ms<=60&&r.service[k].surface.p95_ms<=60),P3:shape!=='writings'||r.recall.filter(q=>!['W4','W6','W11'].includes(q.id)).every(q=>q.p95_ms<=(['W1','W2','W8'].includes(q.id)?20:200)),P4:shape!=='writings'||r.recall.find(q=>q.id==='W6').ratio<=1.25};save();
+ r.passed={P1:['relevance','recency'].every(k=>r.service[k].program.p95_ms<100),P2:['relevance','recency'].every(k=>{
+  const direct=r.surface[k].all,service=r.service[k].surface;
+  return direct.p95_ms!==null&&direct.p95_ms<=60&&service.samples.length===trials&&service.p95_ms!==null&&service.p95_ms<=60;
+ }),P3:shape!=='writings'||r.recall.filter(q=>!['W4','W6','W11'].includes(q.id)).every(q=>q.p95_ms<=(['W1','W2','W8'].includes(q.id)?20:200)),P4:shape!=='writings'||r.recall.find(q=>q.id==='W6').ratio<=1.25};save();
 }console.log(JSON.stringify({root,passed:Object.fromEntries(Object.entries(result.shapes).map(([s,r])=>[s,r.passed]))}));}finally{fake.closeAllConnections();await new Promise(r=>fake.close(r));}

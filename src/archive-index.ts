@@ -27,9 +27,28 @@ export function terms(text: string, query = false): string[] {
   }
   flush(); return query ? [...new Set(result)] : result;
 }
-const match = (words: string[]) => words.map(t => '"' + t.replaceAll('"', '""') + '"').join(' OR ');
+function indexToken(term: string): string {
+  // FTS5 ascii preserves this prefix, which cannot occur in a token from terms().
+  return Buffer.byteLength(term, 'utf8') > 16384
+    ? '\u2063' + createHash('sha256').update(term, 'utf8').digest('hex')
+    : term;
+}
+const match = (words: string[]) => words.map(t => '"' + indexToken(t).replaceAll('"', '""') + '"').join(' OR ');
 const digest = (s: string) => createHash('sha256').update(s).digest('hex').slice(0, 16);
 const termHash = (term: string) => createHash('sha256').update(term, 'utf8').digest();
+function validDf(value: unknown, maxDocs: number): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 && value <= maxDocs;
+}
+// node:sqlite throws when reading an INTEGER outside the safe number range.
+const selectDf = `SELECT CASE WHEN doc BETWEEN 1 AND 9007199254740991 THEN doc END AS doc FROM term_df WHERE term_hash=?`;
+function parseDocCount(value: unknown): number | undefined {
+  if (typeof value !== 'string') return undefined;
+  try {
+    const count: unknown = JSON.parse(value);
+    if (typeof count === 'number' && Number.isSafeInteger(count) && count >= 0) return count;
+  } catch { /* invalid derived metadata */ }
+}
+const dfMismatch = () => Object.assign(Error('Index DF mismatch.'), { errcode: 11 });
 const truncates = (db: DatabaseSync) => (db.prepare("SELECT CAST(x'610062' AS TEXT) v").get()!.v as string).length === 1;
 export const eligible = (nul: boolean) => `((class='experience' AND kind='heard') OR (class='act' AND kind IN ('said','silent')) OR (class='inner' AND kind='wrote' AND ${nul ? 'length(content)>0' : "content<>''"}))`;
 const decode = (r: Record<string, unknown>): Event => ({ ...r, meta: JSON.parse(r.meta as string) }) as Event;
@@ -52,9 +71,13 @@ export function supportsFts() {
   try { db.exec("CREATE VIRTUAL TABLE probe USING fts5(terms,content='',contentless_delete=1)"); return true; }
   catch { return false; } finally { db.close(); }
 }
-interface Metadata { format: number; tokenizer: string; scene: string; branch: string; decode: string; archive_first_id: string | null; through_seq: number; through_id: string | null; }
+interface Metadata { format: number; tokenizer: string; scene: string; branch: string; decode: string; archive_first_id: string | null; through_seq: number; through_id: string | null; doc_count?: number; }
 function metadata(db: DatabaseSync): Metadata {
-  return Object.fromEntries(db.prepare('SELECT key,value FROM metadata').all().map(r => [r.key, JSON.parse(r.value as string)])) as unknown as Metadata;
+  return Object.fromEntries(db.prepare('SELECT key,value FROM metadata').all()
+    .map(r => [r.key, r.key === 'doc_count' ? parseDocCount(r.value) : JSON.parse(r.value as string)])) as unknown as Metadata;
+}
+function readDocCount(db: DatabaseSync) {
+  return parseDocCount(db.prepare("SELECT value FROM metadata WHERE key='doc_count'").get()?.value);
 }
 function openWriter(file: string) {
   if (!existsSync(file)) closeSync(openSync(file, 'wx', 0o600));
@@ -71,7 +94,7 @@ function createIndex(db: DatabaseSync, source: DatabaseSync, scope: Scope, forma
     CREATE VIRTUAL TABLE terms USING fts5(words,content='',contentless_delete=1,tokenize='ascii');
     CREATE VIRTUAL TABLE vocab USING fts5vocab(terms,'row');`);
   const m: Metadata = { format, tokenizer: TOKENIZER, ...scope, decode: truncates(source) ? 'nul_truncated' : 'full',
-    archive_first_id: source.prepare('SELECT id FROM events ORDER BY seq LIMIT 1').get()?.id as string ?? null, through_seq: 0, through_id: null };
+    archive_first_id: source.prepare('SELECT id FROM events ORDER BY seq LIMIT 1').get()?.id as string ?? null, through_seq: 0, through_id: null, doc_count: 0 };
   const insert = db.prepare('INSERT INTO metadata VALUES(?,?)');
   for (const [key, value] of Object.entries(m)) insert.run(key, JSON.stringify(value));
 }
@@ -79,13 +102,14 @@ export function appendBatch(db: DatabaseSync, source: DatabaseSync, scope: Scope
   const m = metadata(db), rows = source.prepare(`SELECT seq,id,kind,t_recorded,content FROM events NOT INDEXED
     WHERE seq>? AND scene=? AND branch=? AND ${eligible(truncates(source))} ORDER BY seq LIMIT ?`).all(m.through_seq, scope.scene, scope.branch, limit);
   if (!rows.length) return 0;
+  if (m.doc_count === undefined) throw dfMismatch();
   const doc = db.prepare('INSERT INTO docs VALUES(?,?,?,?,?)'), insert = db.prepare('INSERT INTO terms(rowid,words) VALUES(?,?)');
   const upsertDf = buildDf ? undefined : db.prepare('INSERT INTO term_df(term_hash,doc) VALUES(?,?) ON CONFLICT(term_hash) DO UPDATE SET doc=doc+excluded.doc');
   const batchDf = buildDf ? undefined : new Map<string, number>();
   db.exec('BEGIN');
   try {
     for (const e of rows) {
-      const content = e.content as string, ws = terms(content);
+      const content = e.content as string, ws = terms(content).map(indexToken);
       doc.run(e.seq, e.kind, e.t_recorded, content.length, digest(content));
       insert.run(e.seq, ws.join(' '));
       if (ws.length) {
@@ -98,6 +122,7 @@ export function appendBatch(db: DatabaseSync, source: DatabaseSync, scope: Scope
     m.through_seq = Number(rows.at(-1)!.seq); m.through_id = rows.at(-1)!.id as string;
     const update = db.prepare('UPDATE metadata SET value=? WHERE key=?');
     update.run(JSON.stringify(m.archive_first_id), 'archive_first_id');
+    update.run(JSON.stringify(m.doc_count + rows.length), 'doc_count');
     update.run(JSON.stringify(m.through_seq), 'through_seq'); update.run(JSON.stringify(m.through_id), 'through_id'); db.exec('COMMIT');
   } catch (error) { db.exec('ROLLBACK'); throw error; }
   return rows.length;
@@ -130,9 +155,10 @@ export function verifyIndex(source: DatabaseSync, file: string, full = false, sc
     const count = Number(db.prepare('SELECT count(*) n FROM docs').get()!.n);
     Object.assign(result, { through_seq: m.through_seq, last_seq: b.last_seq, rows: count, expected_rows: b.expected, sampled: 0 });
     if (m.format !== FORMAT || m.tokenizer !== TOKENIZER || m.scene !== scope.scene || m.branch !== scope.branch || m.decode !== (nul ? 'nul_truncated' : 'full')) return { ...result, status: 'version' };
+    if (m.doc_count !== count || !db.prepare("SELECT 1 FROM sqlite_master WHERE type='index' AND name='docs_wrote' AND tbl_name='docs'").get()) return { ...result, status: 'mismatch' };
     const unbound = count === 0 && m.through_seq === 0 && m.archive_first_id === null && m.through_id === null;
     if (Number(db.prepare('SELECT max(seq) n FROM docs').get()!.n ?? 0) !== m.through_seq || (!unbound && m.archive_first_id !== b.first) || (m.through_seq ? source.prepare('SELECT id FROM events WHERE seq=?').get(m.through_seq)?.id !== m.through_id : m.through_id !== null) || count !== b.expected || Number(db.prepare('SELECT count(*) n FROM terms_docsize').get()!.n) !== count) return { ...result, status: 'mismatch' };
-    const find = source.prepare('SELECT * FROM events WHERE seq=? AND scene=? AND branch=?'), lookup = db.prepare('SELECT rowid FROM terms WHERE terms MATCH ? AND rowid=?'), dfLookup = db.prepare('SELECT doc FROM term_df WHERE term_hash=?');
+    const find = source.prepare('SELECT * FROM events WHERE seq=? AND scene=? AND branch=?'), lookup = db.prepare('SELECT rowid FROM terms WHERE terms MATCH ? AND rowid=?'), dfLookup = db.prepare(selectDf);
     if (!count && Number(db.prepare('SELECT count(*) n FROM term_df').get()!.n) !== 0) return { ...result, status: 'mismatch' };
     if (full) {
       if (db.prepare('PRAGMA integrity_check').all().some(r => Object.values(r)[0] !== 'ok')) return { ...result, status: 'corrupt' };
@@ -140,7 +166,7 @@ export function verifyIndex(source: DatabaseSync, file: string, full = false, sc
       let vocabCount = 0;
       for (const row of db.prepare('SELECT term,doc,cnt FROM vocab').iterate()) {
         const df = dfLookup.get(termHash(row.term as string));
-        if (!df || Number(df.doc) !== Number(row.doc)) return { ...result, status: 'mismatch' };
+        if (!df || !validDf(df.doc, count) || df.doc !== Number(row.doc)) return { ...result, status: 'mismatch' };
         vocabCount++;
       }
       if (Number(db.prepare('SELECT count(*) n FROM term_df').get()!.n) !== vocabCount) return { ...result, status: 'mismatch' };
@@ -150,7 +176,11 @@ export function verifyIndex(source: DatabaseSync, file: string, full = false, sc
       [...new Set(Array.from({ length: Math.min(256, count) }, (_, i) => Number(db!.prepare('SELECT seq FROM docs WHERE seq>=? ORDER BY seq LIMIT 1').get(Math.floor(i * m.through_seq / Math.min(256, count)))?.seq)).filter(Number.isFinite))].map(seq => db!.prepare('SELECT * FROM docs WHERE seq=?').get(seq)!);
     for (const row of samples) {
       const e = find.get(row.seq, scope.scene, scope.branch), words = e ? terms(e.content as string) : [];
-      if (!e || e.kind !== row.kind || e.t_recorded !== row.t_recorded || (e.content as string).length !== row.chars || digest(e.content as string) !== row.digest || (words.length && (!lookup.get(match([words[0]]), row.seq) || Number(dfLookup.get(termHash(words[0]))?.doc ?? 0) < 1))) return { ...result, status: 'mismatch', sampled: checked };
+      if (!e || e.kind !== row.kind || e.t_recorded !== row.t_recorded || (e.content as string).length !== row.chars || digest(e.content as string) !== row.digest) return { ...result, status: 'mismatch', sampled: checked };
+      if (words.length) {
+        const df = dfLookup.get(termHash(indexToken(words[0])));
+        if (!df || !validDf(df.doc, count) || !lookup.get(match([words[0]]), row.seq)) return { ...result, status: 'mismatch', sampled: checked };
+      }
       checked++;
     }
     return { ...result, status: m.through_seq < b.last_seq || (unbound && b.first !== null) ? 'behind' : 'ok', sampled: checked };
@@ -167,6 +197,8 @@ export class ArchiveIndex {
   private state: 'building' | 'ready' | 'unavailable' = 'unavailable';
   private closed = false;
   private warned = false;
+  // Seeded when the writer opens, then advanced only after committed batches.
+  private docCount = 0;
   private nul: boolean;
   readonly file: string;
   constructor(private source: DatabaseSync, private directory: string, private scope: Scope = CURRENT_SCOPE) {
@@ -174,8 +206,15 @@ export class ArchiveIndex {
     this.nul = truncates(source);
     if (!supportsFts()) { this.fail(); return; }
     const status = verifyIndex(source, this.file, false, scope).status;
-    if (status === 'ok' || status === 'behind') { try { this.db = openWriter(this.file); this.state = 'ready'; this.catchUp(); } catch { this.fail(); } }
+    if (status === 'ok' || status === 'behind') { try { this.openReady(); this.catchUp(); } catch { this.fail(); } }
     else this.rebuild();
+  }
+  private openReady() {
+    this.db = openWriter(this.file);
+    const count = readDocCount(this.db);
+    if (count === undefined) throw dfMismatch();
+    this.docCount = count;
+    this.state = 'ready';
   }
   private rebuild() {
     if (this.closed) return;
@@ -184,9 +223,9 @@ export class ArchiveIndex {
       for (const suffix of ['', '-wal', '-shm']) rmSync(this.file + suffix, { force: true });
       this.state = 'building';
       const rows = this.source.prepare(`SELECT seq FROM events NOT INDEXED WHERE scene=? AND branch=? AND ${eligible(this.nul)} LIMIT 2001`).all(this.scope.scene, this.scope.branch);
-      if (rows.length <= 2000) { buildIndex(this.directory, this.file, this.scope); this.db = openWriter(this.file); this.state = 'ready'; return; }
+      if (rows.length <= 2000) { buildIndex(this.directory, this.file, this.scope); this.openReady(); return; }
       const worker = this.worker = new Worker(new URL('./archive-index-worker.js', import.meta.url), { workerData: { directory: this.directory, scope: this.scope } });
-      worker.once('message', () => { if (!this.closed) { try { this.db = openWriter(this.file); this.state = 'ready'; this.catchUp(); } catch (e) { this.fail(e); } } });
+      worker.once('message', () => { if (!this.closed) { try { this.openReady(); this.catchUp(); } catch (e) { this.fail(e); } } });
       worker.once('error', e => this.fail(e));
       worker.once('exit', code => { if (this.worker === worker) { this.worker = undefined; if (code && !this.closed && this.state !== 'unavailable') this.fail(); } });
     } catch (e) { this.fail(e); }
@@ -204,25 +243,32 @@ export class ArchiveIndex {
     try {
       if ((statSync(this.file).mode & 0o222) === 0) throw Error();
       const m = metadata(this.db);
+      if (m.doc_count !== this.docCount) throw dfMismatch();
       let lag;
       try { lag = this.source.prepare(`SELECT seq FROM events NOT INDEXED WHERE seq>? AND scene=? AND branch=? AND ${eligible(this.nul)} ORDER BY seq LIMIT 2001`).all(m.through_seq, this.scope.scene, this.scope.branch); }
       catch { throw new ArchiveSourceFailure(); }
       if (lag.length > 2000) { this.rebuild(); return; }
-      if (lag.length) appendBatch(this.db, this.source, this.scope, 2000);
+      if (lag.length) this.docCount += appendBatch(this.db, this.source, this.scope, 2000);
     } catch (e) { if (e instanceof ArchiveSourceFailure) throw e; this.fail(e); }
   }
   private words(query: string, cap = 50000, precomputed?: string[]) {
-      const all = precomputed ?? terms(query, true), limited = all.length > 32, first = all.slice(0, 32);
-      const df = this.db!.prepare('SELECT doc FROM term_df WHERE term_hash=?');
-      const frequencies = first.map((term, i) => ({ term, i, n: Number(df.get(termHash(term))?.doc ?? 0) })).sort((a, b) => a.n - b.n || a.i - b.i);
-      let used = frequencies, dropped: string[] = [], sum = 0;
-      if (query) {
-        used = [];
-        for (const f of frequencies) { if (!used.length || sum + f.n <= cap) { used.push(f); sum += f.n; } else dropped.push(f.term); }
-      }
-      const common = !!used.length && used[0].n > cap;
-      if (common) { dropped = [...used.slice(1).map(f => f.term), ...dropped]; used = used.slice(0, 1); }
-
+    const all = precomputed ?? terms(query, true), limited = all.length > 32, first = all.slice(0, 32);
+    const docCount = readDocCount(this.db!);
+    if (docCount !== this.docCount) throw dfMismatch();
+    const df = this.db!.prepare(selectDf);
+    const frequencies = first.map((term, i) => {
+      const row = df.get(termHash(indexToken(term)));
+      if (!row) return { term, i, n: 0 };
+      if (!validDf(row.doc, docCount)) throw dfMismatch();
+      return { term, i, n: row.doc };
+    }).sort((a, b) => a.n - b.n || a.i - b.i);
+    let used = frequencies, dropped: string[] = [], sum = 0;
+    if (query) {
+      used = [];
+      for (const f of frequencies) { if (!used.length || sum + f.n <= cap) { used.push(f); sum += f.n; } else dropped.push(f.term); }
+    }
+    const common = !!used.length && used[0].n > cap;
+    if (common) { dropped = [...used.slice(1).map(f => f.term), ...dropped]; used = used.slice(0, 1); }
     return { words: used.map(f => f.term), dropped, common, limited, used };
   }
   private readSources(seqs: number[]): Event[] {

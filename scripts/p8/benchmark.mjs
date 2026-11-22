@@ -37,7 +37,7 @@ try{
   // Real entry point builds in a worker while requests and a fixed-rate health probe run.
   console.error(JSON.stringify({shape,stage:'online-build'}));
   const live=join(dir,'live');mkdirSync(live);copyFileSync(join(data,'archive.sqlite'),join(live,'archive.sqlite'));
-  const beforeStart=performance.now(),service=await startService(dir,{data:live,baseUrl:base,snapshots:join(dir,'snapshots'),context:200,hook});
+  const beforeStart=performance.now(),service=await startService(dir,{data:live,baseUrl:base,snapshots:join(dir,'snapshots'),context:200,hook,recall:options.recall===1});
   const health=[],healthFailures=[],pendingHealth=new Set();let healthActive=true;
   const timer=setInterval(()=>{if(!healthActive)return;const begin=performance.now();const promise=fetch(service.url+'/health').then(r=>{health.push(performance.now()-begin);if(!r.ok)healthFailures.push(r.status);}).catch(()=>healthFailures.push('connection'));pendingHealth.add(promise);void promise.finally(()=>pendingHealth.delete(promise));},100);
   const turns=[];
@@ -65,7 +65,11 @@ try{
     const samples={index:[],scan:[]},responses={};let last;
     for(const engine of options.p9&&q.id!=='R17'?['index']:['index','scan'])for(let i=-1;i<trials;i++){
      const args=JSON.stringify({query:q.query,...(Number.isFinite(q.from)?{from:new Date(q.from).toISOString()}:{}),...(Number.isFinite(q.to)?{to:new Date(q.to).toISOString()}:{})});
-     const begin=performance.now();last=engine==='index'?(q.kinds?index.search(q.query,q.from??-Infinity,q.to??Infinity,q.kinds):check(archive,args,'负责人',{index})):check(archive,args,'负责人');const elapsed=performance.now()-begin;if(i>=0)samples[engine].push(elapsed);
+     const begin=performance.now();
+     if(engine==='scan')last=await check(archive,args,'负责人');
+     else if(q.kinds)last=index.search(q.query,q.from??-Infinity,q.to??Infinity,q.kinds);
+     else last=await check(archive,args,'负责人',{index,scan:(raw,owner,why,tool)=>index.scan(raw,owner,why,tool)});
+     const elapsed=performance.now()-begin;if(i>=0)samples[engine].push(elapsed);
      if(i===0)responses[engine]={engine:last.meta?.engine??'scan',fallback:last.meta?.fallback??null,total:last.total??last.meta.total,result_seqs:last.results?.map(e=>e.seq)??last.meta.result_seqs};
     }
     const comparison=responses.scan?{same_total:responses.index.total===responses.scan.total,same_results:JSON.stringify(responses.index.result_seqs)===JSON.stringify(responses.scan.result_seqs)}:null;
