@@ -1,0 +1,87 @@
+npm warn cli npm v12.2.0 does not support Node.js v22.22.0. This version of npm supports the following node versions: `^22.22.2 || ^24.15.0 || >=26.0.0`. You can find the latest version at https://nodejs.org/.
+npm notice run yuvi-next@0.1.0 build
+npm notice run tsc
+TAP version 13
+# (node:42378) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 C7 real service: one-long-word, full terms, bounded structure and exact show
+ok 1 - P9 C7 real service: one-long-word, full terms, bounded structure and exact show
+  ---
+  duration_ms: 112.778153
+  type: 'test'
+  ...
+# Subtest: P9 C7 real service: 33-long-words, full terms, bounded structure and exact show
+ok 2 - P9 C7 real service: 33-long-words, full terms, bounded structure and exact show
+  ---
+  duration_ms: 104.030405
+  type: 'test'
+  ...
+# (node:42379) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 recall: own nonempty writings only, index and literal fallback, independent budgets and ranks
+ok 3 - P9 recall: own nonempty writings only, index and literal fallback, independent budgets and ranks
+  ---
+  duration_ms: 10.318526
+  type: 'test'
+  ...
+# Subtest: P9 S: exclusions, whole-item budgets, sorting, recency, no terms and scoped candidates
+ok 4 - P9 S: exclusions, whole-item budgets, sorting, recency, no terms and scoped candidates
+  ---
+  duration_ms: 5.576541
+  type: 'test'
+  ...
+# Surfacing failed; continuing without surfaced text.
+# Archive index unavailable; using literal archive search.
+# Subtest: P9 actual process: frozen surfaced base, mixed tool calls, usage once and exact historical reconstruction
+ok 5 - P9 actual process: frozen surfaced base, mixed tool calls, usage once and exact historical reconstruction
+  ---
+  duration_ms: 154.2018
+  type: 'test'
+  ...
+# (node:42379) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Archive index unavailable; using literal archive search.
+# Archive index unavailable; using literal archive search.
+# Subtest: P9 S4–S11: budgets, common/no candidates, recency order and failures do not silently scan
+ok 6 - P9 S4–S11: budgets, common/no candidates, recency order and failures do not silently scan
+  ---
+  duration_ms: 38.074939
+  type: 'test'
+  ...
+# Subtest: P9 V3/V4: forged foreign indexed row is rejected, archive unchanged, show cannot cross scope
+ok 7 - P9 V3/V4: forged foreign indexed row is rejected, archive unchanged, show cannot cross scope
+  ---
+  duration_ms: 3.968003
+  type: 'test'
+  ...
+# Subtest: P9 C3/K3/K5: invalid recall never queries, source failure remains fatal; third continuation only silence
+ok 8 - P9 C3/K3/K5: invalid recall never queries, source failure remains fatal; third continuation only silence
+  ---
+  duration_ms: 4.008971
+  type: 'test'
+  ...
+# Subtest: P9 configuration: recall defaults on, surfacing off; invalid values disclose only variable name
+ok 9 - P9 configuration: recall defaults on, surfacing off; invalid values disclose only variable name
+  ---
+  duration_ms: 1.440593
+  type: 'test'
+  ...
+# Subtest: P9 V3: a foreign forged rank omitted by the result budget cannot leak through rank_seqs
+ok 10 - P9 V3: a foreign forged rank omitted by the result budget cannot leak through rank_seqs
+  ---
+  duration_ms: 4.029539
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 387.944029
+(node:42445) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"root":"/mnt/LinuxData/YUVI_NEXT/.local-data/p9-longword-aykjvA","name":"one-long-word","input_chars":5000,"turn_result":"done","term_chars":[5000],"dropped":[],"reason":"no_candidates","manifest_bytes":5786,"structural_bytes":786,"reconstruction":"exact"}
+{"root":"/mnt/LinuxData/YUVI_NEXT/.local-data/p9-longword-aykjvA","name":"33-long-words","input_chars":99032,"turn_result":"done","term_chars":[3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000,3000],"dropped":[],"reason":"no_candidates","manifest_bytes":96882,"structural_bytes":882,"reconstruction":"exact"}

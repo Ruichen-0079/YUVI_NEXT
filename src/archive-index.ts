@@ -4,10 +4,11 @@ import { existsSync, rmSync, statSync, renameSync, openSync, closeSync, chmodSyn
 import { join } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import type { CheckResult } from './context.js';
-import { CURRENT_SCOPE, type Event } from './archive.js';
+import { CURRENT_SCOPE, ArchiveSourceFailure, type Event } from './archive.js';
 
 type Scope = { scene: string; branch: string };
 export const TOKENIZER = 'p8-grams-1';
+const FORMAT = 2;
 const cjk = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
 const word = /[\p{L}\p{N}\p{M}]/u;
 export function terms(text: string, query = false): string[] {
@@ -26,8 +27,28 @@ export function terms(text: string, query = false): string[] {
   }
   flush(); return query ? [...new Set(result)] : result;
 }
-const match = (words: string[]) => words.map(t => '"' + t.replaceAll('"', '""') + '"').join(' OR ');
+function indexToken(term: string): string {
+  // FTS5 ascii preserves this prefix, which cannot occur in a token from terms().
+  return Buffer.byteLength(term, 'utf8') > 16384
+    ? '\u2063' + createHash('sha256').update(term, 'utf8').digest('hex')
+    : term;
+}
+const match = (words: string[]) => words.map(t => '"' + indexToken(t).replaceAll('"', '""') + '"').join(' OR ');
 const digest = (s: string) => createHash('sha256').update(s).digest('hex').slice(0, 16);
+const termHash = (term: string) => createHash('sha256').update(term, 'utf8').digest();
+function validDf(value: unknown, maxDocs: number): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 && value <= maxDocs;
+}
+// node:sqlite throws when reading an INTEGER outside the safe number range.
+const selectDf = `SELECT CASE WHEN doc BETWEEN 1 AND 9007199254740991 THEN doc END AS doc FROM term_df WHERE term_hash=?`;
+function parseDocCount(value: unknown): number | undefined {
+  if (typeof value !== 'string') return undefined;
+  try {
+    const count: unknown = JSON.parse(value);
+    if (typeof count === 'number' && Number.isSafeInteger(count) && count >= 0) return count;
+  } catch { /* invalid derived metadata */ }
+}
+const dfMismatch = () => Object.assign(Error('Index DF mismatch.'), { errcode: 11 });
 const truncates = (db: DatabaseSync) => (db.prepare("SELECT CAST(x'610062' AS TEXT) v").get()!.v as string).length === 1;
 export const eligible = (nul: boolean) => `((class='experience' AND kind='heard') OR (class='act' AND kind IN ('said','silent')) OR (class='inner' AND kind='wrote' AND ${nul ? 'length(content)>0' : "content<>''"}))`;
 const decode = (r: Record<string, unknown>): Event => ({ ...r, meta: JSON.parse(r.meta as string) }) as Event;
@@ -36,6 +57,7 @@ export interface SearchMeta {
   terms: string[]; dropped: string[]; fallback?: 'no_terms' | 'index_building' | 'index_unavailable';
   rank_seqs: number[]; terms_limited?: boolean;
 }
+export interface Surfacing { strategy: 'relevance' | 'recency'; terms: string[]; dropped: string[]; candidates: number[]; excluded: { seq: number; why: 'foreground' | 'window' | 'budget' }[]; reason?: 'no_terms' | 'common' | 'no_candidates' | 'all_excluded' | 'index_building' | 'index_unavailable' | 'error'; }
 export interface IndexSearch { results: Event[]; total: number; meta: SearchMeta; }
 function boundary(source: DatabaseSync, scope: Scope, nul: boolean, through = Infinity) {
   const params = [scope.scene, scope.branch];
@@ -49,46 +71,76 @@ export function supportsFts() {
   try { db.exec("CREATE VIRTUAL TABLE probe USING fts5(terms,content='',contentless_delete=1)"); return true; }
   catch { return false; } finally { db.close(); }
 }
-interface Metadata { format: number; tokenizer: string; scene: string; branch: string; decode: string; archive_first_id: string | null; through_seq: number; through_id: string | null; }
+interface Metadata { format: number; tokenizer: string; scene: string; branch: string; decode: string; archive_first_id: string | null; through_seq: number; through_id: string | null; doc_count?: number; }
 function metadata(db: DatabaseSync): Metadata {
-  return Object.fromEntries(db.prepare('SELECT key,value FROM metadata').all().map(r => [r.key, JSON.parse(r.value as string)])) as unknown as Metadata;
+  return Object.fromEntries(db.prepare('SELECT key,value FROM metadata').all()
+    .map(r => [r.key, r.key === 'doc_count' ? parseDocCount(r.value) : JSON.parse(r.value as string)])) as unknown as Metadata;
+}
+function readDocCount(db: DatabaseSync) {
+  return parseDocCount(db.prepare("SELECT value FROM metadata WHERE key='doc_count'").get()?.value);
 }
 function openWriter(file: string) {
   if (!existsSync(file)) closeSync(openSync(file, 'wx', 0o600));
   else { const mode = statSync(file).mode; if ((mode & 0o222) === 0) throw Error('Index unavailable.'); chmodSync(file, mode & 0o600); }
   return new DatabaseSync(file);
 }
-function createIndex(db: DatabaseSync, source: DatabaseSync, scope: Scope) {
+function createIndex(db: DatabaseSync, source: DatabaseSync, scope: Scope, format = FORMAT) {
   db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;
     CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
     CREATE TABLE docs(seq INTEGER PRIMARY KEY,kind TEXT NOT NULL,t_recorded INTEGER NOT NULL,chars INTEGER NOT NULL,digest TEXT NOT NULL);
     CREATE INDEX docs_time ON docs(t_recorded);
+    CREATE INDEX docs_wrote ON docs(seq) WHERE kind='wrote';
+    CREATE TABLE term_df(term_hash BLOB PRIMARY KEY,doc INTEGER NOT NULL) WITHOUT ROWID;
     CREATE VIRTUAL TABLE terms USING fts5(words,content='',contentless_delete=1,tokenize='ascii');
     CREATE VIRTUAL TABLE vocab USING fts5vocab(terms,'row');`);
-  const m: Metadata = { format: 1, tokenizer: TOKENIZER, ...scope, decode: truncates(source) ? 'nul_truncated' : 'full',
-    archive_first_id: source.prepare('SELECT id FROM events ORDER BY seq LIMIT 1').get()?.id as string ?? null, through_seq: 0, through_id: null };
+  const m: Metadata = { format, tokenizer: TOKENIZER, ...scope, decode: truncates(source) ? 'nul_truncated' : 'full',
+    archive_first_id: source.prepare('SELECT id FROM events ORDER BY seq LIMIT 1').get()?.id as string ?? null, through_seq: 0, through_id: null, doc_count: 0 };
   const insert = db.prepare('INSERT INTO metadata VALUES(?,?)');
   for (const [key, value] of Object.entries(m)) insert.run(key, JSON.stringify(value));
 }
-export function appendBatch(db: DatabaseSync, source: DatabaseSync, scope: Scope, limit = 500): number {
+export function appendBatch(db: DatabaseSync, source: DatabaseSync, scope: Scope, limit = 500, buildDf?: Map<string, number>): number {
   const m = metadata(db), rows = source.prepare(`SELECT seq,id,kind,t_recorded,content FROM events NOT INDEXED
     WHERE seq>? AND scene=? AND branch=? AND ${eligible(truncates(source))} ORDER BY seq LIMIT ?`).all(m.through_seq, scope.scene, scope.branch, limit);
   if (!rows.length) return 0;
+  if (m.doc_count === undefined) throw dfMismatch();
   const doc = db.prepare('INSERT INTO docs VALUES(?,?,?,?,?)'), insert = db.prepare('INSERT INTO terms(rowid,words) VALUES(?,?)');
+  const upsertDf = buildDf ? undefined : db.prepare('INSERT INTO term_df(term_hash,doc) VALUES(?,?) ON CONFLICT(term_hash) DO UPDATE SET doc=doc+excluded.doc');
+  const batchDf = buildDf ? undefined : new Map<string, number>();
   db.exec('BEGIN');
   try {
-    for (const e of rows) { const content = e.content as string; doc.run(e.seq, e.kind, e.t_recorded, content.length, digest(content)); insert.run(e.seq, terms(content).join(' ')); }
+    for (const e of rows) {
+      const content = e.content as string, ws = terms(content).map(indexToken);
+      doc.run(e.seq, e.kind, e.t_recorded, content.length, digest(content));
+      insert.run(e.seq, ws.join(' '));
+      if (ws.length) {
+        const target = buildDf ?? batchDf!;
+        for (const t of new Set(ws)) target.set(t, (target.get(t) ?? 0) + 1);
+      }
+    }
+    if (upsertDf && batchDf) for (const [t, n] of batchDf) upsertDf.run(termHash(t), n);
     if (m.archive_first_id === null) m.archive_first_id = source.prepare('SELECT id FROM events ORDER BY seq LIMIT 1').get()!.id as string;
     m.through_seq = Number(rows.at(-1)!.seq); m.through_id = rows.at(-1)!.id as string;
     const update = db.prepare('UPDATE metadata SET value=? WHERE key=?');
     update.run(JSON.stringify(m.archive_first_id), 'archive_first_id');
+    update.run(JSON.stringify(m.doc_count + rows.length), 'doc_count');
     update.run(JSON.stringify(m.through_seq), 'through_seq'); update.run(JSON.stringify(m.through_id), 'through_id'); db.exec('COMMIT');
   } catch (error) { db.exec('ROLLBACK'); throw error; }
   return rows.length;
 }
 export function buildIndex(directory: string, file = join(directory, 'index.sqlite'), scope: Scope = CURRENT_SCOPE) {
   const source = new DatabaseSync(join(directory, 'archive.sqlite'), { readOnly: true }), db = openWriter(file);
-  try { createIndex(db, source, scope); while (appendBatch(db, source, scope)) { /* bounded transactional batches */ }
+  const buildDf = new Map<string, number>();
+  try {
+    createIndex(db, source, scope, 0);
+    while (appendBatch(db, source, scope, 2000, buildDf)) { /* bounded transactional batches */ }
+    const entries = [...buildDf.entries()].map(([t, n]) => [termHash(t), n] as const).sort((a, b) => a[0].compare(b[0]));
+    const insertDf = db.prepare('INSERT INTO term_df(term_hash,doc) VALUES(?,?)');
+    db.exec('BEGIN');
+    try {
+      for (const [hash, n] of entries) insertDf.run(hash, n);
+      db.prepare('UPDATE metadata SET value=? WHERE key=?').run(JSON.stringify(FORMAT), 'format');
+      db.exec('COMMIT');
+    } catch (error) { db.exec('ROLLBACK'); throw error; }
     db.exec("INSERT INTO terms(terms) VALUES('optimize')");
   } finally { db.close(); source.close(); }
 }
@@ -102,21 +154,33 @@ export function verifyIndex(source: DatabaseSync, file: string, full = false, sc
     const m = metadata(db), nul = truncates(source), b = boundary(source, scope, nul, m.through_seq);
     const count = Number(db.prepare('SELECT count(*) n FROM docs').get()!.n);
     Object.assign(result, { through_seq: m.through_seq, last_seq: b.last_seq, rows: count, expected_rows: b.expected, sampled: 0 });
-    if (m.format !== 1 || m.tokenizer !== TOKENIZER || m.scene !== scope.scene || m.branch !== scope.branch || m.decode !== (nul ? 'nul_truncated' : 'full')) return { ...result, status: 'version' };
+    if (m.format !== FORMAT || m.tokenizer !== TOKENIZER || m.scene !== scope.scene || m.branch !== scope.branch || m.decode !== (nul ? 'nul_truncated' : 'full')) return { ...result, status: 'version' };
+    if (m.doc_count !== count || !db.prepare("SELECT 1 FROM sqlite_master WHERE type='index' AND name='docs_wrote' AND tbl_name='docs'").get()) return { ...result, status: 'mismatch' };
     const unbound = count === 0 && m.through_seq === 0 && m.archive_first_id === null && m.through_id === null;
     if (Number(db.prepare('SELECT max(seq) n FROM docs').get()!.n ?? 0) !== m.through_seq || (!unbound && m.archive_first_id !== b.first) || (m.through_seq ? source.prepare('SELECT id FROM events WHERE seq=?').get(m.through_seq)?.id !== m.through_id : m.through_id !== null) || count !== b.expected || Number(db.prepare('SELECT count(*) n FROM terms_docsize').get()!.n) !== count) return { ...result, status: 'mismatch' };
-    const find = source.prepare('SELECT * FROM events WHERE seq=? AND scene=? AND branch=?'), lookup = db.prepare('SELECT rowid FROM terms WHERE terms MATCH ? AND rowid=?');
+    const find = source.prepare('SELECT * FROM events WHERE seq=? AND scene=? AND branch=?'), lookup = db.prepare('SELECT rowid FROM terms WHERE terms MATCH ? AND rowid=?'), dfLookup = db.prepare(selectDf);
+    if (!count && Number(db.prepare('SELECT count(*) n FROM term_df').get()!.n) !== 0) return { ...result, status: 'mismatch' };
     if (full) {
       if (db.prepare('PRAGMA integrity_check').all().some(r => Object.values(r)[0] !== 'ok')) return { ...result, status: 'corrupt' };
-      // Walk the posting vocabulary as well as checking each source-row witness.
-      db.prepare('SELECT sum(doc),sum(cnt) FROM vocab').get();
+      // Walk the posting vocabulary and verify exact term_df bijection as well as each source-row witness.
+      let vocabCount = 0;
+      for (const row of db.prepare('SELECT term,doc,cnt FROM vocab').iterate()) {
+        const df = dfLookup.get(termHash(row.term as string));
+        if (!df || !validDf(df.doc, count) || df.doc !== Number(row.doc)) return { ...result, status: 'mismatch' };
+        vocabCount++;
+      }
+      if (Number(db.prepare('SELECT count(*) n FROM term_df').get()!.n) !== vocabCount) return { ...result, status: 'mismatch' };
     }
     let checked = 0;
     const samples = full ? db.prepare('SELECT * FROM docs ORDER BY seq').iterate() :
       [...new Set(Array.from({ length: Math.min(256, count) }, (_, i) => Number(db!.prepare('SELECT seq FROM docs WHERE seq>=? ORDER BY seq LIMIT 1').get(Math.floor(i * m.through_seq / Math.min(256, count)))?.seq)).filter(Number.isFinite))].map(seq => db!.prepare('SELECT * FROM docs WHERE seq=?').get(seq)!);
     for (const row of samples) {
       const e = find.get(row.seq, scope.scene, scope.branch), words = e ? terms(e.content as string) : [];
-      if (!e || e.kind !== row.kind || e.t_recorded !== row.t_recorded || (e.content as string).length !== row.chars || digest(e.content as string) !== row.digest || (words.length && !lookup.get(match([words[0]]), row.seq))) return { ...result, status: 'mismatch', sampled: checked };
+      if (!e || e.kind !== row.kind || e.t_recorded !== row.t_recorded || (e.content as string).length !== row.chars || digest(e.content as string) !== row.digest) return { ...result, status: 'mismatch', sampled: checked };
+      if (words.length) {
+        const df = dfLookup.get(termHash(indexToken(words[0])));
+        if (!df || !validDf(df.doc, count) || !lookup.get(match([words[0]]), row.seq)) return { ...result, status: 'mismatch', sampled: checked };
+      }
       checked++;
     }
     return { ...result, status: m.through_seq < b.last_seq || (unbound && b.first !== null) ? 'behind' : 'ok', sampled: checked };
@@ -133,13 +197,24 @@ export class ArchiveIndex {
   private state: 'building' | 'ready' | 'unavailable' = 'unavailable';
   private closed = false;
   private warned = false;
+  // Seeded when the writer opens, then advanced only after committed batches.
+  private docCount = 0;
+  private nul: boolean;
   readonly file: string;
   constructor(private source: DatabaseSync, private directory: string, private scope: Scope = CURRENT_SCOPE) {
     this.file = join(directory, 'index.sqlite');
+    this.nul = truncates(source);
     if (!supportsFts()) { this.fail(); return; }
     const status = verifyIndex(source, this.file, false, scope).status;
-    if (status === 'ok' || status === 'behind') { try { this.db = openWriter(this.file); this.state = 'ready'; this.catchUp(); } catch { this.fail(); } }
+    if (status === 'ok' || status === 'behind') { try { this.openReady(); this.catchUp(); } catch { this.fail(); } }
     else this.rebuild();
+  }
+  private openReady() {
+    this.db = openWriter(this.file);
+    const count = readDocCount(this.db);
+    if (count === undefined) throw dfMismatch();
+    this.docCount = count;
+    this.state = 'ready';
   }
   private rebuild() {
     if (this.closed) return;
@@ -147,10 +222,10 @@ export class ArchiveIndex {
       this.db?.close(); this.db = undefined;
       for (const suffix of ['', '-wal', '-shm']) rmSync(this.file + suffix, { force: true });
       this.state = 'building';
-      const rows = this.source.prepare(`SELECT seq FROM events NOT INDEXED WHERE scene=? AND branch=? AND ${eligible(truncates(this.source))} LIMIT 2001`).all(this.scope.scene, this.scope.branch);
-      if (rows.length <= 2000) { buildIndex(this.directory, this.file, this.scope); this.db = openWriter(this.file); this.state = 'ready'; return; }
+      const rows = this.source.prepare(`SELECT seq FROM events NOT INDEXED WHERE scene=? AND branch=? AND ${eligible(this.nul)} LIMIT 2001`).all(this.scope.scene, this.scope.branch);
+      if (rows.length <= 2000) { buildIndex(this.directory, this.file, this.scope); this.openReady(); return; }
       const worker = this.worker = new Worker(new URL('./archive-index-worker.js', import.meta.url), { workerData: { directory: this.directory, scope: this.scope } });
-      worker.once('message', () => { if (!this.closed) { try { this.db = openWriter(this.file); this.state = 'ready'; this.catchUp(); } catch (e) { this.fail(e); } } });
+      worker.once('message', () => { if (!this.closed) { try { this.openReady(); this.catchUp(); } catch (e) { this.fail(e); } } });
       worker.once('error', e => this.fail(e));
       worker.once('exit', code => { if (this.worker === worker) { this.worker = undefined; if (code && !this.closed && this.state !== 'unavailable') this.fail(); } });
     } catch (e) { this.fail(e); }
@@ -168,71 +243,136 @@ export class ArchiveIndex {
     try {
       if ((statSync(this.file).mode & 0o222) === 0) throw Error();
       const m = metadata(this.db);
-      const lag = this.source.prepare(`SELECT seq FROM events NOT INDEXED WHERE seq>? AND scene=? AND branch=? AND ${eligible(truncates(this.source))} ORDER BY seq LIMIT 2001`).all(m.through_seq, this.scope.scene, this.scope.branch);
+      if (m.doc_count !== this.docCount) throw dfMismatch();
+      let lag;
+      try { lag = this.source.prepare(`SELECT seq FROM events NOT INDEXED WHERE seq>? AND scene=? AND branch=? AND ${eligible(this.nul)} ORDER BY seq LIMIT 2001`).all(m.through_seq, this.scope.scene, this.scope.branch); }
+      catch { throw new ArchiveSourceFailure(); }
       if (lag.length > 2000) { this.rebuild(); return; }
-      if (lag.length) appendBatch(this.db, this.source, this.scope, 2000);
-    } catch (e) { this.fail(e); }
+      if (lag.length) this.docCount += appendBatch(this.db, this.source, this.scope, 2000);
+    } catch (e) { if (e instanceof ArchiveSourceFailure) throw e; this.fail(e); }
   }
-  search(query: string, from: number, to: number, kinds?: string[]): IndexSearch | { fallback: 'index_building' | 'index_unavailable' } {
+  private words(query: string, cap = 50000, precomputed?: string[]) {
+    const all = precomputed ?? terms(query, true), limited = all.length > 32, first = all.slice(0, 32);
+    const docCount = readDocCount(this.db!);
+    if (docCount !== this.docCount) throw dfMismatch();
+    const df = this.db!.prepare(selectDf);
+    const frequencies = first.map((term, i) => {
+      const row = df.get(termHash(indexToken(term)));
+      if (!row) return { term, i, n: 0 };
+      if (!validDf(row.doc, docCount)) throw dfMismatch();
+      return { term, i, n: row.doc };
+    }).sort((a, b) => a.n - b.n || a.i - b.i);
+    let used = frequencies, dropped: string[] = [], sum = 0;
+    if (query) {
+      used = [];
+      for (const f of frequencies) { if (!used.length || sum + f.n <= cap) { used.push(f); sum += f.n; } else dropped.push(f.term); }
+    }
+    const common = !!used.length && used[0].n > cap;
+    if (common) { dropped = [...used.slice(1).map(f => f.term), ...dropped]; used = used.slice(0, 1); }
+    return { words: used.map(f => f.term), dropped, common, limited, used };
+  }
+  private readSources(seqs: number[]): Event[] {
+    let find;
+    try { find = this.source.prepare('SELECT * FROM events WHERE seq=? AND scene=? AND branch=?'); } catch { throw new ArchiveSourceFailure(); }
+    return seqs.map(seq => {
+      let row: Record<string, unknown> | undefined;
+      try { row = find.get(seq, this.scope.scene, this.scope.branch); } catch { throw new ArchiveSourceFailure(); }
+      const doc = this.db!.prepare('SELECT kind,t_recorded,chars,digest FROM docs WHERE seq=?').get(seq);
+      if (!row || !doc || !((row.class === 'experience' && row.kind === 'heard') || (row.class === 'act' && ['said','silent'].includes(row.kind as string)) || (row.class === 'inner' && row.kind === 'wrote' && (row.content as string).length > 0)) || row.kind !== doc.kind || row.t_recorded !== doc.t_recorded || (row.content as string).length !== doc.chars || digest(row.content as string) !== doc.digest)
+        throw Object.assign(Error('Index source mismatch.'), { errcode: 11 });
+      return decode(row);
+    });
+  }
+  surface(query: string, through: number, foreground: Event[], window: Event[], strategy: Surfacing['strategy'], cap = 50000): { surfaced: Event[]; surfacing: Surfacing } {
+    const m: Surfacing = { strategy, terms: [], dropped: [], candidates: [], excluded: [] };
+    const none = (reason: NonNullable<Surfacing['reason']>) => ({ surfaced: [], surfacing: { ...m, reason } });
+    try {
+      const allTerms = terms(query, true);
+      if (!allTerms.length) return none('no_terms');
+      this.catchUp();
+      if (!this.db || this.state !== 'ready') return none(this.state === 'building' ? 'index_building' : 'index_unavailable');
+      const { words, dropped, common } = this.words(query, cap, allTerms); m.terms = words; m.dropped = dropped;
+      if (common) return none('common');
+      const rows = this.db.prepare(`SELECT f.rowid FROM terms f JOIN docs d ON d.seq=f.rowid WHERE terms MATCH ? AND d.kind='wrote' AND f.rowid<? ORDER BY ${strategy === 'relevance' ? 'f.rank,' : ''}f.rowid DESC LIMIT 20`).all(match(words), through);
+      const candidates = this.readSources(rows.map(r => Number(r.rowid)));
+      if (candidates.some(e => e.class !== 'inner' || e.kind !== 'wrote' || !e.content)) throw Object.assign(Error(), { errcode: 11 });
+      m.candidates = candidates.map(e => e.seq);
+      if (!candidates.length) return none('no_candidates');
+      const selected: Event[] = []; let chars = 0;
+      for (const e of candidates) {
+        const material = e.meta.material as { from_seq?: number; through_seq?: number } | undefined;
+        const why = foreground.some(w => w.seq === e.seq) ? 'foreground' :
+          window.length && material && typeof material.from_seq === 'number' && typeof material.through_seq === 'number' && material.from_seq <= material.through_seq && window[0].seq <= material.from_seq && material.through_seq <= window.at(-1)!.seq ? 'window' :
+          chars + e.content.length > 2000 ? 'budget' : undefined;
+        if (why) m.excluded.push({ seq: e.seq, why });
+        else { selected.push(e); chars += e.content.length; if (selected.length === 3) break; }
+      }
+      return selected.length ? { surfaced: selected.sort((a,b) => a.seq-b.seq), surfacing: m } : none('all_excluded');
+    } catch (e) {
+      if (e instanceof ArchiveSourceFailure) throw e;
+      if ([11,26].includes(((e as { errcode?: number }).errcode ?? 0) & 255)) { this.fail(e); return none(this.state === 'building' ? 'index_building' : 'index_unavailable'); }
+      console.error('Surfacing failed; continuing without surfaced text.'); return none('error');
+    }
+  }
+  search(query: string, from: number, to: number, kinds?: string[], limits: { count: number; chars: number } = { count: 40, chars: 16000 }): IndexSearch | { fallback: 'index_building' | 'index_unavailable' } {
     this.catchUp();
     if (!this.db || this.state !== 'ready') return { fallback: this.state === 'building' ? 'index_building' : 'index_unavailable' };
     try {
-      const all = terms(query, true), limited = all.length > 32, first = all.slice(0, 32);
-      const frequencies = first.map((term, i) => ({ term, i, n: Number(this.db!.prepare('SELECT doc FROM vocab WHERE term=?').get(term)?.doc ?? 0) })).sort((a, b) => a.n - b.n || a.i - b.i);
-      let used = frequencies, dropped: string[] = [], sum = 0;
-      if (query) {
-        used = [];
-        for (const f of frequencies) { if (!used.length || sum + f.n <= 50000) { used.push(f); sum += f.n; } else dropped.push(f.term); }
-      }
-      const common = !!used.length && used[0].n > 50000;
-      if (common) { dropped = [...used.slice(1).map(f => f.term), ...dropped]; used = used.slice(0, 1); }
-      const words = used.map(f => f.term), relevance = !!query && !common;
-      const where = `d.t_recorded>=? AND d.t_recorded<=?${kinds ? ` AND d.kind IN (${kinds.map(() => '?').join(',')})` : ''}`;
-      const params = [from, to, ...(kinds ?? [])];
+      const { words, dropped, common, limited, used } = this.words(query);
+      const relevance = !!query && !common;
+      const wroteOnly = kinds?.length === 1 && kinds[0] === 'wrote';
+      const filters: string[] = [], params: (number | string)[] = [];
+      if (from !== -Infinity) { filters.push('d.t_recorded>=?'); params.push(from); }
+      if (to !== Infinity) { filters.push('d.t_recorded<=?'); params.push(to); }
+      if (wroteOnly) filters.push("d.kind='wrote'");
+      else if (kinds) { filters.push(`d.kind IN (${kinds.map(() => '?').join(',')})`); params.push(...kinds); }
       const table = query ? 'terms f JOIN docs d ON d.seq=f.rowid' : 'docs d';
-      const clause = (query ? 'terms MATCH ? AND ' : '') + where;
+      const predicates = [...(query ? ['terms MATCH ?'] : []), ...filters];
+      const whereClause = predicates.length ? ` WHERE ${predicates.join(' AND ')}` : '';
       const args = [...(query ? [match(words)] : []), ...params];
       const unrestricted = from === -Infinity && to === Infinity && kinds === undefined;
       const total = unrestricted && query ? (used.length === 1 ? used[0].n : Number(this.db.prepare('SELECT count(*) n FROM terms WHERE terms MATCH ?').get(match(words))!.n)) :
-        Number(this.db.prepare(`SELECT count(*) n FROM ${table} WHERE ${clause}`).get(...args)!.n);
-      const ranked = this.db.prepare(`SELECT d.seq,d.chars FROM ${table} WHERE ${clause} ORDER BY ${query ? (relevance ? 'f.rank,f.rowid DESC' : 'f.rowid DESC') : 'd.seq DESC'} LIMIT 100`).all(...args);
+        Number(this.db.prepare(`SELECT count(*) n FROM ${table}${whereClause}`).get(...args)!.n);
+      const ranked = this.db.prepare(`SELECT d.seq,d.chars FROM ${table}${whereClause} ORDER BY ${query ? (relevance ? 'f.rank,f.rowid DESC' : 'f.rowid DESC') : 'd.seq DESC'} LIMIT 100`).all(...args);
+      // Ranks are observable too: validate all bounded references, including
+      // rows omitted by the result budget, before returning any index metadata.
+      if (ranked.length) {
+        let visible;
+        try { visible = this.source.prepare(`SELECT count(*) n FROM events WHERE seq IN (${ranked.map(() => '?').join(',')}) AND scene=? AND branch=? AND ${eligible(this.nul)} AND t_recorded>=? AND t_recorded<=?${kinds ? ` AND kind IN (${kinds.map(() => '?').join(',')})` : ''}`)
+          .get(...ranked.map(r => Number(r.seq)), this.scope.scene, this.scope.branch, from, to, ...(kinds ?? []))!.n; }
+        catch { throw new ArchiveSourceFailure(); }
+        if (visible !== ranked.length) throw Object.assign(Error('Index source mismatch.'), { errcode: 11 });
+      }
       const picked: number[] = [], lengths = new Map(ranked.map(r => [Number(r.seq), Number(r.chars)])); let chars = 0;
       const add = (seq: number, length: number) => { picked.push(seq); chars += length; };
       if (ranked.length) {
         add(Number(ranked[0].seq), Number(ranked[0].chars));
         if (relevance) {
-          const newest = this.db.prepare(`SELECT d.seq,d.chars FROM ${table} WHERE ${clause} ORDER BY f.rowid DESC LIMIT 1`).get(...args)!;
+          const newest = this.db.prepare(`SELECT d.seq,d.chars FROM ${table}${whereClause} ORDER BY f.rowid DESC LIMIT 1`).get(...args)!;
           if (!picked.includes(Number(newest.seq))) add(Number(newest.seq), Number(newest.chars));
         }
         for (const r of ranked) { const seq = Number(r.seq); if (picked.includes(seq)) continue;
-          if (picked.length === 40 || chars + Number(r.chars) > 16000) break; add(seq, lengths.get(seq)!); }
+          if (picked.length === limits.count || chars + Number(r.chars) > limits.chars) break; add(seq, lengths.get(seq)!); }
       }
-      const get = this.source.prepare('SELECT * FROM events WHERE seq=? AND scene=? AND branch=?');
-      const sourceMeta = this.db.prepare('SELECT kind,t_recorded,chars,digest FROM docs WHERE seq=?');
-      const results = picked.sort((a, b) => a - b).map(seq => {
-        const row = get.get(seq, this.scope.scene, this.scope.branch), doc = sourceMeta.get(seq);
-        if (!row || !doc || !((row.class === 'experience' && row.kind === 'heard') || (row.class === 'act' && ['said', 'silent'].includes(row.kind as string)) || (row.class === 'inner' && row.kind === 'wrote' && (row.content as string).length > 0)) || row.kind !== doc.kind || row.t_recorded !== doc.t_recorded || (row.content as string).length !== doc.chars || digest(row.content as string) !== doc.digest)
-          throw Object.assign(new Error('Index source mismatch.'), { errcode: 11 });
-        return decode(row);
-      });
+      const results = this.readSources(picked.sort((a,b) => a-b));
       return { results, total, meta: { rules: 'p8', engine: 'index', mode: relevance ? 'relevance' : 'recent', terms: words, dropped,
         rank_seqs: ranked.map(r => Number(r.seq)), ...(limited ? { terms_limited: true } : {}) } };
-    } catch (e) { this.fail(e); return { fallback: (this.state as string) === 'unavailable' ? 'index_unavailable' : 'index_building' }; }
+    } catch (e) { if (e instanceof ArchiveSourceFailure) throw e; this.fail(e); return { fallback: (this.state as string) === 'unavailable' ? 'index_unavailable' : 'index_building' }; }
   }
-  scan(raw: string, owner: string, fallback: NonNullable<SearchMeta['fallback']>): Promise<CheckResult> {
+  scan(raw: string, owner: string, fallback: NonNullable<SearchMeta['fallback']>, tool: 'check' | 'recall' = 'check'): Promise<CheckResult> {
     if (!this.scanWorker) {
       const worker = this.scanWorker = new Worker(new URL('./archive-index-worker.js', import.meta.url), { workerData: { mode: 'scan', directory: this.directory, scope: this.scope } });
       worker.on('message', ({ id, result, error }) => {
         if (this.closed) return;
         const pending = this.scans.get(id); this.scans.delete(id);
-        if (error) pending?.reject(new Error('Archive scan failed.')); else pending?.resolve(result);
+        if (error) pending?.reject(new ArchiveSourceFailure(true)); else pending?.resolve(result);
       });
       const failed = () => { if (!this.closed) for (const p of this.scans.values()) p.reject(new Error('Archive scan failed.')); this.scans.clear(); };
       worker.on('error', failed);
       worker.once('exit', () => { if (this.scanWorker === worker) { this.scanWorker = undefined; failed(); } });
     }
     const id = ++this.scanId, through = Number(this.source.prepare('SELECT max(seq) n FROM events').get()!.n ?? 0);
-    return new Promise((resolve, reject) => { this.scans.set(id, { resolve, reject }); this.scanWorker!.postMessage({ id, raw, owner, fallback, through }); });
+    return new Promise((resolve, reject) => { this.scans.set(id, { resolve, reject }); this.scanWorker!.postMessage({ id, raw, owner, fallback, through, tool }); });
   }
   async ready() { if (this.worker) await new Promise<void>(resolve => this.worker!.once('exit', () => resolve())); }
   async close() { this.closed = true; this.scans.clear(); this.db?.close(); this.db = undefined; await Promise.all([this.worker?.terminate(), this.scanWorker?.terminate()]); }

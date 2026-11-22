@@ -1,0 +1,3 @@
+{"input_chars":5000,"term_chars":[5000],"manifest_bytes":5778}
+(node:112253) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)

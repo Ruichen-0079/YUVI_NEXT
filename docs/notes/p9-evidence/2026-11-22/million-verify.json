@@ -1,0 +1,62 @@
+[
+  {
+    "dir": ".local-data/p9-million-2026-11-22/writings/data",
+    "mode": "600",
+    "scope": {
+      "scene": "web",
+      "branch": "dev:v2-dev",
+      "rows": 1000128,
+      "invalid": 0
+    },
+    "fast": {
+      "status": "ok",
+      "through_seq": 1000268,
+      "last_seq": 1000268,
+      "rows": 1000128,
+      "expected_rows": 1000128,
+      "sampled": 256
+    },
+    "doc_count": 1000128,
+    "vocab_term_df_bijection": 56531
+  },
+  {
+    "dir": ".local-data/p9-million-2026-11-22/varied/data",
+    "mode": "600",
+    "scope": {
+      "scene": "web",
+      "branch": "dev:v2-dev",
+      "rows": 1000133,
+      "invalid": 0
+    },
+    "fast": {
+      "status": "ok",
+      "through_seq": 1000266,
+      "last_seq": 1000266,
+      "rows": 1000133,
+      "expected_rows": 1000133,
+      "sampled": 256
+    },
+    "doc_count": 1000133,
+    "vocab_term_df_bijection": 61993
+  },
+  {
+    "dir": ".local-data/p9-p8-default-2026-11-22-clean/varied/seed",
+    "mode": "600",
+    "scope": {
+      "scene": "web",
+      "branch": "dev:v2-dev",
+      "rows": 1000089,
+      "invalid": 0
+    },
+    "fast": {
+      "status": "ok",
+      "through_seq": 1000178,
+      "last_seq": 1000178,
+      "rows": 1000089,
+      "expected_rows": 1000089,
+      "sampled": 256
+    },
+    "doc_count": 1000089,
+    "vocab_term_df_bijection": 62016
+  }
+]

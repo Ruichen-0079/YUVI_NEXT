@@ -15,13 +15,16 @@ export const silentTool = { type: 'function', function: { name: 'stay_silent',
 export const checkTool = { type: 'function', function: { name: 'check',
   description: '查阅档案原文：返回本场景中符合条件的原始记录，逐字，带时间和作者，也包括你自己以前写下的文字。查阅会被记录。当你要把过去的事当作事实告诉别人时，先用它核对。',
   parameters: { type: 'object', properties: { query: { type: 'string' }, from: { type: 'string' }, to: { type: 'string' } }, additionalProperties: false } } };
-export interface RequestParameters { tools?: (typeof silentTool | typeof checkTool)[]; tool_choice?: 'auto'; max_tokens?: number; }
-export interface RequestOptions { parameters?: RequestParameters; mode?: 'dialogue' | 'consolidation'; lastStep?: boolean; maxTokens?: number; finish?: (reason: unknown) => void; }
+export const recallTool = { type: 'function', function: { name: 'recall',
+  description: '回想你自己以前写下的文字：返回你写下的、与查询有关的文字和写下的时间。它们是你当时的想法，不一定准确，也不一定是现在的情况；要核对实际发生了什么，用 check。回想会被记录。',
+  parameters: checkTool.function.parameters } };
+export interface RequestParameters { tools?: (typeof silentTool | typeof checkTool | typeof recallTool)[]; tool_choice?: 'auto'; max_tokens?: number; }
+export interface RequestOptions { recall?: boolean; parameters?: RequestParameters; mode?: 'dialogue' | 'consolidation'; lastStep?: boolean; maxTokens?: number; finish?: (reason: unknown) => void; }
 
 // Used by assembly and by direct model-client callers (P1–P6 compatibility).
 export function requestParameters(options: RequestOptions = {}): RequestParameters {
   return options.mode === 'consolidation' ? { max_tokens: options.maxTokens } : {
-    tools: options.lastStep ? [silentTool] : [silentTool, checkTool], tool_choice: 'auto'
+    tools: options.lastStep ? [silentTool] : [silentTool, checkTool, ...(options.recall ? [recallTool] : [])], tool_choice: 'auto'
   };
 }
 

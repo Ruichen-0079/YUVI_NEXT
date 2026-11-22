@@ -1,0 +1,95 @@
+{
+  "old_root": ".local-data/p9-baseline-uYr1Is",
+  "baseline_root": ".local-data/p9-baseline-j2eKYC",
+  "regress_root": ".local-data/p9-baseline-oRXn5Y",
+  "runs": {
+    "life-a-E-R-excerpt": {
+      "events": 8802,
+      "requests": 2300,
+      "prefix_changed_requests": 0,
+      "request_chars_saved": 0,
+      "fake_prompt_tokens_saved": 0,
+      "research_metrics_unchanged": true,
+      "metrics_sha256": "4a381017b2d9916a5828b55bf02641914c5fefbc687ffea919b714481f64aca4",
+      "normalized_archive_sha256": "f907e87f8bf69b5fc9a101e23ae21aa159e66ab543e740ea1d8c7f0c7796b8b3",
+      "request_trace_sha256": "3d77273c308e1c50ba14dd6169479450b15b97b4584c3574810af8b12e4d0da4"
+    },
+    "life-a-E-S-excerpt": {
+      "events": 8732,
+      "requests": 2265,
+      "prefix_changed_requests": 2011,
+      "request_chars_saved": 4022,
+      "fake_prompt_tokens_saved": 4022,
+      "research_metrics_unchanged": true,
+      "metrics_sha256": "51968f6d8c61d2708f13e6bbfae7a6a0ad51c4ca05e656bcaf5b700df28fe34b",
+      "normalized_archive_sha256": "e88ef6cd91b8d713bc8f503d4eb908390480dea3fe20c155518dd84ffbe18f40",
+      "request_trace_sha256": "0fa3ac0140020c9670bebb12e9f86e2a01b3d83f4970f48e091963666c691790"
+    },
+    "life-a-E-SR-excerpt": {
+      "events": 8732,
+      "requests": 2265,
+      "prefix_changed_requests": 2011,
+      "request_chars_saved": 4022,
+      "fake_prompt_tokens_saved": 4022,
+      "research_metrics_unchanged": true,
+      "metrics_sha256": "152ed0915f48d08f64c4ed4de27c06f5aed98d1b42f5b0b8df5d24118043eda4",
+      "normalized_archive_sha256": "1cbf1b3fa5fa33ffb22d264567a99a5700454adabdf3489b89fecdc35a6e768f",
+      "request_trace_sha256": "bebd99d8baeebea4ed2d8ea5e6edb1bedb1d7e390db15ebff3ae60dc7c55ffb0"
+    },
+    "life-a-E-SC-excerpt": {
+      "events": 8802,
+      "requests": 2300,
+      "prefix_changed_requests": 2041,
+      "request_chars_saved": 4082,
+      "fake_prompt_tokens_saved": 4082,
+      "research_metrics_unchanged": true,
+      "metrics_sha256": "cac887a84749b4e0c4aa1b8476c479c20ed3eaf1a52dbbd41ddd1ee9b8f51a7b",
+      "normalized_archive_sha256": "5c9ca53c2a538e63eb9877b47ee5ecaf45480147824aa6dc60f025f59bd2c037",
+      "request_trace_sha256": "1b4c85031fe409f41720cea4d38c082c971e3006d4f25fdd0d06fe4c795d4a6e"
+    },
+    "life-b-E-R-excerpt": {
+      "events": 42547,
+      "requests": 10960,
+      "prefix_changed_requests": 0,
+      "request_chars_saved": 0,
+      "fake_prompt_tokens_saved": 0,
+      "research_metrics_unchanged": true,
+      "metrics_sha256": "79b96f1586d4aa06c1fbe9c0a071bb406fba3b47ac625c896e343cf6d88cda40",
+      "normalized_archive_sha256": "41047622589db126a44bc9131a0f9d8023996d4facdf90ee9b7997fdb68459c9",
+      "request_trace_sha256": "2094cf9d2c48413c7771ba0887a89075a109c8a1c31d21a46529f80a1f0acc0a"
+    },
+    "life-b-E-S-excerpt": {
+      "events": 42477,
+      "requests": 10925,
+      "prefix_changed_requests": 10396,
+      "request_chars_saved": 20792,
+      "fake_prompt_tokens_saved": 20792,
+      "research_metrics_unchanged": true,
+      "metrics_sha256": "28658ca18761d808ca9e3f5d513b7d582efd5ba647fd248e1cc2a9418fc8a30f",
+      "normalized_archive_sha256": "7747679a3bec01e7cd51e39a8f2af7fc67f1f40ae808341cd004d396515924c1",
+      "request_trace_sha256": "db36d90d7ad1c856f8f554073f9b174de1e23ed9e7da66d17f1d340113680113"
+    },
+    "life-b-E-SR-excerpt": {
+      "events": 42477,
+      "requests": 10925,
+      "prefix_changed_requests": 10396,
+      "request_chars_saved": 20792,
+      "fake_prompt_tokens_saved": 20792,
+      "research_metrics_unchanged": true,
+      "metrics_sha256": "1deedec7a5a89a2dc4acbe331af282a8f07cba3eb3b3cc5afc1f08cdec5f83f4",
+      "normalized_archive_sha256": "d409ef4dbb65169cef31f4efe5b450d61a779fa17a1461059728e78411692224",
+      "request_trace_sha256": "dcc53b6b50ef451d5960a22d04734bb1d12722585fec78dbda5784702b6c1c47"
+    },
+    "life-b-E-SC-excerpt": {
+      "events": 42547,
+      "requests": 10960,
+      "prefix_changed_requests": 10431,
+      "request_chars_saved": 20862,
+      "fake_prompt_tokens_saved": 20862,
+      "research_metrics_unchanged": true,
+      "metrics_sha256": "52fb8373f1685f2f1be879b670ea50b81a2690ccb3a61bffc1d6d212ed3d046c",
+      "normalized_archive_sha256": "e42fb919a763316fa80287765e9f0492375c362ed91125528fe1f5c437a658be",
+      "request_trace_sha256": "e05f6c4098d7aeca0bd480d97afb672985305bddf96f221e4f10c9fbbe393f63"
+    }
+  }
+}

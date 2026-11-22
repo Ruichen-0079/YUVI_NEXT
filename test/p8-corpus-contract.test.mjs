@@ -14,8 +14,8 @@ test('P8 C6: 50000-event index stores postings only; 10 long originals and1000 s
   for(const q of corpus.queries)if(q.id!=='R17')index.search(q.query,q.from??-Infinity,q.to??Infinity,q.kinds);
   const db=new DatabaseSync(index.file,{readOnly:true});try{
    const schema=db.prepare('SELECT name,sql FROM sqlite_master').all();assert.ok(!schema.some(r=>r.name.endsWith('_content')));assert.match(schema.find(r=>r.name==='terms').sql,/content=''/);
-   const allowed=new Set(['metadata','sqlite_autoindex_metadata_1','docs','docs_time','terms','terms_data','terms_idx','terms_docsize','terms_config','vocab']);assert.ok(schema.every(r=>allowed.has(r.name)));
-   for(const table of ['metadata','docs'])for(const row of db.prepare('SELECT * FROM '+table).iterate())for(const v of Object.values(row))if(typeof v==='string'||v instanceof Uint8Array)assert.ok(Buffer.byteLength(v)<=256);
+   const allowed=new Set(['metadata','sqlite_autoindex_metadata_1','docs','docs_time','docs_wrote','term_df','terms','terms_data','terms_idx','terms_docsize','terms_config','vocab']);assert.ok(schema.every(r=>allowed.has(r.name)));
+   for(const table of ['metadata','docs','term_df'])for(const row of db.prepare('SELECT * FROM '+table).iterate())for(const v of Object.values(row))if(typeof v==='string'||v instanceof Uint8Array)assert.ok(Buffer.byteLength(v)<=256);
   }finally{db.close();}
   const files=['index.sqlite','index.sqlite-wal','index.sqlite-shm'].filter(n=>existsSync(join(dir,n)));
   for(const file of files)assert.equal(statSync(join(dir,file)).mode&0o777,0o600);

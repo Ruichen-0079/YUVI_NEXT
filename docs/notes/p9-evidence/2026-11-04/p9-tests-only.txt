@@ -1,0 +1,304 @@
+TAP version 13
+# (node:263165) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 recall: own nonempty writings only, index and literal fallback, independent budgets and ranks
+ok 1 - P9 recall: own nonempty writings only, index and literal fallback, independent budgets and ranks
+  ---
+  duration_ms: 11.871194
+  type: 'test'
+  ...
+# Subtest: P9 S: exclusions, whole-item budgets, sorting, recency, no terms and scoped candidates
+ok 2 - P9 S: exclusions, whole-item budgets, sorting, recency, no terms and scoped candidates
+  ---
+  duration_ms: 5.926601
+  type: 'test'
+  ...
+# Surfacing failed; continuing without surfaced text.
+# Archive index unavailable; using literal archive search.
+# Subtest: P9 actual process: frozen surfaced base, mixed tool calls, usage once and exact historical reconstruction
+ok 3 - P9 actual process: frozen surfaced base, mixed tool calls, usage once and exact historical reconstruction
+  ---
+  duration_ms: 174.831377
+  type: 'test'
+  ...
+# (node:263165) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Archive index unavailable; using literal archive search.
+# Archive index unavailable; using literal archive search.
+# Subtest: P9 S4–S11: budgets, common/no candidates, recency order and failures do not silently scan
+ok 4 - P9 S4–S11: budgets, common/no candidates, recency order and failures do not silently scan
+  ---
+  duration_ms: 44.44632
+  type: 'test'
+  ...
+# Subtest: P9 V3/V4: forged foreign indexed row is rejected, archive unchanged, show cannot cross scope
+ok 5 - P9 V3/V4: forged foreign indexed row is rejected, archive unchanged, show cannot cross scope
+  ---
+  duration_ms: 5.721087
+  type: 'test'
+  ...
+# Subtest: P9 C3/K3/K5: invalid recall never queries, source failure remains fatal; third continuation only silence
+ok 6 - P9 C3/K3/K5: invalid recall never queries, source failure remains fatal; third continuation only silence
+  ---
+  duration_ms: 5.342079
+  type: 'test'
+  ...
+# Subtest: P9 configuration: recall defaults on, surfacing off; invalid values disclose only variable name
+ok 7 - P9 configuration: recall defaults on, surfacing off; invalid values disclose only variable name
+  ---
+  duration_ms: 1.929859
+  type: 'test'
+  ...
+# Subtest: P9 V3: a foreign forged rank omitted by the result budget cannot leak through rank_seqs
+ok 8 - P9 V3: a foreign forged rank omitted by the result budget cannot leak through rank_seqs
+  ---
+  duration_ms: 6.102556
+  type: 'test'
+  ...
+# (node:263166) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 E1: life-r preserves all frozen facts, probes, gaps and times, with answer keys and smaller rhythm
+ok 9 - P9 E1: life-r preserves all frozen facts, probes, gaps and times, with answer keys and smaller rhythm
+  ---
+  duration_ms: 32.177436
+  type: 'test'
+  ...
+# Subtest: P9 E2/E5: four new arms deterministic fast regression and window sanity
+ok 10 - P9 E2/E5: four new arms deterministic fast regression and window sanity
+  ---
+  duration_ms: 9137.929029
+  type: 'test'
+  ...
+# Subtest: P9 real guard: refuses before credentials/network, explicit caps; provider usage stops fail-closed
+ok 11 - P9 real guard: refuses before credentials/network, explicit caps; provider usage stops fail-closed
+  ---
+  duration_ms: 30.620766
+  type: 'test'
+  ...
+# Subtest: P9 real driver: loopback fake provider cap halts subsequent requests and marks partial evidence
+ok 12 - P9 real driver: loopback fake provider cap halts subsequent requests and marks partial evidence
+  ---
+  duration_ms: 173.904976
+  type: 'test'
+  ...
+# Subtest: P9-R offline only: complete 63-day real-driver path against loopback fake, usage and proxies retained
+ok 13 - P9-R offline only: complete 63-day real-driver path against loopback fake, usage and proxies retained
+  ---
+  duration_ms: 5126.491196
+  type: 'test'
+  ...
+# Subtest: P9 real guard stops at a streamed usage limit without waiting for provider EOF
+ok 14 - P9 real guard stops at a streamed usage limit without waiting for provider EOF
+  ---
+  duration_ms: 166.631303
+  type: 'test'
+  ...
+# (node:263172) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 independent accounting: omission order, two new channels, and same-timestamp earlier probe echo
+    # Subtest: no_carrier
+    ok 1 - no_carrier
+      ---
+      duration_ms: 6.467239
+      type: 'test'
+      ...
+    # Subtest: no_recall
+    ok 2 - no_recall
+      ---
+      duration_ms: 2.077364
+      type: 'test'
+      ...
+    # Subtest: not_candidate
+    ok 3 - not_candidate
+      ---
+      duration_ms: 1.685363
+      type: 'test'
+      ...
+    # Subtest: cue_no_terms
+    ok 4 - cue_no_terms
+      ---
+      duration_ms: 1.580375
+      type: 'test'
+      ...
+    # Subtest: cue_common
+    ok 5 - cue_common
+      ---
+      duration_ms: 1.749897
+      type: 'test'
+      ...
+    # Subtest: excluded_window
+    ok 6 - excluded_window
+      ---
+      duration_ms: 1.958508
+      type: 'test'
+      ...
+    # Subtest: budget_skip
+    ok 7 - budget_skip
+      ---
+      duration_ms: 1.3783
+      type: 'test'
+      ...
+    # Subtest: ranked_out
+    ok 8 - ranked_out
+      ---
+      duration_ms: 1.509359
+      type: 'test'
+      ...
+    # Subtest: budget_cut
+    ok 9 - budget_cut
+      ---
+      duration_ms: 3.414563
+      type: 'test'
+      ...
+    # Subtest: recall_writing
+    ok 10 - recall_writing
+      ---
+      duration_ms: 2.287939
+      type: 'test'
+      ...
+    # Subtest: surfaced_writing
+    ok 11 - surfaced_writing
+      ---
+      duration_ms: 1.794428
+      type: 'test'
+      ...
+    # Subtest: pressure_writing
+    ok 12 - pressure_writing
+      ---
+      duration_ms: 1.537361
+      type: 'test'
+      ...
+    # Subtest: echo
+    ok 13 - echo
+      ---
+      duration_ms: 1.901223
+      type: 'test'
+      ...
+    1..13
+ok 15 - P9 independent accounting: omission order, two new channels, and same-timestamp earlier probe echo
+  ---
+  duration_ms: 34.363657
+  type: 'test'
+  ...
+# Subtest: P9-R accounting uses probe turns rather than answer count for tool rates
+ok 16 - P9-R accounting uses probe turns rather than answer count for tool rates
+  ---
+  duration_ms: 3.158158
+  type: 'test'
+  ...
+# (node:263173) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 K4: SIGKILL exactly after recalled commit, restart restores once and keeps exact request history
+ok 17 - P9 K4: SIGKILL exactly after recalled commit, restart restores once and keeps exact request history
+  ---
+  duration_ms: 214.190683
+  type: 'test'
+  ...
+# Subtest: P9 S12/C2: actual P8 process versus disabled P9 requests, events, SSE and usage equivalent
+ok 18 - P9 S12/C2: actual P8 process versus disabled P9 requests, events, SSE and usage equivalent
+  ---
+  duration_ms: 1138.664831
+  type: 'test'
+  ...
+# Subtest: P9 K5: selection exception continues with error manifest; presented storage error terminates process
+ok 19 - P9 K5: selection exception continues with error manifest; presented storage error terminates process
+  ---
+  duration_ms: 160.591916
+  type: 'test'
+  ...
+# Subtest: P9 K2: true index worker rebuild skips surfacing and recall scans only writings, then catches up
+ok 20 - P9 K2: true index worker rebuild skips surfacing and recall scans only writings, then catches up
+  ---
+  duration_ms: 4309.911351
+  type: 'test'
+  ...
+# Subtest: P9 recovery: snapshot restore retains p9 surfaced/recall/scan histories exactly and rebuilds derived index
+ok 21 - P9 recovery: snapshot restore retains p9 surfaced/recall/scan histories exactly and rebuilds derived index
+  ---
+  duration_ms: 259.891188
+  type: 'test'
+  ...
+# (node:263179) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 W1–W11: frozen 50000-event writings corpus
+    # Subtest: W1
+    ok 1 - W1
+      ---
+      duration_ms: 2.666817
+      type: 'test'
+      ...
+    # Subtest: W2
+    ok 2 - W2
+      ---
+      duration_ms: 0.589606
+      type: 'test'
+      ...
+    # Subtest: W3
+    ok 3 - W3
+      ---
+      duration_ms: 0.527054
+      type: 'test'
+      ...
+    # Subtest: W4
+    ok 4 - W4
+      ---
+      duration_ms: 13.399864
+      type: 'test'
+      ...
+    # Subtest: W5
+    ok 5 - W5
+      ---
+      duration_ms: 1.447895
+      type: 'test'
+      ...
+    # Subtest: W6
+    ok 6 - W6
+      ---
+      duration_ms: 20.805351
+      type: 'test'
+      ...
+    # Subtest: W7
+    ok 7 - W7
+      ---
+      duration_ms: 1.626975
+      type: 'test'
+      ...
+    # Subtest: W8
+    ok 8 - W8
+      ---
+      duration_ms: 0.617775
+      type: 'test'
+      ...
+    # Subtest: W9
+    ok 9 - W9
+      ---
+      duration_ms: 0.782283
+      type: 'test'
+      ...
+    # Subtest: W10
+    ok 10 - W10
+      ---
+      duration_ms: 1.05549
+      type: 'test'
+      ...
+    # Subtest: W11
+    ok 11 - W11
+      ---
+      duration_ms: 1.570506
+      type: 'test'
+      ...
+    1..11
+ok 22 - P9 W1–W11: frozen 50000-event writings corpus
+  ---
+  duration_ms: 3174.636117
+  type: 'test'
+  ...
+1..22
+# tests 46
+# suites 0
+# pass 46
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14730.83592

@@ -1,0 +1,318 @@
+TAP version 13
+# (node:87843) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 C7 real service: one-long-word, full terms, bounded structure and exact show
+ok 1 - P9 C7 real service: one-long-word, full terms, bounded structure and exact show
+  ---
+  duration_ms: 137.453599
+  type: 'test'
+  ...
+# Subtest: P9 C7 real service: 33-long-words, full terms, bounded structure and exact show
+ok 2 - P9 C7 real service: 33-long-words, full terms, bounded structure and exact show
+  ---
+  duration_ms: 135.88012
+  type: 'test'
+  ...
+# (node:87844) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 recall: own nonempty writings only, index and literal fallback, independent budgets and ranks
+ok 3 - P9 recall: own nonempty writings only, index and literal fallback, independent budgets and ranks
+  ---
+  duration_ms: 12.77049
+  type: 'test'
+  ...
+# Subtest: P9 S: exclusions, whole-item budgets, sorting, recency, no terms and scoped candidates
+ok 4 - P9 S: exclusions, whole-item budgets, sorting, recency, no terms and scoped candidates
+  ---
+  duration_ms: 7.569013
+  type: 'test'
+  ...
+# Surfacing failed; continuing without surfaced text.
+# Archive index unavailable; using literal archive search.
+# Subtest: P9 actual process: frozen surfaced base, mixed tool calls, usage once and exact historical reconstruction
+ok 5 - P9 actual process: frozen surfaced base, mixed tool calls, usage once and exact historical reconstruction
+  ---
+  duration_ms: 187.847061
+  type: 'test'
+  ...
+# (node:87844) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Archive index unavailable; using literal archive search.
+# Archive index unavailable; using literal archive search.
+# Subtest: P9 S4–S11: budgets, common/no candidates, recency order and failures do not silently scan
+ok 6 - P9 S4–S11: budgets, common/no candidates, recency order and failures do not silently scan
+  ---
+  duration_ms: 50.754769
+  type: 'test'
+  ...
+# Subtest: P9 V3/V4: forged foreign indexed row is rejected, archive unchanged, show cannot cross scope
+ok 7 - P9 V3/V4: forged foreign indexed row is rejected, archive unchanged, show cannot cross scope
+  ---
+  duration_ms: 6.316865
+  type: 'test'
+  ...
+# Subtest: P9 C3/K3/K5: invalid recall never queries, source failure remains fatal; third continuation only silence
+ok 8 - P9 C3/K3/K5: invalid recall never queries, source failure remains fatal; third continuation only silence
+  ---
+  duration_ms: 6.230921
+  type: 'test'
+  ...
+# Subtest: P9 configuration: recall defaults on, surfacing off; invalid values disclose only variable name
+ok 9 - P9 configuration: recall defaults on, surfacing off; invalid values disclose only variable name
+  ---
+  duration_ms: 2.298338
+  type: 'test'
+  ...
+# Subtest: P9 V3: a foreign forged rank omitted by the result budget cannot leak through rank_seqs
+ok 10 - P9 V3: a foreign forged rank omitted by the result budget cannot leak through rank_seqs
+  ---
+  duration_ms: 6.415389
+  type: 'test'
+  ...
+# (node:87850) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 E1: life-r preserves all frozen facts, probes, gaps and times, with answer keys and smaller rhythm
+ok 11 - P9 E1: life-r preserves all frozen facts, probes, gaps and times, with answer keys and smaller rhythm
+  ---
+  duration_ms: 33.168647
+  type: 'test'
+  ...
+# Subtest: P9 E2/E5: four new arms deterministic fast regression and window sanity
+ok 12 - P9 E2/E5: four new arms deterministic fast regression and window sanity
+  ---
+  duration_ms: 9800.285754
+  type: 'test'
+  ...
+# Subtest: P9 real guard: refuses before credentials/network, explicit caps; provider usage stops fail-closed
+ok 13 - P9 real guard: refuses before credentials/network, explicit caps; provider usage stops fail-closed
+  ---
+  duration_ms: 35.753095
+  type: 'test'
+  ...
+# Subtest: P9 real driver: loopback fake provider cap halts subsequent requests and marks partial evidence
+ok 14 - P9 real driver: loopback fake provider cap halts subsequent requests and marks partial evidence
+  ---
+  duration_ms: 194.534339
+  type: 'test'
+  ...
+# Subtest: P9-R offline only: complete 63-day real-driver path against loopback fake, usage and proxies retained
+ok 15 - P9-R offline only: complete 63-day real-driver path against loopback fake, usage and proxies retained
+  ---
+  duration_ms: 4804.724421
+  type: 'test'
+  ...
+# Subtest: P9 real guard stops at a streamed usage limit without waiting for provider EOF
+ok 16 - P9 real guard stops at a streamed usage limit without waiting for provider EOF
+  ---
+  duration_ms: 203.486163
+  type: 'test'
+  ...
+# (node:87851) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 independent accounting: omission order, two new channels, and same-timestamp earlier probe echo
+    # Subtest: no_carrier
+    ok 1 - no_carrier
+      ---
+      duration_ms: 6.077163
+      type: 'test'
+      ...
+    # Subtest: no_recall
+    ok 2 - no_recall
+      ---
+      duration_ms: 1.973641
+      type: 'test'
+      ...
+    # Subtest: not_candidate
+    ok 3 - not_candidate
+      ---
+      duration_ms: 1.559282
+      type: 'test'
+      ...
+    # Subtest: cue_no_terms
+    ok 4 - cue_no_terms
+      ---
+      duration_ms: 1.381134
+      type: 'test'
+      ...
+    # Subtest: cue_common
+    ok 5 - cue_common
+      ---
+      duration_ms: 1.578559
+      type: 'test'
+      ...
+    # Subtest: excluded_window
+    ok 6 - excluded_window
+      ---
+      duration_ms: 1.943108
+      type: 'test'
+      ...
+    # Subtest: budget_skip
+    ok 7 - budget_skip
+      ---
+      duration_ms: 1.422473
+      type: 'test'
+      ...
+    # Subtest: ranked_out
+    ok 8 - ranked_out
+      ---
+      duration_ms: 1.393041
+      type: 'test'
+      ...
+    # Subtest: budget_cut
+    ok 9 - budget_cut
+      ---
+      duration_ms: 2.142806
+      type: 'test'
+      ...
+    # Subtest: recall_writing
+    ok 10 - recall_writing
+      ---
+      duration_ms: 1.587724
+      type: 'test'
+      ...
+    # Subtest: surfaced_writing
+    ok 11 - surfaced_writing
+      ---
+      duration_ms: 2.23171
+      type: 'test'
+      ...
+    # Subtest: pressure_writing
+    ok 12 - pressure_writing
+      ---
+      duration_ms: 1.147969
+      type: 'test'
+      ...
+    # Subtest: echo
+    ok 13 - echo
+      ---
+      duration_ms: 1.582148
+      type: 'test'
+      ...
+    1..13
+ok 17 - P9 independent accounting: omission order, two new channels, and same-timestamp earlier probe echo
+  ---
+  duration_ms: 30.429673
+  type: 'test'
+  ...
+# Subtest: P9-R accounting uses probe turns rather than answer count for tool rates
+ok 18 - P9-R accounting uses probe turns rather than answer count for tool rates
+  ---
+  duration_ms: 2.631239
+  type: 'test'
+  ...
+# (node:87853) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 K4: SIGKILL exactly after recalled commit, restart restores once and keeps exact request history
+ok 19 - P9 K4: SIGKILL exactly after recalled commit, restart restores once and keeps exact request history
+  ---
+  duration_ms: 233.910611
+  type: 'test'
+  ...
+# Subtest: P9 S12/C2: actual P8 process versus disabled P9 requests, events, SSE and usage equivalent
+ok 20 - P9 S12/C2: actual P8 process versus disabled P9 requests, events, SSE and usage equivalent
+  ---
+  duration_ms: 1213.118084
+  type: 'test'
+  ...
+# Subtest: P9 K5: selection exception continues with error manifest; presented storage error terminates process
+ok 21 - P9 K5: selection exception continues with error manifest; presented storage error terminates process
+  ---
+  duration_ms: 172.698135
+  type: 'test'
+  ...
+# Subtest: P9 K2: true index worker rebuild skips surfacing and recall scans only writings, then catches up
+ok 22 - P9 K2: true index worker rebuild skips surfacing and recall scans only writings, then catches up
+  ---
+  duration_ms: 4394.726422
+  type: 'test'
+  ...
+# Subtest: P9 recovery: snapshot restore retains p9 surfaced/recall/scan histories exactly and rebuilds derived index
+ok 23 - P9 recovery: snapshot restore retains p9 surfaced/recall/scan histories exactly and rebuilds derived index
+  ---
+  duration_ms: 275.711367
+  type: 'test'
+  ...
+# (node:87860) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: P9 W1–W11: frozen 50000-event writings corpus
+    # Subtest: W1
+    ok 1 - W1
+      ---
+      duration_ms: 3.450504
+      type: 'test'
+      ...
+    # Subtest: W2
+    ok 2 - W2
+      ---
+      duration_ms: 0.962246
+      type: 'test'
+      ...
+    # Subtest: W3
+    ok 3 - W3
+      ---
+      duration_ms: 0.894009
+      type: 'test'
+      ...
+    # Subtest: W4
+    ok 4 - W4
+      ---
+      duration_ms: 11.474972
+      type: 'test'
+      ...
+    # Subtest: W5
+    ok 5 - W5
+      ---
+      duration_ms: 1.737043
+      type: 'test'
+      ...
+    # Subtest: W6
+    ok 6 - W6
+      ---
+      duration_ms: 20.970137
+      type: 'test'
+      ...
+    # Subtest: W7
+    ok 7 - W7
+      ---
+      duration_ms: 2.100497
+      type: 'test'
+      ...
+    # Subtest: W8
+    ok 8 - W8
+      ---
+      duration_ms: 0.850642
+      type: 'test'
+      ...
+    # Subtest: W9
+    ok 9 - W9
+      ---
+      duration_ms: 1.0755
+      type: 'test'
+      ...
+    # Subtest: W10
+    ok 10 - W10
+      ---
+      duration_ms: 2.096269
+      type: 'test'
+      ...
+    # Subtest: W11
+    ok 11 - W11
+      ---
+      duration_ms: 2.564281
+      type: 'test'
+      ...
+    1..11
+ok 24 - P9 W1–W11: frozen 50000-event writings corpus
+  ---
+  duration_ms: 3231.398663
+  type: 'test'
+  ...
+1..24
+# tests 48
+# suites 0
+# pass 48
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15137.799154

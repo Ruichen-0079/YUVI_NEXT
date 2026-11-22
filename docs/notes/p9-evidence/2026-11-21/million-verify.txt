@@ -1,0 +1,16 @@
+[{"scene":"web","branch":"dev:v2-dev","rows":1000128,"invalid":0},{"scene":"web","branch":"dev:v2-dev","rows":1000133,"invalid":0}]
+(node:288582) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+=== verify --full .local-data/p9-million-v2/writings/data ===
+600 .local-data/p9-million-v2/writings/data/index.sqlite
+{"status":"ok","through_seq":1000268,"last_seq":1000268,"rows":1000128,"expected_rows":1000128,"sampled":1000128}
+(node:288590) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+=== verify --full .local-data/p9-million-v2/varied/data ===
+600 .local-data/p9-million-v2/varied/data/index.sqlite
+{"status":"ok","through_seq":1000266,"last_seq":1000266,"rows":1000133,"expected_rows":1000133,"sampled":1000133}
+(node:298519) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+=== P5 seed scope ===
+[{"scene":"web","branch":"dev:v2-dev","rows":1000089,"invalid":0}]

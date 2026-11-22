@@ -1,0 +1,15 @@
+(node:65045) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"shape":"writings","stage":"generate"}
+{"shape":"writings","stage":"build"}
+(node:65045) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"shape":"writings","stage":"service","surfacing":"off"}
+{"shape":"writings","stage":"service","surfacing":"relevance"}
+{"shape":"writings","stage":"service","surfacing":"recency"}
+{"shape":"varied","stage":"generate"}
+{"shape":"varied","stage":"build"}
+{"shape":"varied","stage":"service","surfacing":"off"}
+{"shape":"varied","stage":"service","surfacing":"relevance"}
+{"shape":"varied","stage":"service","surfacing":"recency"}
+{"root":"/mnt/LinuxData/YUVI_NEXT/.local-data/p9-million-1","passed":{"writings":{"P1":true,"P2":true,"P3":true,"P4":true},"varied":{"P1":true,"P2":true,"P3":true,"P4":true}}}

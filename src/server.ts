@@ -1,6 +1,6 @@
 import { ArchiveIndex } from './archive-index.js';
 import { createServer, type ServerResponse, type IncomingMessage } from 'node:http';
-import { Archive, type Event } from './archive.js';
+import { ArchiveSourceFailure, Archive, type Event } from './archive.js';
 import type { Config } from './config.js';
 import { streamModel, silenceReason, type Usage, ModelFailure } from './model.js';
 import { state, recordedTimeZone, assembleContext, selectDialogue, selectConsolidation, check, type StepResult } from './context.js';
@@ -28,6 +28,7 @@ function sse(res: ServerResponse, kind: string, value: unknown): boolean {
   return true;
 }
 export function createApp(config: Config, archive = new Archive(config.dataDir), options: { checkEngine?: 'scan' } = {}) {
+  config = { recall: true, surfacing: 'off', ...config };
   archive.recover();
   const index = new ArchiveIndex(archive.db, config.dataDir, archive.scope);
   let queue = Promise.resolve();
@@ -74,7 +75,9 @@ export function createApp(config: Config, archive = new Archive(config.dataDir),
   }
   async function turn(heard: Event, res: ServerResponse): Promise<void> {
     await pressure();
-    let assembled = assembleContext({ purpose: 'dialogue', selected: selectDialogue(archive, config), heard },
+    const selected = selectDialogue(archive, config);
+    const surfaced = config.surfacing && config.surfacing !== 'off' ? index.surface(heard.content, heard.seq, selected.writings, selected.window, config.surfacing) : {};
+    let assembled = assembleContext({ purpose: 'dialogue', selected: { ...selected, ...surfaced }, heard },
       config, Date.now(), zone, nodeMajor);
     let attempt: Event | undefined, content = '', sentContent = '';
     let archiveFailed = false, usage: Usage | undefined;
@@ -98,20 +101,20 @@ export function createApp(config: Config, archive = new Archive(config.dataDir),
           if (sse(res, 'delta', { text })) sentContent += text;
           content += text; stepContent += text;
         }, value => { usage = value; }, { parameters: assembled.parameters });
-        const checks = tools.filter(t => t.name === 'check');
+        const checks = tools.filter(t => t.name === 'check' || (config.recall && t.name === 'recall'));
         if (checks.length && step < 3) {
           let recordedUsage = false;
           const replies: StepResult[] = [];
           for (const tool of tools) {
-            if (tool.name !== 'check') {
+            if (tool.name !== 'check' && !(config.recall && tool.name === 'recall')) {
               ignored.push(tool.name);
               replies.push({ reference: { ignored: tool.name }, content: '本步继续查阅；这个调用没有作为回合结局。' }); continue;
             }
-            const result = await check(archive, tool.arguments, config.ownerName ?? '负责人', { index, engine: options.checkEngine, scan: (raw, owner, reason) => index.scan(raw, owner, reason) });
-            const checked = append({ class: 'act', kind: 'checked', actor: 'yuvi', model: config.model,
+            const result = await check(archive, tool.arguments, config.ownerName ?? '负责人', { index, engine: options.checkEngine, ...(tool.name === 'recall' ? { tool: 'recall' as const } : {}), scan: (raw, owner, reason, name) => index.scan(raw, owner, reason, name) });
+            const checked = append({ class: 'act', kind: tool.name === 'recall' ? 'recalled' : 'checked', actor: 'yuvi', model: config.model,
               reply_to: heard.id, meta: { ...result.meta, ...(!recordedUsage ? usageMeta() : {}) } });
-            recordedUsage = true;
-            replies.push({ reference: { checked: checked.id }, content: result.content });
+            recordedUsage = true; usage = undefined;
+            replies.push({ reference: tool.name === 'recall' ? { recalled: checked.id } : { checked: checked.id }, content: result.content });
           }
           try {
             assembled = assembleContext({ previous: assembled, previousId: presented.id, text: stepContent, calls: tools, results: replies },
@@ -130,7 +133,7 @@ export function createApp(config: Config, archive = new Archive(config.dataDir),
         break;
       }
     } catch (error) {
-      if (archiveFailed) throw new Error('archive failure');
+      if (archiveFailed || error instanceof ArchiveSourceFailure) throw new Error('archive failure');
       append({ class: 'control', kind: 'error', actor: 'system', reply_to: heard.id,
         content: sentContent, meta: { outcome: attempt ? 'partial' : 'not_sent', reason: 'model_failure',
           request_chars: assembled.messages.reduce((sum, message) => sum + message.content.length, 0),

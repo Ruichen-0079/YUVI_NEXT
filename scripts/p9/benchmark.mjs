@@ -1,0 +1,50 @@
+// P9 real entry point + loopback fake. No credentials or external network.
+import {mkdirSync,writeFileSync,statSync} from 'node:fs';import {join,resolve} from 'node:path';import {createServer} from 'node:http';import {performance} from 'node:perf_hooks';
+import {DatabaseSync} from 'node:sqlite';import {Archive} from '../../dist/archive.js';import {ArchiveIndex,buildIndex} from '../../dist/archive-index.js';import {check} from '../../dist/context.js';import {generate} from '../p6/generate.mjs';import {listen,startService,text,done} from '../../test/helpers/p6-process.mjs';
+const root=resolve(process.argv[2]),count=Number(process.argv[3]??1000000),trials=Number(process.argv[4]??20);mkdirSync(root,{recursive:false,mode:0o700});
+const percentile=(xs,p)=>[...xs].sort((a,b)=>a-b)[Math.max(0,Math.ceil(xs.length*p)-1)],stats=xs=>!xs.length?{samples:[],p50_ms:null,p95_ms:null,max_ms:null}:({samples:xs,p50_ms:percentile(xs,.5),p95_ms:percentile(xs,.95),max_ms:Math.max(...xs)});
+const result={node:process.version,count,trials,method:'two service warmups, one direct warmup; monotonic wall; actual service entry; loopback fake; turn program=(done.at-frames.sentAt)-sum(provider t3-t2) with pre_model=calls[0].t2-frames.sentAt>=0 and post_model=done.at-calls[-1].t3>=0 (replaces earlier heard.at start which arrived after synchronous surfacing); no concurrent benchmark',shapes:{}};const save=()=>writeFileSync(join(root,'results.json'),JSON.stringify(result,null,2)+'\n');
+let calls=[];const fake=createServer(async(req,res)=>{const chunks=[];for await(const c of req)chunks.push(c);const t2=performance.now(),body=JSON.parse(Buffer.concat(chunks).toString());res.end(text(body.tools?'正常回应':'独立性能整理')+done({prompt_tokens:1,completion_tokens:1}));calls.push({t2,t3:performance.now()});});const base=await listen(fake);
+try{for(const shape of ['writings','varied']){
+ console.error(JSON.stringify({shape,stage:'generate'}));const dir=join(root,shape);mkdirSync(dir);const data=join(dir,'data');mkdirSync(data);const begin=performance.now(),fixture=generate(join(data,'archive.sqlite'),{count,shape,seed:67});
+ const r=result.shapes[shape]={generation_ms:performance.now()-begin,fixture};save();console.error(JSON.stringify({shape,stage:'build'}));const built=performance.now();buildIndex(data);r.build_ms=performance.now()-built;save();
+ const a=new Archive(data),index=new ArchiveIndex(a.db,data);try{
+  const db=new DatabaseSync(index.file,{readOnly:true});try{r.index={format:JSON.parse(db.prepare("SELECT value FROM metadata WHERE key='format'").get().value),bytes:statSync(index.file).size,archive_bytes:statSync(join(data,'archive.sqlite')).size,documents:db.prepare('SELECT count(*) n FROM docs').get().n,writings:db.prepare("SELECT count(*) n FROM docs WHERE kind='wrote'").get().n,term_df_rows:db.prepare('SELECT count(*) n FROM term_df').get().n,plan:db.prepare("EXPLAIN QUERY PLAN SELECT f.rowid FROM terms f JOIN docs d ON d.seq=f.rowid WHERE terms MATCH ? AND d.kind='wrote' AND f.rowid<? ORDER BY f.rank,f.rowid DESC LIMIT 20").all('"银杏"',count),plan_recency:db.prepare("EXPLAIN QUERY PLAN SELECT f.rowid FROM terms f JOIN docs d ON d.seq=f.rowid WHERE terms MATCH ? AND d.kind='wrote' AND f.rowid<? ORDER BY f.rowid DESC LIMIT 20").all('"银杏"',count)};}finally{db.close();}
+  const cues=['年糕','灯塔','银杏','的 我 是','🌙','旧照片','无交集的雪豹',...a.db.prepare("SELECT content FROM events WHERE kind='heard' AND scene='web' AND branch='dev:v2-dev' AND seq % 33331=7 LIMIT 30").all().map(e=>e.content)];r.cues=cues;
+  r.surface={};for(const strategy of ['relevance','recency']){const all=[];r.surface[strategy]={};for(const cue of cues){
+   const samples=[];let response;for(let i=-1;i<trials;i++){const start=performance.now();response=index.surface(cue,count+1,[],[],strategy);if(i>=0)samples.push(performance.now()-start);}all.push(...samples);r.surface[strategy][cue]={...stats(samples),candidates:response.surfacing.candidates.length,selected:response.surfaced.length,reason:response.surfacing.reason??null};
+  }r.surface[strategy].all=stats(all);}save();
+  r.recall=[];if(shape==='writings')for(const q of fixture.queries){const raw=JSON.stringify({query:q.query,...(q.from?{from:new Date(q.from).toISOString(),to:new Date(q.to).toISOString()}:{})}),samples=[],original=[],worker=[];let response;
+   for(let i=-1;i<trials;i++){const start=performance.now();response=await check(a,raw,'负责人',{index,tool:'recall',scan:(raw,owner,why,tool)=>index.scan(raw,owner,why,tool)});if(i>=0)samples.push(performance.now()-start);
+    if(q.id==='W6'){let start=performance.now();const scan=await check(a,raw,'负责人',{engine:'scan',tool:'recall'});if(i>=0)original.push(performance.now()-start);if(JSON.stringify(scan.meta.result_seqs)!==JSON.stringify(response.meta.result_seqs)||scan.meta.total!==response.meta.total)throw Error('Scan semantic mismatch');}}
+   r.recall.push({id:q.id,...stats(samples),engine:response.meta.engine,total:response.meta.total,result_seqs:response.meta.result_seqs,...(q.id==='W6'?{original:stats(original),ratio:percentile(samples,.95)/percentile(original,.95)}:{})});save();
+  }
+ }finally{await index.close();a.close();}
+ const serviceCues=r.cues.filter(c=>c.length>20);
+ const hook=join(dir,'surface-probe.mjs');writeFileSync(hook,`import{ArchiveIndex}from${JSON.stringify(resolve('dist/archive-index.js'))};const old=ArchiveIndex.prototype.surface;ArchiveIndex.prototype.surface=function(...args){const at=performance.now();try{return old.apply(this,args);}finally{console.log('P9_SURFACE '+(performance.now()-at));}};`);
+ r.service={};for(const surfacing of ['off','relevance','recency']){
+  console.error(JSON.stringify({shape,stage:'service',surfacing}));const s=await startService(dir,{data,baseUrl:base,recall:true,surfacing,hook,context:200}),program=[],preModel=[],postModel=[],wall=[],provider=[],health=[];try{
+   for(let i=-2;i<trials;i++){
+    calls=[];
+    const cues=serviceCues.length?serviceCues:['年糕','银杏','旧照片','的 我 是'];
+    const frames=await s.post(cues[Math.max(i,0)%cues.length]),last=frames.at(-1);
+    if(last.event!=='done')throw Error('Service turn failed');
+    if(!calls.length)throw Error('Service turn recorded no model call');
+    if(calls.some(c=>!(c.t3>=c.t2)))throw Error('Invalid model call timing');
+    if(i<0)continue;
+    const pre=calls[0].t2-frames.sentAt,post=last.at-calls.at(-1).t3,totalWall=last.at-frames.sentAt,prov=calls.reduce((n,c)=>n+c.t3-c.t2,0),prog=totalWall-prov;
+    if(!(pre>=0&&post>=0&&prov>=0&&prog>=0))throw Error(`Invalid negative turn timing: pre=${pre} post=${post} provider=${prov} program=${prog}`);
+    for(let k=1;k<calls.length;k++)if(calls[k].t2<calls[k-1].t3)throw Error('Invalid negative inter-call timing');
+    preModel.push(pre);postModel.push(post);wall.push(totalWall);provider.push(prov);program.push(prog);
+   }
+   for(let i=0;i<trials;i++){const at=performance.now();const response=await fetch(s.url+'/health');if(!response.ok)throw Error('Health failed');health.push(performance.now()-at);}
+   const surfaceSamples=s.output.split('\n').filter(line=>line.startsWith('P9_SURFACE ')).map(line=>Number(line.slice(11)));
+   if(surfacing!=='off'&&surfaceSamples.length!==trials+2)throw Error(`Expected ${trials+2} surfacing samples, got ${surfaceSamples.length}`);
+   r.service[surfacing]={startup_ms:s.startupMs,rss_bytes:await s.rss(),program:stats(program),pre_model:stats(preModel),post_model:stats(postModel),wall:stats(wall),provider:stats(provider),health:stats(health),surface:stats(surfacing==='off'?[]:surfaceSamples.slice(2))};
+  }finally{await s.stop();}save();
+ }
+ r.passed={P1:['relevance','recency'].every(k=>r.service[k].program.p95_ms<100),P2:['relevance','recency'].every(k=>{
+  const direct=r.surface[k].all,service=r.service[k].surface;
+  return direct.p95_ms!==null&&direct.p95_ms<=60&&service.samples.length===trials&&service.p95_ms!==null&&service.p95_ms<=60;
+ }),P3:shape!=='writings'||r.recall.filter(q=>!['W4','W6','W11'].includes(q.id)).every(q=>q.p95_ms<=(['W1','W2','W8'].includes(q.id)?20:200)),P4:shape!=='writings'||r.recall.find(q=>q.id==='W6').ratio<=1.25};save();
+}console.log(JSON.stringify({root,passed:Object.fromEntries(Object.entries(result.shapes).map(([s,r])=>[s,r.passed]))}));}finally{fake.closeAllConnections();await new Promise(r=>fake.close(r));}

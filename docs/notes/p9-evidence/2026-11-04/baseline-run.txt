@@ -1,0 +1,11 @@
+npm warn cli npm v12.2.0 does not support Node.js v22.22.0. This version of npm supports the following node versions: `^22.22.2 || ^24.15.0 || >=26.0.0`. You can find the latest version at https://nodejs.org/.
+npm notice run yuvi-next@0.1.0 preeval
+npm notice run npm run build
+npm warn cli npm v12.2.0 does not support Node.js v22.22.0. This version of npm supports the following node versions: `^22.22.2 || ^24.15.0 || >=26.0.0`. You can find the latest version at https://nodejs.org/.
+npm notice run yuvi-next@0.1.0 build
+npm notice run tsc
+npm notice run yuvi-next@0.1.0 eval
+npm notice run node eval/cli.mjs baseline-p9
+{"root":"/mnt/LinuxData/YUVI_NEXT/.local-data/p9-baseline-uYr1Is","wall_ms":1314491.571736,"p8_regression_wall_ms":529975.991223,"p8_root":"/mnt/LinuxData/YUVI_NEXT/.local-data/p8-baseline-FELPYa"}
+(node:70756) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)

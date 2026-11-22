@@ -1,0 +1,209 @@
+{
+  "default_recall": true,
+  "surfacing": "off",
+  "legacy_comparator": "3343efa",
+  "passed": {
+    "retrieval": true,
+    "scan_semantics": true,
+    "build": true,
+    "health": true,
+    "turns": true,
+    "ordinary": true,
+    "startup_increment": true,
+    "index_size": true
+  },
+  "build_ms": 53741.892422000004,
+  "health_p99": 1.280984000004537,
+  "checks_during_rebuild": [
+    {
+      "arguments": {
+        "query": "重建",
+        "from": "2026-11-04T12:12:29.085Z"
+      },
+      "result_seqs": [
+        1000001
+      ],
+      "total": 1,
+      "rules": "p8",
+      "engine": "scan",
+      "mode": "substring",
+      "terms": [],
+      "dropped": [],
+      "fallback": "index_building",
+      "rank_seqs": [
+        1000001
+      ]
+    },
+    {
+      "arguments": {
+        "query": "重建",
+        "from": "2026-11-04T12:12:29.345Z"
+      },
+      "result_seqs": [
+        1000001,
+        1000007,
+        1000011,
+        1000015,
+        1000019
+      ],
+      "total": 5,
+      "rules": "p8",
+      "engine": "scan",
+      "mode": "substring",
+      "terms": [],
+      "dropped": [],
+      "fallback": "index_building",
+      "rank_seqs": [
+        1000019,
+        1000015,
+        1000011,
+        1000007,
+        1000001
+      ]
+    },
+    {
+      "arguments": {
+        "query": "重建",
+        "from": "2026-11-04T12:12:29.577Z"
+      },
+      "result_seqs": [
+        1000001,
+        1000007,
+        1000011,
+        1000015,
+        1000019,
+        1000025,
+        1000029,
+        1000033,
+        1000037
+      ],
+      "total": 9,
+      "rules": "p8",
+      "engine": "scan",
+      "mode": "substring",
+      "terms": [],
+      "dropped": [],
+      "fallback": "index_building",
+      "rank_seqs": [
+        1000037,
+        1000033,
+        1000029,
+        1000025,
+        1000019,
+        1000015,
+        1000011,
+        1000007,
+        1000001
+      ]
+    },
+    {
+      "arguments": {
+        "query": "重建",
+        "from": "2026-11-04T12:12:29.805Z"
+      },
+      "result_seqs": [
+        1000001,
+        1000007,
+        1000011,
+        1000015,
+        1000019,
+        1000025,
+        1000029,
+        1000033,
+        1000037,
+        1000043,
+        1000047,
+        1000051,
+        1000055
+      ],
+      "total": 13,
+      "rules": "p8",
+      "engine": "scan",
+      "mode": "substring",
+      "terms": [],
+      "dropped": [],
+      "fallback": "index_building",
+      "rank_seqs": [
+        1000055,
+        1000051,
+        1000047,
+        1000043,
+        1000037,
+        1000033,
+        1000029,
+        1000025,
+        1000019,
+        1000015,
+        1000011,
+        1000007,
+        1000001
+      ]
+    },
+    {
+      "arguments": {
+        "query": "重建",
+        "from": "2026-11-04T12:12:30.032Z"
+      },
+      "result_seqs": [
+        1000001,
+        1000007,
+        1000011,
+        1000015,
+        1000019,
+        1000025,
+        1000029,
+        1000033,
+        1000037,
+        1000043,
+        1000047,
+        1000051,
+        1000055,
+        1000061,
+        1000065,
+        1000069,
+        1000073
+      ],
+      "total": 17,
+      "rules": "p8",
+      "engine": "scan",
+      "mode": "substring",
+      "terms": [],
+      "dropped": [],
+      "fallback": "index_building",
+      "rank_seqs": [
+        1000073,
+        1000069,
+        1000065,
+        1000061,
+        1000055,
+        1000051,
+        1000047,
+        1000043,
+        1000037,
+        1000033,
+        1000029,
+        1000025,
+        1000019,
+        1000015,
+        1000011,
+        1000007,
+        1000001
+      ]
+    }
+  ],
+  "program_p95": 4.3216320000065025,
+  "incremental_max": 32.910167,
+  "startup_delta_ms": 872.1092949999875,
+  "index_bytes": 320978944,
+  "archive_bytes": 339525632,
+  "scan_comparison": [
+    {
+      "id": "R17",
+      "p95_ratio": 1.009869549579346,
+      "within_1_25": true,
+      "same_total": true,
+      "same_results": true,
+      "threshold_status": "reported; owner requests Claude final review of mandatory status"
+    }
+  ]
+}

@@ -1,10 +1,10 @@
-import { terms, type ArchiveIndex, type SearchMeta } from './archive-index.js';
+import { terms, type ArchiveIndex, type SearchMeta, type Surfacing } from './archive-index.js';
 import type { Archive, Event } from './archive.js';
 import type { Config } from './config.js';
 import { requestParameters, type Message, type ToolCall, type RequestParameters } from './model.js';
 import { createHash } from 'node:crypto';
 
-export type PresentationConfig = Pick<Config, 'persona' | 'ownerName' | 'writingChars'>;
+export type PresentationConfig = Pick<Config, 'persona' | 'ownerName' | 'writingChars' | 'recall' | 'surfacing'>;
 export const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
 
 export function state(archive: Archive, n: number) {
@@ -61,11 +61,14 @@ export function renderPrefix(selected: Event[], config: Pick<Config, 'persona' |
   return [{ role: 'system', content: config.persona },
     ...selected.map(e => ({ role: 'user' as const, content: record(e, config.ownerName ?? '负责人', false, timeZone) }))];
 }
-export function renderDialogue(selected: { writings: Event[]; window: Event[] }, heard: Event, config: PresentationConfig, now: number, timeZone?: string): Message[] {
+export function renderDialogue(selected: { writings: Event[]; window: Event[]; surfaced?: Event[]; surfacing?: Surfacing }, heard: Event, config: PresentationConfig, now: number, timeZone?: string): Message[] {
   return [...renderPrefix(selected.writings, config, timeZone), ...selected.window.map(e => ({
     role: e.kind === 'said' ? 'assistant' as const : 'user' as const,
     content: e.kind === 'said' ? e.content : record(e, config.ownerName ?? '负责人', false, timeZone)
-  })), { role: 'user', content: `现在是${localTime(now, timeZone)}。当前回应的是${config.ownerName ?? '负责人'}在${localTime(heard.t_recorded, timeZone)}说的这一句：\n${heard.content}` }];
+  })), ...(selected.surfaced?.length ? [{ role: 'user' as const, content: surfacedText(selected.surfaced, config.ownerName ?? '负责人', timeZone) }] : []), { role: 'user', content: `现在是${localTime(now, timeZone)}。当前回应的是${config.ownerName ?? '负责人'}在${localTime(heard.t_recorded, timeZone)}说的这一句：\n${heard.content}` }];
+}
+export function surfacedText(events: Event[], owner: string, zone?: string): string {
+  return '你以前写下的：\n\n' + events.map(e => record(e, owner, false, zone)).join('\n\n');
 }
 export function renderConsolidation(selected: { writings: Event[]; material: Event[] }, config: PresentationConfig, now: number, timeZone?: string): Message[] {
   return [...renderPrefix(selected.writings, config, timeZone), { role: 'user', content: selected.material.map(e => record(e, config.ownerName ?? '负责人', false, timeZone)).join('\n\n') },
@@ -91,14 +94,14 @@ export function consolidationMessages(archive: Archive, material: Event[], confi
 }
 
 export interface Section {
-  name: 'persona' | 'writings' | 'window' | 'material' | 'instruction' | 'step';
+  name: 'persona' | 'writings' | 'window' | 'material' | 'instruction' | 'step' | 'surfaced';
   messages: number; chars: number;
-  first_seq?: number; last_seq?: number; count?: number; heard?: string;
+  seqs?: number[]; first_seq?: number; last_seq?: number; count?: number; heard?: string;
   index?: number; assistant_text?: string; tool_calls?: { id: string; name: string; arguments: string }[];
-  results?: ({ checked: string } | { ignored: string })[];
+  results?: ({ checked: string } | { recalled: string } | { ignored: string })[];
 }
 export interface PresentationManifest extends Record<string, unknown> {
-  format: number; rules: string; purpose: 'dialogue' | 'consolidation'; step?: number; previous?: string;
+  surfacing?: Surfacing; format: number; rules: string; purpose: 'dialogue' | 'consolidation'; step?: number; previous?: string;
   now: number; time_zone: string | null; owner_name: string; writing_chars: number; node_major: number;
   request: { tools: string[]; max_tokens?: number }; persona: { sha256: string; chars: number };
   sections: Section[]; total: { messages: number; chars: number }; messages_sha256: string;
@@ -111,7 +114,7 @@ export function messageSize(messages: Message[]) {
 // Source events and the clock value are explicit in both paths.
 // The same messages drive the section counts, request parameters and digest.
 export function assembleBase(input: {
-  purpose: 'dialogue'; selected: { writings: Event[]; window: Event[] }; heard: Event;
+  purpose: 'dialogue'; selected: { writings: Event[]; window: Event[]; surfaced?: Event[]; surfacing?: Surfacing }; heard: Event;
 } | {
   purpose: 'consolidation'; selected: { writings: Event[]; material: Event[] }; maxTokens: number;
 }, config: PresentationConfig, now: number, timeZone: string | null, nodeMajor: number, renderTimeZone?: string): Assembly {
@@ -129,13 +132,14 @@ export function assembleBase(input: {
   if (writings.length) part('writings', writings.length, range(writings));
   if (input.purpose === 'dialogue') {
     if (input.selected.window.length) part('window', input.selected.window.length, range(input.selected.window));
+    if (input.selected.surfaced?.length) part('surfaced', 1, { seqs: input.selected.surfaced.map(e => e.seq) });
     part('instruction', 1, { heard: input.heard.id });
   } else {
     part('material', 1, range(input.selected.material)); part('instruction', 1);
   }
-  const parameters = requestParameters(input.purpose === 'dialogue' ? {} : { mode: 'consolidation', maxTokens: input.maxTokens });
+  const parameters = requestParameters(input.purpose === 'dialogue' ? { recall: config.recall } : { mode: 'consolidation', maxTokens: input.maxTokens });
   return { messages, parameters, manifest: {
-    format: 1 as const, rules: 'p8', purpose: input.purpose, ...(input.purpose === 'dialogue' ? { step: 0 } : {}),
+    format: 1 as const, rules: config.recall || (config.surfacing && config.surfacing !== 'off') ? 'p9' : 'p8', ...(input.purpose === 'dialogue' && input.selected.surfacing ? { surfacing: input.selected.surfacing } : {}), purpose: input.purpose, ...(input.purpose === 'dialogue' ? { step: 0 } : {}),
     now, time_zone: timeZone, node_major: nodeMajor, writing_chars: config.writingChars ?? 16000, owner_name: config.ownerName ?? '负责人',
     request: { tools: parameters.tools?.map(tool => tool.function.name) ?? [],
       ...(parameters.max_tokens === undefined ? {} : { max_tokens: parameters.max_tokens }) },
@@ -144,7 +148,7 @@ export function assembleBase(input: {
   } };
 }
 
-export type StepResult = { reference: { checked: string } | { ignored: string }; content: string };
+export type StepResult = { reference: { checked: string } | { recalled: string } | { ignored: string }; content: string };
 export function renderStep(text: string, calls: NonNullable<Section['tool_calls']>, replies: string[]): Message[] {
   return [{ role: 'assistant', content: text, tool_calls: calls.map(call => ({
     id: call.id, type: 'function', function: { name: call.name, arguments: call.arguments }
@@ -159,7 +163,7 @@ export function assembleContext(input: Parameters<typeof assembleBase>[0] | {
   const prior = input.previous, index = prior.manifest.step!;
   const calls = input.calls.map((call, i) => ({ id: call.id || `call_${index}_${i}`, name: call.name, arguments: call.arguments }));
   const appended = renderStep(input.text, calls, input.results.map(result => result.content));
-  const messages = [...prior.messages, ...appended], parameters = requestParameters({ lastStep: index + 1 === 3 });
+  const messages = [...prior.messages, ...appended], parameters = requestParameters({ lastStep: index + 1 === 3, recall: prior.manifest.request.tools.includes('recall') });
   const section: Section = { name: 'step', ...messageSize(appended), index, assistant_text: input.text,
     tool_calls: calls, results: input.results.map(result => result.reference) };
   return { messages, parameters, manifest: { ...prior.manifest, step: index + 1, previous: input.previousId,
@@ -180,9 +184,10 @@ function dateBound(value: unknown): number {
 }
 export interface CheckResult { meta: Record<string, unknown>; content: string; }
 export function check(archive: Pick<Archive, 'search' | 'scanRanks'>, rawArguments: string, owner: string, options?: {
-  index?: ArchiveIndex; engine?: 'scan'; fallback?: SearchMeta['fallback'];
-  scan?: (raw: string, owner: string, fallback: NonNullable<SearchMeta['fallback']>) => Promise<CheckResult>;
+  tool?: 'recall'; index?: ArchiveIndex; engine?: 'scan'; fallback?: SearchMeta['fallback'];
+  scan?: (raw: string, owner: string, fallback: NonNullable<SearchMeta['fallback']>, tool?: 'check' | 'recall') => Promise<CheckResult>;
 }): CheckResult | Promise<CheckResult> {
+  const isRecall = options?.tool === 'recall', scanOptions = isRecall ? { kinds: ['wrote'], limit: 10, chars: 8000 } : undefined;
   let args: unknown;
   try { args = JSON.parse(rawArguments); } catch { args = rawArguments; }
   let params: Record<string, unknown>, from: number, to: number;
@@ -195,7 +200,7 @@ export function check(archive: Pick<Archive, 'search' | 'scanRanks'>, rawArgumen
     to = params.to === undefined ? Infinity : dateBound(params.to);
     if (from > to) throw new Error();
   } catch {
-    return { meta: { arguments: args, invalid: true, result_seqs: [], total: 0, ...(options ? { rules: 'p8', engine: options.engine === 'scan' ? 'scan' : 'index', mode: options.engine === 'scan' ? 'substring' : 'recent', terms: [], dropped: [], rank_seqs: [], ...(options.engine === 'scan' ? { fallback: 'index_unavailable' } : {}) } : {}) }, content: '查阅参数无效；请使用子串及有效的日期范围。' };
+    return { meta: { arguments: args, invalid: true, result_seqs: [], total: 0, ...(options ? { rules: isRecall ? 'p9' : 'p8', engine: options.engine === 'scan' ? 'scan' : 'index', mode: options.engine === 'scan' ? 'substring' : 'recent', terms: [], dropped: [], rank_seqs: [], ...(options.engine === 'scan' ? { fallback: 'index_unavailable' } : {}) } : {}) }, content: '查阅参数无效；请使用子串及有效的日期范围。' };
   }
   const query = params.query as string ?? '';
   // The three-argument form remains the P6 scan helper for differential tests.
@@ -206,26 +211,27 @@ export function check(archive: Pick<Archive, 'search' | 'scanRanks'>, rawArgumen
   }
   const words = terms(query, true);
   const found = options.engine === 'scan' ? { fallback: 'index_unavailable' as const } :
-    query && !words.length ? { fallback: 'no_terms' as const } : options.index!.search(query, from, to);
+    query && !words.length ? { fallback: 'no_terms' as const } : options.index!.search(query, from, to, scanOptions?.kinds, isRecall ? { count: 10, chars: 8000 } : undefined);
   let results: Event[], total: number, selection: SearchMeta;
   if ('fallback' in found) {
-    if (options.scan) return options.scan(rawArguments, owner, found.fallback);
-    ({ results, total } = archive.search(query, from, to));
+    if (options.scan) return options.scan(rawArguments, owner, found.fallback, isRecall ? 'recall' : 'check');
+    ({ results, total } = archive.search(query, from, to, scanOptions));
     // Recover the top 100 matching seqs without decoding the whole archive.
-    const candidates = total === results.length ? results.map(e => e.seq).reverse() : archive.scanRanks(query, from, to);
+    const candidates = total === results.length ? results.map(e => e.seq).reverse() : archive.scanRanks(query, from, to, scanOptions);
     selection = { rules: 'p8', engine: 'scan', mode: 'substring', terms: [], dropped: [], fallback: options.fallback ?? found.fallback, rank_seqs: candidates };
   } else { ({ results, total } = found); selection = found.meta; }
-  const meta = { arguments: args, result_seqs: results.map(e => e.seq), total, ...selection };
+  const meta = { arguments: args, result_seqs: results.map(e => e.seq), total, ...selection, ...(isRecall ? { rules: 'p9' } : {}) };
   return { meta, content: checkedText(meta, results, owner) };
 }
 
 export function checkedText(meta: { total: number; rules?: unknown; mode?: unknown; engine?: unknown; fallback?: unknown; dropped?: unknown; terms_limited?: unknown }, results: Event[], owner: string, zone?: string): string {
   const records = results.map(e => record(e, owner, true, zone)).join('\n\n');
-  if (meta.rules !== 'p8') return `共匹配${meta.total}条，返回${results.length}条。\n\n${records}`;
+  if (meta.rules !== 'p8' && meta.rules !== 'p9') return `共匹配${meta.total}条，返回${results.length}条。\n\n${records}`;
   let description = meta.mode === 'relevance' ? '按相关度选出、按时间排列' : meta.mode === 'substring' ? '逐字查找、按时间排列' : '按时间从近到远选出、按时间排列';
+  if (meta.rules === 'p9') description = meta.mode === 'relevance' ? '按相关度选出、按时间排列' : meta.mode === 'substring' ? '逐字查找' : '按时间从近到远';
   if (meta.engine === 'index' && meta.mode === 'recent' && Array.isArray((meta as Record<string, unknown>).terms) && ((meta as Record<string, unknown>).terms as unknown[]).length) description += '。这些词都太常见，只按时间从近到远返回';
   if (meta.engine === 'scan') description += '。已退回逐字查找：' + (meta.fallback === 'no_terms' ? '查询没有可检索的字词' : meta.fallback === 'index_building' ? '检索目录正在建立' : '检索目录暂不可用');
   if (Array.isArray(meta.dropped) && meta.dropped.length) description += '。已裁剪的检索词：' + meta.dropped.join('、');
   if (meta.terms_limited) description += '。检索词超过上限，只用了前32个';
-  return `共匹配${meta.total}条，返回${results.length}条。${description}。\n\n${records}`;
+  return `${meta.rules === 'p9' ? `找到你写下的文字 ${meta.total} 段，返回 ${results.length} 段。` : `共匹配${meta.total}条，返回${results.length}条。`}${description}。\n\n${records}`;
 }
